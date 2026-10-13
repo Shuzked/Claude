@@ -16,9 +16,9 @@ y la transcripción por palabra de la toma.
 | --- | --- |
 | `src/timeline.ts` | Recorte inicial, quién habla, correcciones de la transcripción, palabras subrayadas, planos, golpes de zoom, sacudidas, barridos y efectos de sonido. Todo en segundos del original. |
 | `src/transcript.json` | Transcripción por palabra de la toma. |
-| `src/Camera.tsx` | Zoom continuo: empuje lento por plano, golpe en cada corte, golpes en los remates, deriva de cámara en mano, entrada de golpe, sacudidas y barridos con desenfoque. |
-| `src/Captions.tsx` | Subtítulos palabra a palabra (1 a 3 en pantalla), sin relleno; los destacados del guion se subrayan en verde. |
-| `src/Graphics.tsx` | Motion graphics de cada nota del guion sobre paneles negro neutro con textura vintage y transiciones de entrada y salida. |
+| `src/Camera.tsx` | Vídeo a pantalla completa o en ventana durante las escenas. Zoom continuo: empuje lento por plano, golpe en cada corte, golpes en los remates, deriva de cámara en mano, entrada de golpe, sacudidas y barridos con desenfoque. |
+| `src/Captions.tsx` | Subtítulos palabra a palabra (1 a 3 en pantalla) con glow sutil; los destacados del guion se pintan con subrayador verde al pronunciarse. |
+| `src/Graphics.tsx` | Escenas de motion graphics a pantalla completa (fondo negro neutro con textura vintage, cortinilla diagonal, vídeo en ventana) con figuras e iconos animados: hoja de Excel, torso con el pecho iluminado, gráfica plana, calendario, móviles, diana, reloj, checklist, caja de comentario PLAN. |
 | `src/Sound.tsx` | Música y efectos (cada efecto se alinea por su punto de impacto). |
 | `src/Finish.tsx` | Grano, viñeta y destellos en los golpes. |
 | `audio-src/music.py` | Genera la música: intro electrónica a 127 BPM y parte chill a medio tiempo. |

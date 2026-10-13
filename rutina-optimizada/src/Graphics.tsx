@@ -8,25 +8,36 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { WINDOW, useWindow } from "./Camera";
 import { FONT, GREEN, INK, PAPER } from "./theme";
-import { f } from "./timeline";
+import { f, SCENE_IN, SCENE_OUT, scenes, SOURCE_END, type Scene } from "./timeline";
 
 // ---------------------------------------------------------------------------
-// Animación
+// Estilo y animación
+
+const BG = "#121212"; // negro neutro, no puro
+const GLOW = "drop-shadow(0 0 10px rgba(4, 228, 0, 0.55))";
+const GLOW_SOFT = "drop-shadow(0 0 18px rgba(4, 228, 0, 0.35))";
+const TEXT_GLOW = "0 0 22px rgba(255,255,255,0.22)";
+const GREEN_TEXT_GLOW = "0 0 18px rgba(4,228,0,0.55)";
+
+// Zona de contenido bajo la ventana del vídeo (encima de los subtítulos).
+const AREA = { x: 60, y: 925, w: 960, h: 395 };
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const easeIn = Easing.bezier(0.7, 0, 0.84, 0);
+const easeInOut = Easing.bezier(0.65, 0, 0.35, 1);
 
-// Los paneles necesitan este tiempo para entrar antes de mostrar contenido.
-const PANEL_IN = 0.32;
-const PANEL_OUT = 0.26;
-
-/** 0→1 desde `at` (segundos desde el inicio del bloque) en `dur` segundos. */
-const useReveal = (at: number, dur = 0.35, ease = easeOut) => {
+const useT = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  return interpolate(frame / fps, [at, at + dur], [0, 1], { ...clamp, easing: ease });
+  return frame / fps;
+};
+
+/** 0→1 desde `at` (segundos desde el inicio de la escena) en `dur` segundos. */
+const useReveal = (at: number, dur = 0.35, ease = easeOut) => {
+  const t = useT();
+  return interpolate(t, [at, at + dur], [0, 1], { ...clamp, easing: ease });
 };
 
 const useSpringAt = (at: number, damping = 14) => {
@@ -43,16 +54,19 @@ const display: React.CSSProperties = {
   letterSpacing: -1,
   lineHeight: 0.95,
   whiteSpace: "nowrap",
+  color: PAPER,
+  textShadow: TEXT_GLOW,
 };
 
 const label: React.CSSProperties = {
   fontFamily: FONT,
   fontWeight: 700,
-  fontSize: 26,
+  fontSize: 24,
   letterSpacing: 6,
   textTransform: "uppercase",
   color: GREEN,
   whiteSpace: "nowrap",
+  textShadow: GREEN_TEXT_GLOW,
 };
 
 /** Texto que sube detrás de una máscara. */
@@ -61,591 +75,969 @@ const MaskUp: React.FC<{ p: number; children: React.ReactNode; style?: React.CSS
   children,
   style,
 }) => (
-  <div style={{ overflow: "hidden", padding: "0 10px 4px 0", ...style }}>
-    <div style={{ transform: `translateY(${(1 - p) * 110}%)` }}>{children}</div>
+  <div style={{ overflow: "hidden", padding: "6px 14px 6px 4px", margin: "-6px -14px -6px -4px", ...style }}>
+    <div style={{ transform: `translateY(${(1 - p) * 115}%)` }}>{children}</div>
   </div>
 );
 
-/** Subrayado verde que se dibuja de izquierda a derecha. */
-const Underline: React.FC<{ p: number; height?: number }> = ({ p, height = 8 }) => (
-  <div
-    style={{
-      height,
-      marginTop: 6,
-      background: GREEN,
-      transformOrigin: "left center",
-      transform: `scaleX(${p}) skewX(-12deg)`,
-    }}
-  />
+/** Subrayador: trazo verde irregular que pinta de izquierda a derecha detrás del contenido. */
+const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({ p, children }) => (
+  <div style={{ position: "relative", display: "inline-block" }}>
+    <svg
+      viewBox="0 0 200 52"
+      preserveAspectRatio="none"
+      style={{
+        position: "absolute",
+        left: -12,
+        top: "14%",
+        width: "calc(100% + 24px)",
+        height: "80%",
+        overflow: "visible",
+        transform: "rotate(-1.5deg)",
+        clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`,
+        filter: GLOW,
+      }}
+    >
+      <path
+        d="M 2 9 C 20 5, 45 7, 70 5 S 120 6, 150 4 L 198 3 L 196 47 C 170 49, 140 46, 110 48 S 50 46, 24 49 L 0 50 Z"
+        fill={GREEN}
+        opacity={0.92}
+      />
+    </svg>
+    <div style={{ position: "relative" }}>{children}</div>
+  </div>
 );
 
 // ---------------------------------------------------------------------------
-// Panel: negro neutro (no puro) con textura de vídeo vintage y transiciones
+// Fondo de escena a pantalla completa: textura vintage con detalle
 
-const Texture: React.FC<{ id: string }> = ({ id }) => {
+const Backdrop: React.FC<{ scene: Scene; index: number }> = ({ scene, index }) => {
   const frame = useCurrentFrame();
+  const t = useT();
+  const { durationInFrames, fps } = useVideoConfig();
+  const end = durationInFrames / fps;
+  const last = scene.to >= SOURCE_END - 0.05;
+  const inQ = interpolate(t, [0, SCENE_IN], [0, 1], { ...clamp, easing: easeInOut });
+  const outQ = last ? 0 : interpolate(t, [end - SCENE_OUT, end], [0, 1], { ...clamp, easing: easeInOut });
+  // cortinilla diagonal: entra desde la izquierda y sale hacia la derecha
+  const a = inQ * 130;
+  const b = outQ * 130;
+  const clip = `polygon(${b}% 0, ${a}% 0, ${a - 30}% 100%, ${b - 30}% 100%)`;
+
   const seed = Math.floor(frame / 2) % 9;
-  // un arañazo vertical que aparece de vez en cuando
-  const scratch = (frame * 37) % 97 < 6;
+  const flicker = 1 + Math.sin(frame * 1.7) * 0.015 + Math.sin(frame * 0.37) * 0.012;
+  const scratch = (frame * 37) % 97 < 5;
   const scratchX = ((frame * 53) % 89) + 5;
-  const flicker = 1 + Math.sin(frame * 1.7) * 0.015 + Math.sin(frame * 0.37) * 0.01;
+  const drift = t * 26;
+
   return (
-    <AbsoluteFill style={{ filter: `brightness(${flicker})` }}>
-      <AbsoluteFill style={{ background: "#141414" }} />
-      <AbsoluteFill
-        style={{
-          background: "radial-gradient(ellipse 90% 80% at 40% 30%, rgba(255,255,255,0.05), transparent 70%)",
-        }}
-      />
-      <svg width="100%" height="100%" style={{ position: "absolute", opacity: 0.22, mixBlendMode: "screen" }}>
-        <filter id={`n-${id}-${seed}`}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves={2} seed={seed} />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#n-${id}-${seed})`} />
-      </svg>
-      <AbsoluteFill
-        style={{
-          background:
-            "repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 4px)",
-        }}
-      />
-      {scratch ? (
+    <AbsoluteFill style={{ clipPath: clip }}>
+      <AbsoluteFill style={{ background: BG, filter: `brightness(${flicker})` }}>
+        {/* luz de estudio muy suave */}
+        <AbsoluteFill
+          style={{ background: "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.06), transparent 70%)" }}
+        />
+        {/* cuadrícula técnica */}
+        <AbsoluteFill
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+            backgroundPosition: `${-drift * 0.3}px ${-drift * 0.15}px`,
+          }}
+        />
+        {/* título gigante en contorno, desplazándose */}
         <div
           style={{
             position: "absolute",
-            top: 0,
-            bottom: 0,
-            left: `${scratchX}%`,
-            width: 1.5,
-            background: "rgba(255,255,255,0.18)",
+            top: 1500,
+            left: 60 - drift,
+            fontFamily: FONT,
+            fontWeight: 900,
+            fontStyle: "italic",
+            fontSize: 330,
+            lineHeight: 1,
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+            color: "transparent",
+            WebkitTextStroke: "2px rgba(255,255,255,0.07)",
+          }}
+        >
+          {scene.title} · {scene.title}
+        </div>
+        {/* grano */}
+        <svg width="100%" height="100%" style={{ position: "absolute", opacity: 0.2, mixBlendMode: "screen" }}>
+          <filter id={`bd-${scene.id}-${seed}`}>
+            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} seed={seed} />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter={`url(#bd-${scene.id}-${seed})`} />
+        </svg>
+        {/* líneas de escaneo */}
+        <AbsoluteFill
+          style={{
+            background:
+              "repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px)",
+          }}
+        />
+        {scratch ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: `${scratchX}%`,
+              width: 1.5,
+              background: "rgba(255,255,255,0.14)",
+            }}
+          />
+        ) : null}
+        {/* marcas de registro y metadatos */}
+        <Registration />
+        <div style={{ position: "absolute", top: 70, left: 64, ...label, fontSize: 22, color: PAPER, textShadow: "none", opacity: 0.55 }}>
+          {String(index + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}
+        </div>
+        <div style={{ position: "absolute", top: 70, right: 64, ...label, fontSize: 22, opacity: 0.85 }}>
+          {scene.title}
+        </div>
+        <AbsoluteFill style={{ boxShadow: "inset 0 0 220px rgba(0,0,0,0.75)" }} />
+      </AbsoluteFill>
+      {/* borde de la cortinilla */}
+      {inQ < 1 || outQ > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: GREEN,
+            clipPath: `polygon(${a - 1.2}% 0, ${a}% 0, ${a - 30}% 100%, ${a - 31.2}% 100%)`,
+            filter: GLOW,
           }}
         />
       ) : null}
-      <AbsoluteFill style={{ boxShadow: "inset 0 0 60px rgba(0,0,0,0.65)" }} />
     </AbsoluteFill>
   );
 };
 
-const Panel: React.FC<{
-  id: string;
-  top: number;
-  width: number;
-  height: number;
-  children: React.ReactNode;
-}> = ({ id, top, width, height, children }) => {
-  const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
-  const t = frame / fps;
-  const end = durationInFrames / fps;
-  const inP = interpolate(t, [0, PANEL_IN], [0, 1], { ...clamp, easing: easeOut });
-  const outP = interpolate(t, [end - PANEL_OUT, end], [0, 1], { ...clamp, easing: easeIn });
-  // entra barriendo desde la izquierda y sale barriendo hacia la derecha
-  const clip = `inset(0 ${(1 - inP) * 100}% 0 ${outP * 100}%)`;
+const Registration: React.FC = () => {
+  const mark = (style: React.CSSProperties) => (
+    <div style={{ position: "absolute", width: 34, height: 34, ...style }} />
+  );
+  const line = "2px solid rgba(255,255,255,0.22)";
   return (
-    <AbsoluteFill style={{ top, height, alignItems: "center" }}>
-      <div
-        style={{
-          position: "relative",
-          width,
-          height,
-          overflow: "hidden",
-          clipPath: clip,
-          transform: `translateX(${(1 - inP) * -50 + outP * 50}px) skewX(${(1 - inP) * -6 + outP * 6}deg)`,
-        }}
-      >
-        <Texture id={id} />
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 7, background: GREEN }} />
-        <div style={{ position: "absolute", inset: 0, border: "1.5px solid rgba(255,255,255,0.08)" }} />
-        <div style={{ position: "absolute", inset: 0, padding: "34px 44px 30px 52px" }}>{children}</div>
-      </div>
-    </AbsoluteFill>
+    <>
+      {mark({ top: 40, left: 40, borderTop: line, borderLeft: line })}
+      {mark({ top: 40, right: 40, borderTop: line, borderRight: line })}
+      {mark({ bottom: 40, left: 40, borderBottom: line, borderLeft: line })}
+      {mark({ bottom: 40, right: 40, borderBottom: line, borderRight: line })}
+    </>
   );
 };
 
-const At: React.FC<{ from: number; to: number; name: string; children: React.ReactNode }> = ({
-  from,
-  to,
-  name,
-  children,
-}) => (
-  <Sequence from={f(from)} durationInFrames={f(to) - f(from)} name={name}>
-    {children}
-  </Sequence>
-);
-
-// ---------------------------------------------------------------------------
-// E02 · «el Excel» → «el pecho sigue igual» (mismo panel, cambio con barrido)
-
-const SWAP = 1.17; // segundos tras la entrada del panel: justo antes de «pecho» (8,2 s)
-
-const ExcelGrid: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const grid = useReveal(PANEL_IN - 0.1, 0.3);
-  const head = useReveal(PANEL_IN - 0.15, 0.3);
-  const title = useSpringAt(PANEL_IN + 0.02, 15);
-  const cols = 5;
-  const rows = 4;
-  const W = 560;
-  const H = 150;
-  return (
-    <div>
-      <MaskUp p={head}>
-        <div style={label}>rutina.xlsx</div>
-      </MaskUp>
-      <svg width={W} height={H} style={{ marginTop: 14, display: "block" }}>
-        <rect x={0} y={0} width={W * grid} height={H / rows} fill={GREEN} opacity={0.9} />
-        {Array.from({ length: cols + 1 }).map((_, i) => (
-          <line
-            key={`c${i}`}
-            x1={(W / cols) * i}
-            x2={(W / cols) * i}
-            y1={0}
-            y2={H * grid}
-            stroke="rgba(245,245,240,0.3)"
-            strokeWidth={2}
-          />
-        ))}
-        {Array.from({ length: rows + 1 }).map((_, i) => (
-          <line
-            key={`r${i}`}
-            y1={(H / rows) * i}
-            y2={(H / rows) * i}
-            x1={0}
-            x2={W * grid}
-            stroke="rgba(245,245,240,0.3)"
-            strokeWidth={2}
-          />
-        ))}
-        {Array.from({ length: cols * (rows - 1) }).map((_, i) => {
-          const at = PANEL_IN + i * 0.03;
-          const p = interpolate(frame / fps, [at, at + 0.08], [0, 1], clamp);
-          const c = i % cols;
-          const r = Math.floor(i / cols) + 1;
-          const w = ((i * 37) % 44) + 26;
-          return (
-            <rect
-              key={`v${i}`}
-              x={(W / cols) * c + 12}
-              y={(H / rows) * r + 16}
-              width={w * p}
-              height={9}
-              fill={PAPER}
-              opacity={0.7}
-            />
-          );
-        })}
-      </svg>
-      <div style={{ marginTop: 18 }}>
-        <MaskUp p={title}>
-          <div style={{ ...display, fontSize: 64, color: PAPER }}>El Excel</div>
-        </MaskUp>
-      </div>
-    </div>
+// Esquinas verdes alrededor de la ventana del vídeo
+const WindowFrame: React.FC = () => {
+  const { p } = useWindow();
+  if (p < 0.02) return null;
+  const L = 46;
+  const s = 5;
+  const o = (1 - p) * 30;
+  const c = (style: React.CSSProperties) => (
+    <div style={{ position: "absolute", width: L, height: L, borderColor: GREEN, borderStyle: "solid", borderWidth: 0, ...style }} />
   );
-};
-
-const FlatChart: React.FC = () => {
-  const frame = useCurrentFrame();
-  const axes = useReveal(0.05, 0.3);
-  const line = useReveal(0.18, 0.5, Easing.linear);
-  const stamp = useSpringAt(0.4, 13);
-  const under = useReveal(0.55, 0.3);
-  const W = 560;
-  const H = 150;
-  const wobble = Math.sin(frame / 2.2) * 2 * (1 - line);
-  return (
-    <div>
-      <MaskUp p={axes}>
-        <div style={label}>Pecho · progreso</div>
-      </MaskUp>
-      <svg width={W} height={H} style={{ marginTop: 14, display: "block", overflow: "visible" }}>
-        <path
-          d={`M 3 0 L 3 ${H - 3} L ${W} ${H - 3}`}
-          fill="none"
-          stroke={PAPER}
-          strokeWidth={4}
-          strokeDasharray={W + H}
-          strokeDashoffset={(W + H) * (1 - axes)}
-        />
-        <path
-          d={`M 18 ${H * 0.58} L ${W - 24} ${H * 0.58 + wobble}`}
-          fill="none"
-          stroke={GREEN}
-          strokeWidth={8}
-          strokeDasharray={W}
-          strokeDashoffset={W * (1 - line)}
-        />
-        <rect
-          x={18 + (W - 42) * line - 9}
-          y={H * 0.58 - 9}
-          width={18}
-          height={18}
-          fill={GREEN}
-          opacity={line > 0.02 ? 1 : 0}
-        />
-      </svg>
-      <div style={{ marginTop: 22, transform: `scale(${0.85 + 0.15 * stamp})`, transformOrigin: "left center" }}>
-        <MaskUp p={stamp}>
-          <div style={{ ...display, fontSize: 64, color: PAPER }}>Sigue igual</div>
-        </MaskUp>
-        <div style={{ width: 380 }}>
-          <Underline p={under} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ExcelToChart: React.FC = () => {
-  const { fps } = useVideoConfig();
-  // barrido vertical entre las dos vistas
-  const swap = useReveal(SWAP - 0.05, 0.3);
-  return (
-    <Panel id="excel" top={960} width={680} height={370}>
-      <div style={{ position: "relative", height: "100%" }}>
-        <div style={{ position: "absolute", inset: 0, transform: `translateY(${-swap * 110}%)` }}>
-          <ExcelGrid />
-        </div>
-        <div style={{ position: "absolute", inset: 0, transform: `translateY(${(1 - swap) * 110}%)` }}>
-          <Sequence from={Math.round(SWAP * fps)} layout="none">
-            <FlatChart />
-          </Sequence>
-        </div>
-      </div>
-    </Panel>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// E03 · herramientas en una misma línea (sin cruces ni valoración)
-
-const Tools: React.FC<{ items: { text: string; at: number }[] }> = ({ items }) => (
-  <Panel id="tools" top={1110} width={960} height={140}>
-    <div style={{ display: "flex", alignItems: "center", height: "100%", gap: 14 }}>
-      {items.map((it, i) => (
-        <ToolItem key={i} {...it} first={i === 0} />
-      ))}
-    </div>
-  </Panel>
-);
-
-const ToolItem: React.FC<{ text: string; at: number; first: boolean }> = ({ text, at, first }) => {
-  const p = useSpringAt(at, 15);
-  const u = useReveal(at + 0.1, 0.3);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      {!first ? <div style={{ ...display, fontSize: 34, color: GREEN, opacity: p }}>+</div> : null}
-      <div>
-        <MaskUp p={p}>
-          <div style={{ ...display, fontSize: 36, color: PAPER }}>{text}</div>
-        </MaskUp>
-        <Underline p={u} height={5} />
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// E04 · «tres vídeos» (sin mostrar creadores ni contenido ajeno)
-
-const Phone: React.FC<{ at: number; rot: number; dx: number }> = ({ at, rot, dx }) => {
-  const p = useSpringAt(at, 12);
   return (
     <div
       style={{
         position: "absolute",
-        left: "50%",
-        top: 6,
-        width: 112,
-        height: 196,
-        marginLeft: -56 + dx * p,
-        transform: `translateY(${(1 - p) * 70}px) rotate(${rot * p}deg) scale(${0.6 + 0.4 * p})`,
-        opacity: Math.min(1, p * 2),
-        border: `5px solid ${PAPER}`,
-        borderRadius: 18,
-        background: "#1c1c1c",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        left: WINDOW.x - 12,
+        top: WINDOW.y - 12,
+        width: WINDOW.w + 24,
+        height: WINDOW.h + 24,
+        opacity: p,
+        filter: GLOW,
       }}
     >
-      <svg width={38} height={44}>
-        <path d="M 5 3 L 35 22 L 5 41 Z" fill={GREEN} />
+      {c({ top: -o, left: -o, borderTopWidth: s, borderLeftWidth: s })}
+      {c({ top: -o, right: -o, borderTopWidth: s, borderRightWidth: s })}
+      {c({ bottom: -o, left: -o, borderBottomWidth: s, borderLeftWidth: s })}
+      {c({ bottom: -o, right: -o, borderBottomWidth: s, borderRightWidth: s })}
+    </div>
+  );
+};
+
+/** Contenedor del contenido: entra tras la cortinilla y sale antes de que se cierre. */
+const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({ scene, children }) => {
+  const t = useT();
+  const { durationInFrames, fps } = useVideoConfig();
+  const end = durationInFrames / fps;
+  const last = scene.to >= SOURCE_END - 0.05;
+  const out = last ? 0 : interpolate(t, [end - SCENE_OUT - 0.05, end - 0.08], [0, 1], { ...clamp, easing: easeInOut });
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: AREA.x,
+        top: AREA.y,
+        width: AREA.w,
+        height: AREA.h,
+        opacity: 1 - out,
+        transform: `translateX(${out * 60}px)`,
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
+const SceneBlock: React.FC<{ id: string }> = ({ id }) => {
+  const index = scenes.findIndex((s) => s.id === id);
+  const scene = scenes[index];
+  return (
+    <Sequence from={f(scene.from)} durationInFrames={f(scene.to) - f(scene.from)} name={`Escena · ${scene.title}`}>
+      <Backdrop scene={scene} index={index} />
+    </Sequence>
+  );
+};
+
+const SceneContent: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+  const scene = scenes.find((s) => s.id === id)!;
+  return (
+    <Sequence from={f(scene.from)} durationInFrames={f(scene.to) - f(scene.from)} name={`Gráfico · ${scene.title}`}>
+      <Content scene={scene}>{children}</Content>
+    </Sequence>
+  );
+};
+
+/** Tiempo del original → segundos desde el inicio de la escena. */
+const rel = (id: string, sourceSeconds: number) => sourceSeconds - scenes.find((s) => s.id === id)!.from;
+
+// ---------------------------------------------------------------------------
+// 01 · E02 «el Excel» → «el pecho sigue igual»
+
+const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  const grid = useReveal(at, 0.4);
+  const cols = ["Ejercicio", "Series", "Reps", "Carga", "Notas"];
+  const widths = [250, 150, 150, 150, 180];
+  const rows = 4;
+  const rowH = 46;
+  const x0 = 46;
+  const W = widths.reduce((a, b) => a + b, 0);
+  // cursor de celda que salta como si alguien estuviera editando
+  const step = Math.max(0, Math.floor((t - at - 0.3) / 0.14));
+  const cr = (step * 3) % rows;
+  const cc = (step * 2 + 1) % cols.length;
+  const cx = x0 + widths.slice(0, cc).reduce((a, b) => a + b, 0);
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, opacity: grid }}>
+        {[0, 1, 2].map((i) => (
+          <div key={i} style={{ width: 12, height: 12, borderRadius: 6, background: i === 0 ? GREEN : "rgba(255,255,255,0.25)" }} />
+        ))}
+        <div style={{ ...label, marginLeft: 8 }}>rutina.xlsx</div>
+      </div>
+      <svg width={x0 + W} height={30 + rowH * (rows + 1)} style={{ marginTop: 16, display: "block", overflow: "visible" }}>
+        {/* letras de columna */}
+        {cols.map((_, i) => (
+          <text
+            key={`l${i}`}
+            x={x0 + widths.slice(0, i).reduce((a, b) => a + b, 0) + 10}
+            y={18}
+            fill="rgba(255,255,255,0.35)"
+            fontFamily={FONT}
+            fontWeight={700}
+            fontSize={16}
+            opacity={grid}
+          >
+            {String.fromCharCode(65 + i)}
+          </text>
+        ))}
+        {/* cabecera */}
+        <rect x={x0} y={28} width={W * grid} height={rowH} fill={GREEN} opacity={0.95} style={{ filter: GLOW_SOFT }} />
+        {cols.map((c, i) => (
+          <text
+            key={`h${i}`}
+            x={x0 + widths.slice(0, i).reduce((a, b) => a + b, 0) + 12}
+            y={28 + 30}
+            fill={INK}
+            fontFamily={FONT}
+            fontWeight={800}
+            fontSize={19}
+            opacity={interpolate(t, [at + 0.15 + i * 0.04, at + 0.3 + i * 0.04], [0, 1], clamp)}
+          >
+            {c.toUpperCase()}
+          </text>
+        ))}
+        {/* números de fila */}
+        {Array.from({ length: rows + 1 }).map((_, r) => (
+          <text key={`n${r}`} x={14} y={28 + rowH * r + 30} fill="rgba(255,255,255,0.35)" fontFamily={FONT} fontWeight={700} fontSize={16} opacity={grid}>
+            {r + 1}
+          </text>
+        ))}
+        {/* rejilla */}
+        {Array.from({ length: rows + 2 }).map((_, r) => (
+          <line key={`r${r}`} x1={x0} x2={x0 + W * grid} y1={28 + rowH * r} y2={28 + rowH * r} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+        ))}
+        {widths.map((_, i) => {
+          const x = x0 + widths.slice(0, i).reduce((a, b) => a + b, 0);
+          return <line key={`c${i}`} x1={x} x2={x} y1={28} y2={28 + rowH * (rows + 1) * grid} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />;
+        })}
+        <line x1={x0 + W} x2={x0 + W} y1={28} y2={28 + rowH * (rows + 1) * grid} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+        {/* contenido de celdas: barras como texto difuminado */}
+        {Array.from({ length: rows * cols.length }).map((_, i) => {
+          const r = Math.floor(i / cols.length);
+          const c = i % cols.length;
+          const s0 = at + 0.3 + i * 0.025;
+          const p = interpolate(t, [s0, s0 + 0.1], [0, 1], clamp);
+          const w = Math.min(widths[c] - 30, ((i * 41) % 70) + 34);
+          const x = x0 + widths.slice(0, c).reduce((a, b) => a + b, 0) + 12;
+          return <rect key={`v${i}`} x={x} y={28 + rowH * (r + 1) + 19} width={w * p} height={9} rx={2} fill={PAPER} opacity={0.55} />;
+        })}
+        {/* cursor */}
+        {t > at + 0.3 ? (
+          <rect
+            x={cx}
+            y={28 + rowH * (cr + 1)}
+            width={widths[cc]}
+            height={rowH}
+            fill="rgba(4,228,0,0.12)"
+            stroke={GREEN}
+            strokeWidth={3}
+            style={{ filter: GLOW }}
+          />
+        ) : null}
       </svg>
     </div>
   );
 };
 
-const ThreeVideos: React.FC = () => {
-  const lbl = useSpringAt(PANEL_IN + 0.3, 14);
-  const under = useReveal(PANEL_IN + 0.45, 0.3);
+// Torso minimalista de línea: el pecho se ilumina
+const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
+  const t = useT();
+  const draw = useReveal(at, 0.7, easeInOut);
+  const glow = useReveal(glowAt, 0.35);
+  const pulse = glow * (0.75 + 0.25 * Math.sin((t - glowAt) * 9));
+  const L = 1400;
+  const stroke = {
+    fill: "none",
+    stroke: PAPER,
+    strokeWidth: 3.5,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeDasharray: L,
+    strokeDashoffset: L * (1 - draw),
+    opacity: 0.9,
+  };
   return (
-    <Panel id="videos" top={930} width={620} height={400}>
-      <div style={{ position: "relative", height: 220 }}>
-        <Phone at={PANEL_IN - 0.05} rot={-12} dx={-150} />
-        <Phone at={PANEL_IN + 0.1} rot={12} dx={150} />
-        <Phone at={PANEL_IN + 0.25} rot={0} dx={0} />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 18 }}>
-        <MaskUp p={lbl}>
-          <div style={{ ...display, fontSize: 70, color: PAPER }}>3 vídeos</div>
-        </MaskUp>
-        <div style={{ width: 300 }}>
-          <Underline p={under} />
-        </div>
-      </div>
-    </Panel>
+    <svg width={330} height={330} viewBox="0 0 330 330" style={{ overflow: "visible" }}>
+      <defs>
+        <filter id="pec-glow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation={10 + 6 * pulse} result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {/* pectorales: relleno que se enciende */}
+      <g filter="url(#pec-glow)" opacity={glow}>
+        <path d="M 163 112 C 140 104, 108 104, 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 163 148 Z" fill={GREEN} opacity={0.55 + 0.35 * pulse} />
+        <path d="M 167 112 C 190 104, 222 104, 242 118 C 250 140, 238 162, 212 166 C 190 168, 172 160, 167 148 Z" fill={GREEN} opacity={0.55 + 0.35 * pulse} />
+      </g>
+      {/* contorno del torso */}
+      <path {...stroke} d="M 140 40 C 142 58, 140 70, 128 78 C 104 86, 72 88, 56 100 C 40 112, 36 140, 38 176 L 40 240" />
+      <path {...stroke} d="M 190 40 C 188 58, 190 70, 202 78 C 226 86, 258 88, 274 100 C 290 112, 294 140, 292 176 L 290 240" />
+      <path {...stroke} d="M 72 150 C 76 200, 88 250, 100 300" />
+      <path {...stroke} d="M 258 150 C 254 200, 242 250, 230 300" />
+      {/* línea de pectorales */}
+      <path {...stroke} d="M 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 165 146 C 172 160, 190 168, 212 166 C 238 162, 250 140, 242 118" />
+      {/* clavículas */}
+      <path {...stroke} d="M 128 80 C 140 92, 152 96, 165 96 C 178 96, 190 92, 202 80" />
+      {/* abdomen */}
+      <path {...stroke} d="M 165 170 L 165 296" strokeWidth={2.5} />
+      <path {...stroke} d="M 135 196 C 150 200, 180 200, 195 196 M 137 232 C 150 236, 180 236, 193 232 M 140 266 C 152 270, 178 270, 190 266" strokeWidth={2.5} />
+      {/* etiqueta de zona */}
+      <g opacity={glow}>
+        <line x1={242} y1={130} x2={300} y2={70} stroke={GREEN} strokeWidth={2.5} style={{ filter: GLOW }} />
+        <circle cx={242} cy={130} r={5} fill={GREEN} />
+      </g>
+    </svg>
   );
 };
 
-// ---------------------------------------------------------------------------
-// Tono útil (desde E04): paneles sobrios
-
-const Rows: React.FC<{
-  id: string;
-  top: number;
-  width: number;
-  title: string;
-  items: { text: string; at: number }[];
-}> = ({ id, top, width, title, items }) => {
-  const head = useReveal(PANEL_IN - 0.1, 0.3);
+const FlatChart: React.FC<{ at: number; stampAt: number }> = ({ at, stampAt }) => {
+  const t = useT();
+  const axes = useReveal(at, 0.35);
+  const line = useReveal(at + 0.2, 0.6, Easing.linear);
+  const stamp = useSpringAt(stampAt, 13);
+  const mark = useReveal(stampAt + 0.1, 0.3);
+  const W = 520;
+  const H = 190;
+  const y = H * 0.55;
+  const dot = 0.6 + 0.4 * Math.sin(t * 10);
   return (
-    <Panel id={id} top={top} width={width} height={110 + items.length * 78}>
-      <MaskUp p={head}>
-        <div style={label}>{title}</div>
-      </MaskUp>
-      <div style={{ marginTop: 14 }}>
-        {items.map((it, i) => (
-          <Row key={i} {...it} />
+    <div>
+      <div style={label}>Pecho · progreso</div>
+      <svg width={W} height={H + 34} style={{ marginTop: 14, display: "block", overflow: "visible" }}>
+        {[0.2, 0.4, 0.6, 0.8].map((g) => (
+          <line key={g} x1={30} x2={W} y1={H * g} y2={H * g} stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} opacity={axes} />
         ))}
-      </div>
-    </Panel>
-  );
-};
-
-const Row: React.FC<{ text: string; at: number }> = ({ text, at }) => {
-  const p = useReveal(Math.max(PANEL_IN, at), 0.35);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 20, height: 78 }}>
-      <div style={{ width: 16, height: 16, background: GREEN, transform: `scale(${p})` }} />
-      <MaskUp p={p}>
-        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 50, color: PAPER, whiteSpace: "nowrap" }}>
-          {text}
-        </div>
-      </MaskUp>
-    </div>
-  );
-};
-
-// E06 · «solo lo que haga falta»
-const OnlyWhatsNeeded: React.FC = () => {
-  const a = useReveal(PANEL_IN - 0.05, 0.35);
-  const b = useReveal(PANEL_IN + 0.1, 0.35);
-  const under = useReveal(PANEL_IN + 0.35, 0.35);
-  return (
-    <Panel id="falta" top={990} width={760} height={290}>
-      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", height: "100%" }}>
-        <MaskUp p={a}>
-          <div style={{ ...display, fontSize: 64, color: PAPER }}>Solo lo que</div>
-        </MaskUp>
-        <MaskUp p={b}>
-          <div style={{ ...display, fontSize: 84, color: GREEN }}>haga falta</div>
-        </MaskUp>
-        <div style={{ width: 470 }}>
-          <Underline p={under} />
-        </div>
-      </div>
-    </Panel>
-  );
-};
-
-// «antes de añadir más, revisaría tus registros, cómo ejecutas, cómo te recuperas»
-const Checklist: React.FC<{ items: { text: string; at: number }[] }> = ({ items }) => {
-  const head = useReveal(PANEL_IN - 0.1, 0.3);
-  return (
-    <Panel id="check" top={900} width={680} height={350}>
-      <MaskUp p={head}>
-        <div style={label}>Antes de añadir más</div>
-      </MaskUp>
-      <div style={{ marginTop: 24 }}>
-        {items.map((it, i) => (
-          <CheckRow key={i} {...it} />
+        <path d={`M 30 0 L 30 ${H} L ${W} ${H}`} fill="none" stroke={PAPER} strokeWidth={3} strokeDasharray={W + H} strokeDashoffset={(W + H) * (1 - axes)} />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <text key={i} x={46 + i * 60} y={H + 28} fill="rgba(255,255,255,0.4)" fontFamily={FONT} fontWeight={700} fontSize={15} opacity={axes}>
+            S{i + 1}
+          </text>
         ))}
-      </div>
-    </Panel>
-  );
-};
-
-const CheckRow: React.FC<{ text: string; at: number }> = ({ text, at }) => {
-  const box = useReveal(at - 0.2, 0.25);
-  const tick = useReveal(at, 0.3);
-  const txt = useReveal(at - 0.12, 0.35);
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 24, height: 80, opacity: box }}>
-      <svg width={50} height={50}>
-        <rect x={3} y={3} width={44} height={44} fill="none" stroke={PAPER} strokeWidth={4} />
         <path
-          d="M 11 26 L 21 36 L 40 14"
+          d={`M 40 ${y} L ${W - 20} ${y}`}
           fill="none"
           stroke={GREEN}
           strokeWidth={7}
-          strokeDasharray={50}
-          strokeDashoffset={50 * (1 - tick)}
+          strokeLinecap="round"
+          strokeDasharray={W}
+          strokeDashoffset={W * (1 - line)}
+          style={{ filter: GLOW }}
         />
+        {Array.from({ length: 8 }).map((_, i) => {
+          const x = 52 + i * 60;
+          const vis = line * (W - 60) + 40 > x ? 1 : 0;
+          return <circle key={i} cx={x} cy={y} r={6} fill={BG} stroke={GREEN} strokeWidth={3} opacity={vis} />;
+        })}
+        <circle cx={40 + (W - 60) * line} cy={y} r={9 * dot + 4} fill={GREEN} opacity={line > 0.02 ? 0.5 : 0} style={{ filter: GLOW }} />
       </svg>
-      <MaskUp p={txt}>
-        <div style={{ fontFamily: FONT, fontWeight: 800, fontSize: 52, color: PAPER, whiteSpace: "nowrap" }}>
-          {text}
-        </div>
-      </MaskUp>
+      <div style={{ marginTop: 10, transform: `scale(${0.85 + 0.15 * stamp})`, transformOrigin: "left center", opacity: Math.min(1, stamp * 2) }}>
+        <Marker p={mark}>
+          <div style={{ ...display, fontSize: 58, padding: "0 6px" }}>Sigue igual</div>
+        </Marker>
+      </div>
     </div>
   );
 };
 
-// E07 · «hacer más / hacer menos / dejar de cambiar» en una misma línea
-const Options: React.FC<{ items: { text: string; at: number }[] }> = ({ items }) => (
-  <Panel id="options" top={1100} width={960} height={140}>
-    <div style={{ display: "flex", alignItems: "center", height: "100%", gap: 12 }}>
-      {items.map((it, i) => (
-        <Option key={i} {...it} sep={i > 0} />
-      ))}
+const ExcelScene: React.FC = () => {
+  const swapAt = rel("excel", 8.1);
+  const swap = useReveal(swapAt, 0.4, easeInOut);
+  const title = useSpringAt(rel("excel", 7.3), 15);
+  const titleMark = useReveal(rel("excel", 7.4), 0.3);
+  const { fps } = useVideoConfig();
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+      {/* vista A: la hoja de cálculo */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${-swap * 105}%)` }}>
+        <Spreadsheet at={SCENE_IN - 0.12} />
+        <div style={{ position: "absolute", right: 10, bottom: 0, transform: `rotate(-3deg) scale(${0.8 + 0.2 * title})`, opacity: Math.min(1, title * 2) }}>
+          <Marker p={titleMark}>
+            <div style={{ ...display, fontSize: 72, padding: "0 8px", color: PAPER }}>El Excel</div>
+          </Marker>
+        </div>
+      </div>
+      {/* vista B: torso + gráfica plana */}
+      <div style={{ position: "absolute", inset: 0, transform: `translateX(${(1 - swap) * 105}%)`, display: "flex", gap: 40, alignItems: "center" }}>
+        <Sequence from={Math.round(swapAt * fps)} layout="none">
+          <Torso at={0.05} glowAt={rel("excel", 8.2) - swapAt} />
+          <FlatChart at={0.15} stampAt={rel("excel", 8.48) - swapAt} />
+        </Sequence>
+      </div>
     </div>
-  </Panel>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 02 · E03 herramientas (sin cruces ni valoración)
+
+const Card: React.FC<{ at: number; index: number; title: React.ReactNode; children: React.ReactNode; width?: number }> = ({
+  at,
+  index,
+  title,
+  children,
+  width = 290,
+}) => {
+  const p = useSpringAt(at, 15);
+  const line = useReveal(at + 0.1, 0.4);
+  return (
+    <div
+      style={{
+        position: "relative",
+        width,
+        height: 330,
+        background: "rgba(255,255,255,0.035)",
+        border: "1.5px solid rgba(255,255,255,0.1)",
+        transform: `translateY(${(1 - p) * 60}px)`,
+        opacity: Math.min(1, p * 2),
+        padding: "20px 22px",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ position: "absolute", top: 0, left: 0, height: 4, width: `${line * 100}%`, background: GREEN, filter: GLOW }} />
+      <div style={{ ...label, fontSize: 20, color: "rgba(255,255,255,0.45)", textShadow: "none" }}>{String(index).padStart(2, "0")}</div>
+      <div style={{ height: 170, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div>
+      <div style={{ ...display, fontSize: 30 }}>{title}</div>
+    </div>
+  );
+};
+
+const VolumeIcon: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  return (
+    <svg width={190} height={140} style={{ overflow: "visible", filter: GLOW }}>
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const p = interpolate(t, [at + i * 0.06, at + i * 0.06 + 0.3], [0, 1], { ...clamp, easing: easeOut });
+        const h = (40 + i * 18) * p;
+        return <rect key={i} x={i * 32} y={140 - h} width={22} height={h} fill={i === 5 ? GREEN : PAPER} opacity={i === 5 ? 1 : 0.85} />;
+      })}
+    </svg>
+  );
+};
+
+const CalendarIcon: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  const days = ["L", "M", "X", "J", "V", "S", "D"];
+  const on = [0, 2, 4];
+  return (
+    <svg width={230} height={120} style={{ overflow: "visible" }}>
+      {days.map((d, i) => {
+        const p = interpolate(t, [at + i * 0.04, at + i * 0.04 + 0.2], [0, 1], clamp);
+        const lit = on.includes(i) && t > at + 0.35 + on.indexOf(i) * 0.12;
+        return (
+          <g key={i} opacity={p}>
+            <rect x={i * 33} y={30} width={27} height={60} fill={lit ? GREEN : "none"} stroke={lit ? GREEN : "rgba(255,255,255,0.4)"} strokeWidth={2} style={lit ? { filter: GLOW } : undefined} />
+            <text x={i * 33 + 13.5} y={20} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontFamily={FONT} fontWeight={700} fontSize={15}>
+              {d}
+            </text>
+          </g>
+        );
+      })}
+      <text x={115} y={118} textAnchor="middle" fill={GREEN} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={22} opacity={interpolate(t, [at + 0.6, at + 0.8], [0, 1], clamp)} style={{ filter: GLOW }}>
+        3× / SEMANA
+      </text>
+    </svg>
+  );
+};
+
+const DropIcon: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  return (
+    <svg width={200} height={140} style={{ overflow: "visible" }}>
+      {[0, 1, 2, 3].map((i) => {
+        const p = interpolate(t, [at + i * 0.1, at + i * 0.1 + 0.25], [0, 1], { ...clamp, easing: easeOut });
+        const h = (120 - i * 26) * p;
+        return <rect key={i} x={i * 48} y={140 - h} width={36} height={h} fill={PAPER} opacity={0.9 - i * 0.12} />;
+      })}
+      <path
+        d="M 10 10 L 70 34 L 118 58 L 168 84"
+        fill="none"
+        stroke={GREEN}
+        strokeWidth={5}
+        strokeDasharray={200}
+        strokeDashoffset={200 * (1 - interpolate(t, [at + 0.4, at + 0.8], [0, 1], clamp))}
+        style={{ filter: GLOW }}
+      />
+      <path d="M 168 84 l -16 -2 M 168 84 l -6 -14" stroke={GREEN} strokeWidth={5} opacity={t > at + 0.8 ? 1 : 0} />
+    </svg>
+  );
+};
+
+const ToolsScene: React.FC = () => {
+  const head = useReveal(SCENE_IN - 0.1, 0.3);
+  return (
+    <div>
+      <MaskUp p={head}>
+        <div style={label}>Lo que ha cambiado</div>
+      </MaskUp>
+      <div style={{ display: "flex", gap: 45, marginTop: 20 }}>
+        <Card at={rel("tools", 11.62)} index={1} title="Volumen">
+          <VolumeIcon at={rel("tools", 11.7)} />
+        </Card>
+        <Card at={rel("tools", 12.42)} index={2} title="Frecuencia 3">
+          <CalendarIcon at={rel("tools", 12.5)} />
+        </Card>
+        <Card at={rel("tools", 13.7)} index={3} title="Drop sets">
+          <DropIcon at={rel("tools", 13.78)} />
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 03 · E04 «tres vídeos» (sin creadores ni contenido ajeno)
+
+const Phone: React.FC<{ at: number; n: number; rot: number }> = ({ at, n, rot }) => {
+  const t = useT();
+  const p = useSpringAt(at, 12);
+  const prog = interpolate(t, [at + 0.2, at + 1.6], [0, 1], clamp);
+  return (
+    <div
+      style={{
+        width: 170,
+        height: 300,
+        border: `5px solid ${PAPER}`,
+        borderRadius: 26,
+        background: "#1a1a1a",
+        position: "relative",
+        transform: `translateY(${(1 - p) * 80}px) rotate(${rot * p}deg)`,
+        opacity: Math.min(1, p * 2),
+        overflow: "hidden",
+        boxShadow: "0 0 26px rgba(255,255,255,0.08)",
+      }}
+    >
+      <div style={{ position: "absolute", top: 10, left: "50%", marginLeft: -22, width: 44, height: 7, borderRadius: 4, background: "rgba(255,255,255,0.25)" }} />
+      <div style={{ position: "absolute", inset: "40px 14px 70px", border: "1.5px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width={50} height={56} style={{ filter: GLOW }}>
+          <path d="M 6 4 L 46 28 L 6 52 Z" fill={GREEN} />
+        </svg>
+      </div>
+      <div style={{ position: "absolute", left: 14, right: 14, bottom: 46, height: 5, background: "rgba(255,255,255,0.15)" }}>
+        <div style={{ width: `${prog * 100}%`, height: "100%", background: GREEN, filter: GLOW }} />
+      </div>
+      <div style={{ position: "absolute", left: 14, bottom: 16, ...label, fontSize: 16, letterSpacing: 3, color: PAPER, textShadow: "none" }}>
+        Vídeo {n}
+      </div>
+    </div>
+  );
+};
+
+const VideosScene: React.FC = () => {
+  const lbl = useSpringAt(rel("videos", 24.5), 14);
+  const mark = useReveal(rel("videos", 24.6), 0.3);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 40, height: "100%" }}>
+      <div style={{ display: "flex", gap: 18 }}>
+        <Phone at={SCENE_IN - 0.15} n={1} rot={-5} />
+        <Phone at={SCENE_IN} n={2} rot={0} />
+        <Phone at={SCENE_IN + 0.15} n={3} rot={5} />
+      </div>
+      <div style={{ transform: `scale(${0.8 + 0.2 * lbl}) rotate(-3deg)`, opacity: Math.min(1, lbl * 2) }}>
+        <Marker p={mark}>
+          <div style={{ ...display, fontSize: 72, padding: "0 8px", lineHeight: 1 }}>
+            3<br />vídeos
+          </div>
+        </Marker>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 04 · ajustar el trabajo a tus prioridades y al tiempo que tienes
+
+const TargetIcon: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  const p = interpolate(t, [at, at + 0.6], [0, 1], { ...clamp, easing: easeOut });
+  const hit = interpolate(t, [at + 0.5, at + 0.7], [0, 1], clamp);
+  return (
+    <svg width={150} height={150} viewBox="-75 -75 150 150" style={{ overflow: "visible" }}>
+      {[66, 46, 26].map((r, i) => (
+        <circle key={r} r={r} fill="none" stroke={i === 2 ? GREEN : PAPER} strokeWidth={4} strokeDasharray={2 * Math.PI * r} strokeDashoffset={2 * Math.PI * r * (1 - p)} opacity={0.9} style={i === 2 ? { filter: GLOW } : undefined} />
+      ))}
+      <circle r={9 * hit} fill={GREEN} style={{ filter: GLOW }} />
+    </svg>
+  );
+};
+
+const ClockIcon: React.FC<{ at: number }> = ({ at }) => {
+  const t = useT();
+  const p = interpolate(t, [at, at + 0.5], [0, 1], { ...clamp, easing: easeOut });
+  const spin = Math.max(0, t - at) * 220;
+  return (
+    <svg width={150} height={150} viewBox="-75 -75 150 150" style={{ overflow: "visible" }}>
+      <circle r={64} fill="none" stroke={PAPER} strokeWidth={4} strokeDasharray={402} strokeDashoffset={402 * (1 - p)} />
+      {Array.from({ length: 12 }).map((_, i) => (
+        <line key={i} x1={0} y1={-56} x2={0} y2={-48} stroke="rgba(255,255,255,0.5)" strokeWidth={3} transform={`rotate(${i * 30})`} opacity={p} />
+      ))}
+      <line x1={0} y1={0} x2={0} y2={-42} stroke={GREEN} strokeWidth={5} strokeLinecap="round" transform={`rotate(${spin})`} opacity={p} style={{ filter: GLOW }} />
+      <line x1={0} y1={0} x2={0} y2={-28} stroke={PAPER} strokeWidth={5} strokeLinecap="round" transform={`rotate(${spin / 12})`} opacity={p} />
+      <circle r={6} fill={GREEN} opacity={p} />
+    </svg>
+  );
+};
+
+const PrioScene: React.FC = () => {
+  const head = useReveal(SCENE_IN - 0.1, 0.3);
+  return (
+    <div>
+      <MaskUp p={head}>
+        <div style={label}>Ajustar el trabajo a</div>
+      </MaskUp>
+      <div style={{ display: "flex", gap: 40, marginTop: 20 }}>
+        <Card at={rel("prio", 33.7)} index={1} title="Tus prioridades" width={460}>
+          <TargetIcon at={rel("prio", 33.8)} />
+        </Card>
+        <Card at={rel("prio", 34.86)} index={2} title="Tu tiempo" width={460}>
+          <ClockIcon at={rel("prio", 34.95)} />
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 05 · E06 «solo lo que haga falta»
+
+const FaltaScene: React.FC = () => {
+  const t = useT();
+  const a = useReveal(rel("falta", 38.96) - 0.05, 0.35);
+  const b = useReveal(rel("falta", 39.5), 0.35);
+  const mark = useReveal(rel("falta", 39.6), 0.35);
+  // la rutina se mantiene y solo se ajustan dos piezas
+  const blocks = 8;
+  const changed = [2, 5];
+  return (
+    <div>
+      <MaskUp p={a}>
+        <div style={{ ...display, fontSize: 70 }}>Solo lo que</div>
+      </MaskUp>
+      <div style={{ marginTop: 8 }}>
+        <MaskUp p={b} style={{ display: "inline-block" }}>
+          <Marker p={mark}>
+            <div style={{ ...display, fontSize: 96, padding: "0 10px", color: PAPER }}>haga falta</div>
+          </Marker>
+        </MaskUp>
+      </div>
+      <div style={{ display: "flex", gap: 14, marginTop: 34 }}>
+        {Array.from({ length: blocks }).map((_, i) => {
+          const p = interpolate(t, [SCENE_IN + i * 0.04, SCENE_IN + i * 0.04 + 0.25], [0, 1], clamp);
+          const lit = changed.includes(i) && t > rel("falta", 39.7) + changed.indexOf(i) * 0.15;
+          return (
+            <div
+              key={i}
+              style={{
+                width: 100,
+                height: 70,
+                border: `2px solid ${lit ? GREEN : "rgba(255,255,255,0.3)"}`,
+                background: lit ? "rgba(4,228,0,0.18)" : "rgba(255,255,255,0.03)",
+                opacity: p,
+                transform: `translateY(${(1 - p) * 20}px) scale(${lit ? 1.06 : 1})`,
+                filter: lit ? GLOW : undefined,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// 06 · antes de añadir más: registros, ejecución, recuperación
+
+const LogIcon = () => (
+  <svg width={44} height={44}>
+    <rect x={4} y={3} width={36} height={38} fill="none" stroke={PAPER} strokeWidth={3} />
+    <path d="M 11 14 H 33 M 11 22 H 33 M 11 30 H 25" stroke={PAPER} strokeWidth={3} />
+  </svg>
+);
+const MoveIcon = () => (
+  <svg width={44} height={44}>
+    <path d="M 4 22 H 40" stroke={PAPER} strokeWidth={4} />
+    <rect x={6} y={10} width={7} height={24} fill={PAPER} />
+    <rect x={31} y={10} width={7} height={24} fill={PAPER} />
+  </svg>
+);
+const BatteryIcon: React.FC<{ p: number }> = ({ p }) => (
+  <svg width={52} height={44}>
+    <rect x={3} y={10} width={40} height={24} fill="none" stroke={PAPER} strokeWidth={3} />
+    <rect x={44} y={17} width={5} height={10} fill={PAPER} />
+    <rect x={8} y={15} width={30 * p} height={14} fill={GREEN} style={{ filter: GLOW }} />
+  </svg>
 );
 
-const Option: React.FC<{ text: string; at: number; sep: boolean }> = ({ text, at, sep }) => {
-  const txt = useReveal(at, 0.3);
-  const under = useReveal(at + 0.12, 0.35);
+const CheckRow: React.FC<{ at: number; text: string; icon: React.ReactNode }> = ({ at, text, icon }) => {
+  const row = useReveal(at - 0.25, 0.35);
+  const tick = useReveal(at, 0.3);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-      {sep ? <div style={{ ...display, fontSize: 30, color: GREEN, opacity: txt }}>/</div> : null}
-      <div>
-        <MaskUp p={txt}>
-          <div style={{ ...display, fontSize: 30, color: PAPER, letterSpacing: 0 }}>{text}</div>
-        </MaskUp>
-        <Underline p={under} height={5} />
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 26,
+        height: 96,
+        borderBottom: "1.5px solid rgba(255,255,255,0.08)",
+        opacity: row,
+        transform: `translateX(${(1 - row) * -30}px)`,
+      }}
+    >
+      <div style={{ width: 56, display: "flex", justifyContent: "center" }}>{icon}</div>
+      <div style={{ ...display, fontStyle: "normal", fontWeight: 800, fontSize: 52, flex: 1, textTransform: "none", letterSpacing: 0 }}>{text}</div>
+      <svg width={56} height={56} style={{ filter: tick > 0 ? GLOW : undefined }}>
+        <rect x={3} y={3} width={50} height={50} fill={tick > 0.5 ? "rgba(4,228,0,0.15)" : "none"} stroke={tick > 0 ? GREEN : PAPER} strokeWidth={3.5} />
+        <path d="M 13 29 L 24 40 L 44 16" fill="none" stroke={GREEN} strokeWidth={6} strokeDasharray={50} strokeDashoffset={50 * (1 - tick)} />
+      </svg>
+    </div>
+  );
+};
+
+const CheckScene: React.FC = () => {
+  const head = useReveal(SCENE_IN - 0.1, 0.3);
+  const battery = useReveal(rel("check", 49.3), 0.6);
+  return (
+    <div>
+      <MaskUp p={head}>
+        <div style={label}>Antes de añadir más</div>
+      </MaskUp>
+      <div style={{ marginTop: 14 }}>
+        <CheckRow at={rel("check", 47.32)} text="Registros" icon={<LogIcon />} />
+        <CheckRow at={rel("check", 48.16)} text="Ejecución" icon={<MoveIcon />} />
+        <CheckRow at={rel("check", 49.24)} text="Recuperación" icon={<BatteryIcon p={battery} />} />
       </div>
     </div>
   );
 };
 
 // ---------------------------------------------------------------------------
-// E08 · CTA
+// 07 · E07 «hacer más / hacer menos / dejar de cambiar» (una misma línea)
 
-const Cta: React.FC = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const comenta = useReveal(PANEL_IN - 0.05, 0.35);
-  const plan = useSpringAt(0.44, 12);
-  const sub = useReveal(0.96, 0.4);
-  const breathe = 1 + Math.sin(frame / fps / 0.55) * 0.012 * plan;
+const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({ dir, p }) => (
+  <svg width={110} height={110} viewBox="-55 -55 110 110" style={{ filter: GLOW }}>
+    <circle r={48} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={3} />
+    <circle r={48} fill="none" stroke={GREEN} strokeWidth={4} strokeDasharray={302} strokeDashoffset={302 * (1 - p)} transform="rotate(-90)" />
+    {dir === "pause" ? (
+      <g opacity={p}>
+        <rect x={-16} y={-20} width={10} height={40} fill={PAPER} />
+        <rect x={6} y={-20} width={10} height={40} fill={PAPER} />
+      </g>
+    ) : (
+      <path
+        d={dir === "up" ? "M 0 22 V -20 M -16 -4 L 0 -20 L 16 -4" : "M 0 -22 V 20 M -16 4 L 0 20 L 16 4"}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={p}
+        transform={`translate(0 ${(1 - p) * (dir === "up" ? 10 : -10)})`}
+      />
+    )}
+  </svg>
+);
+
+const OptionCard: React.FC<{ at: number; dir: "up" | "down" | "pause"; lines: string[]; index: number }> = ({ at, dir, lines, index }) => {
+  const p = useReveal(at, 0.45);
   return (
-    <Panel id="cta" top={900} width={720} height={420}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
-        <MaskUp p={comenta}>
-          <div style={{ ...display, fontSize: 76, color: PAPER }}>Comenta</div>
-        </MaskUp>
+    <Card at={at} index={index} title={<span style={{ fontSize: 32, lineHeight: 1.05 }}>{lines.map((l, i) => <div key={i}>{l}</div>)}</span>}>
+      <ArrowIcon dir={dir} p={p} />
+    </Card>
+  );
+};
+
+const OptionsScene: React.FC = () => (
+  <div style={{ display: "flex", gap: 45, marginTop: 30 }}>
+    <OptionCard at={rel("options", 54.0)} dir="up" lines={["Hacer", "más"]} index={1} />
+    <OptionCard at={rel("options", 54.72)} dir="down" lines={["Hacer", "menos"]} index={2} />
+    <OptionCard at={rel("options", 55.8)} dir="pause" lines={["Dejar de", "cambiar"]} index={3} />
+  </div>
+);
+
+// ---------------------------------------------------------------------------
+// 08 · E08 CTA: «Comenta PLAN» + «Te escribo por privado»
+
+const CtaScene: React.FC = () => {
+  const t = useT();
+  const { fps } = useVideoConfig();
+  const comenta = useReveal(SCENE_IN - 0.1, 0.35);
+  const box = useReveal(SCENE_IN, 0.4);
+  const typeAt = rel("cta", 62.12);
+  const typed = Math.max(0, Math.min(4, Math.floor((t - typeAt) / 0.07) + 1));
+  const sent = useSpringAt(typeAt + 0.45, 12);
+  const dm = useReveal(rel("cta", 62.6), 0.4);
+  const plane = useReveal(rel("cta", 62.6), 0.7, easeInOut);
+  const caret = Math.floor(t * fps / 8) % 2 === 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <MaskUp p={comenta}>
+        <div style={{ ...display, fontSize: 64 }}>Comenta</div>
+      </MaskUp>
+      {/* caja de comentario donde se teclea PLAN */}
+      <div
+        style={{
+          marginTop: 22,
+          width: 760,
+          height: 130,
+          border: `3px solid ${typed > 0 ? GREEN : "rgba(255,255,255,0.3)"}`,
+          borderRadius: 65,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 22px 0 46px",
+          opacity: box,
+          transform: `scaleX(${0.9 + 0.1 * box})`,
+          filter: typed > 0 ? GLOW_SOFT : undefined,
+          background: "rgba(255,255,255,0.03)",
+        }}
+      >
+        <div style={{ ...display, fontSize: 88, flex: 1, color: typed > 0 ? GREEN : "rgba(255,255,255,0.3)", textShadow: typed > 0 ? GREEN_TEXT_GLOW : "none" }}>
+          {typed > 0 ? "PLAN".slice(0, typed) : "Añade un comentario…".slice(0, 0)}
+          <span style={{ opacity: caret && sent < 0.5 ? 1 : 0, color: PAPER, fontStyle: "normal" }}>|</span>
+        </div>
         <div
           style={{
-            position: "relative",
-            marginTop: 8,
-            width: 360,
-            height: 170,
-            transform: `scale(${(0.5 + 0.5 * plan) * breathe}) rotate(${-4 + 2 * plan}deg)`,
-            opacity: Math.min(1, plan * 2),
+            width: 88,
+            height: 88,
+            borderRadius: 44,
+            background: GREEN,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `scale(${0.6 + 0.4 * sent})`,
+            opacity: Math.min(1, sent * 2),
+            filter: GLOW,
           }}
         >
-          <svg width={360} height={170} style={{ position: "absolute", inset: 0 }}>
-            <path d="M 8 8 L 352 4 L 346 128 L 112 134 L 66 166 L 72 134 L 14 136 Z" fill={GREEN} />
+          <svg width={40} height={40}>
+            <path d="M 20 32 V 8 M 9 18 L 20 7 L 31 18" stroke={INK} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <div
-            style={{
-              ...display,
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: 10,
-              textAlign: "center",
-              fontSize: 118,
-              color: INK,
-            }}
-          >
-            Plan
-          </div>
-        </div>
-        <div style={{ marginTop: 26, opacity: sub, transform: `translateY(${(1 - sub) * 14}px)` }}>
-          <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 40, color: PAPER, whiteSpace: "nowrap" }}>
-            Te escribo por privado
-          </div>
         </div>
       </div>
-    </Panel>
+      {/* te escribo por privado */}
+      <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 40, opacity: dm, transform: `translateY(${(1 - dm) * 20}px)` }}>
+        <svg width={56} height={56} style={{ overflow: "visible", filter: GLOW, transform: `translate(${plane * 6}px, ${-plane * 6}px)` }}>
+          <path d="M 4 26 L 52 6 L 38 50 L 28 32 Z" fill="none" stroke={GREEN} strokeWidth={4} strokeLinejoin="round" />
+          <path d="M 28 32 L 52 6" stroke={GREEN} strokeWidth={4} />
+        </svg>
+        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 42, color: PAPER, textShadow: TEXT_GLOW, whiteSpace: "nowrap" }}>
+          Te escribo por privado
+        </div>
+      </div>
+    </div>
   );
 };
 
 // ---------------------------------------------------------------------------
 
+/** Capa por debajo del vídeo: fondos de escena a pantalla completa. */
+export const SceneBackdrops: React.FC = () => (
+  <AbsoluteFill>
+    {scenes.map((s) => (
+      <SceneBlock key={s.id} id={s.id} />
+    ))}
+  </AbsoluteFill>
+);
+
+/** Capa por encima del vídeo: marco de la ventana y contenido de cada escena. */
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
-    <At from={7.3 - PANEL_IN} to={9.62} name="E02 · El Excel → el pecho sigue igual">
-      <ExcelToChart />
-    </At>
-
-    <At from={11.5} to={14.6} name="E03 · Volumen + frecuencia 3 + drop sets">
-      <Tools
-        items={[
-          { text: "Volumen", at: 0.28 },
-          { text: "Frecuencia 3", at: 1.08 },
-          { text: "Drop sets", at: 2.36 },
-        ]}
-      />
-    </At>
-
-    <At from={24.32 - PANEL_IN} to={25.9} name="E04 · Tres vídeos">
-      <ThreeVideos />
-    </At>
-
-    <At from={33.6} to={36.05} name="Prioridades · tiempo">
-      <Rows
-        id="prio"
-        top={1000}
-        width={620}
-        title="Ajustar el trabajo a"
-        items={[
-          { text: "Tus prioridades", at: 0.16 },
-          { text: "Tu tiempo", at: 1.32 },
-        ]}
-      />
-    </At>
-
-    <At from={38.96 - PANEL_IN} to={40.7} name="E06 · Solo lo que haga falta">
-      <OnlyWhatsNeeded />
-    </At>
-
-    <At from={45.24} to={50.0} name="Antes de añadir más">
-      <Checklist
-        items={[
-          { text: "Registros", at: 2.08 },
-          { text: "Ejecución", at: 2.92 },
-          { text: "Recuperación", at: 4.0 },
-        ]}
-      />
-    </At>
-
-    <At from={53.9} to={57.1} name="E07 · Hacer más / hacer menos / dejar de cambiar">
-      <Options
-        items={[
-          { text: "Hacer más", at: 0.1 + PANEL_IN },
-          { text: "Hacer menos", at: 0.82 },
-          { text: "Dejar de cambiar", at: 1.9 },
-        ]}
-      />
-    </At>
-
-    <At from={61.68} to={65.6} name="E08 · Comenta PLAN">
-      <Cta />
-    </At>
+    <WindowFrame />
+    <SceneContent id="excel">
+      <ExcelScene />
+    </SceneContent>
+    <SceneContent id="tools">
+      <ToolsScene />
+    </SceneContent>
+    <SceneContent id="videos">
+      <VideosScene />
+    </SceneContent>
+    <SceneContent id="prio">
+      <PrioScene />
+    </SceneContent>
+    <SceneContent id="falta">
+      <FaltaScene />
+    </SceneContent>
+    <SceneContent id="check">
+      <CheckScene />
+    </SceneContent>
+    <SceneContent id="options">
+      <OptionsScene />
+    </SceneContent>
+    <SceneContent id="cta">
+      <CtaScene />
+    </SceneContent>
   </AbsoluteFill>
 );

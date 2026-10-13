@@ -24,7 +24,7 @@ export type Word = {
   speaker: Speaker;
   // Fin de frase: los subtítulos no juntan palabras de frases distintas.
   eos: boolean;
-  // Se subraya al pronunciarse (destacados del guion).
+  // Se pinta con subrayador al pronunciarse (destacados del guion).
   underline: boolean;
 };
 
@@ -75,7 +75,7 @@ const fixes: Record<string, string> = {
 // Preguntas que la transcripción dejó sin signo de apertura.
 const openQuestion = new Set(["36"]);
 
-// Palabras que se subrayan al pronunciarse: exactamente las que el guion pide
+// Palabras que se pintan con subrayador al pronunciarse: las que el guion pide
 // destacar (E02, E03, E04, E06, E07, E08). Identificadas por su inicio.
 const underlined = new Set([
   "7.12", "7.36", // el Excel
@@ -184,8 +184,45 @@ export const impacts = [1.47, 3.72, 7.36, 8.72, 24.32];
 // Cortes con transición de barrido (desenfoque de movimiento + whoosh).
 export const whips = [3.7, 6.3, 11.0, 23.1, 25.8, 36.0, 50.0, 57.1, 61.7];
 
-// Mitad de la entrada de cada panel gráfico (llevan whoosh salvo que ya tengan golpe).
-export const panelIns = [11.65, 33.75, 38.79, 45.39, 54.05];
+// --- Escenas de motion graphics a pantalla completa ---------------------------
+// Durante una escena el fondo texturizado ocupa toda la pantalla y el vídeo se
+// encoge a una ventana (así se mantiene la cara que pide el guion: E02, E06, E07, E08).
+export type Scene = { id: string; from: number; to: number; title: string };
+
+export const SCENE_IN = 0.42;
+export const SCENE_OUT = 0.36;
+
+export const scenes: Scene[] = [
+  { id: "excel", from: 6.94, to: 9.66, title: "Excel" },
+  { id: "tools", from: 11.4, to: 14.62, title: "Cambios" },
+  { id: "videos", from: 23.95, to: 25.92, title: "Vídeos" },
+  { id: "prio", from: 33.5, to: 36.05, title: "Ajuste" },
+  { id: "falta", from: 38.6, to: 40.75, title: "Falta" },
+  { id: "check", from: 45.1, to: 50.0, title: "Revisar" },
+  { id: "options", from: 53.5, to: 57.1, title: "Decidir" },
+  { id: "cta", from: 61.6, to: 65.6, title: "Plan" },
+];
+
+const smooth = (x: number) => {
+  const c = Math.min(1, Math.max(0, x));
+  return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2;
+};
+
+const isLast = (s: Scene) => s.to >= SOURCE_END - 0.05;
+
+/** 0 = vídeo a pantalla completa, 1 = vídeo en ventana (escena activa). */
+export const sceneAmount = (t: number) => {
+  for (const s of scenes) {
+    if (t >= s.from && t <= s.to) {
+      const out = isLast(s) ? 1 : smooth((s.to - t) / SCENE_OUT);
+      return Math.min(smooth((t - s.from) / SCENE_IN), out);
+    }
+  }
+  return 0;
+};
+
+// Mitad de la entrada y de la salida de cada escena (llevan whoosh salvo que ya tengan golpe).
+export const panelIns = scenes.flatMap((s) => (isLast(s) ? [s.from + 0.2] : [s.from + 0.2, s.to - 0.18]));
 
 const designed: Sfx[] = [
   // Apertura: captación y retención

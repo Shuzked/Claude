@@ -11,45 +11,62 @@ import {
 import { FONT, GREEN } from "./theme";
 import { captionPages, f, TRIM, type Word } from "./timeline";
 
+// Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
+const MARKER_PATH =
+  "M 2 9 C 20 5, 45 7, 70 5 S 120 6, 150 4 L 198 3 L 196 47 C 170 49, 140 46, 110 48 S 50 46, 24 49 L 0 50 Z";
+
+const Highlighter: React.FC<{ p: number }> = ({ p }) => (
+  <svg
+    viewBox="0 0 200 52"
+    preserveAspectRatio="none"
+    style={{
+      position: "absolute",
+      left: -10,
+      right: -10,
+      top: "12%",
+      height: "82%",
+      width: "calc(100% + 20px)",
+      zIndex: -1,
+      overflow: "visible",
+      transform: "rotate(-1.5deg)",
+      filter: "drop-shadow(0 0 14px rgba(4, 228, 0, 0.55))",
+      // pinta de izquierda a derecha
+      clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`,
+    }}
+  >
+    <path d={MARKER_PATH} fill={GREEN} opacity={0.92} />
+    {/* segunda pasada más fina: textura de rotulador */}
+    <path d="M 4 14 C 60 11, 120 13, 194 9" stroke="rgba(255,255,255,0.18)" strokeWidth={3} fill="none" />
+  </svg>
+);
+
 // Palabra a palabra: cada palabra aparece cuando se pronuncia (mínimo 1 en
 // pantalla, máximo 3). Las que aún no se han dicho ocupan su sitio invisibles
-// para que la línea no salte. Sin relleno: los destacados del guion se subrayan.
-
+// para que la línea no salte. Los destacados del guion se pintan con subrayador.
 const WordView: React.FC<{ w: Word; t: number }> = ({ w, t }) => {
   const { fps } = useVideoConfig();
   const local = (t - w.start) * fps;
   const shown = local >= 0;
   const pop = shown ? spring({ frame: local, fps, config: { damping: 16, stiffness: 320, mass: 0.5 } }) : 0;
-  const line = interpolate(t, [w.start + 0.02, w.start + 0.22], [0, 1], {
+  // el trazo dura lo que dura la palabra (entre 0,18 y 0,4 s)
+  const dur = Math.min(0.4, Math.max(0.18, w.end - w.start));
+  const paint = interpolate(t, [w.start, w.start + dur], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
+    easing: Easing.bezier(0.33, 0, 0.2, 1),
   });
   return (
     <span
       style={{
         position: "relative",
         display: "inline-block",
+        zIndex: 0,
         opacity: shown ? Math.min(1, pop * 1.6) : 0,
         transform: `translateY(${(1 - pop) * 22}px) scale(${0.9 + 0.1 * pop})`,
       }}
     >
+      {w.underline ? <Highlighter p={paint} /> : null}
       {w.text}
-      {w.underline ? (
-        <span
-          style={{
-            position: "absolute",
-            left: 2,
-            right: 2,
-            bottom: -4,
-            height: 8,
-            background: GREEN,
-            transformOrigin: "left center",
-            transform: `scaleX(${line}) skewX(-12deg)`,
-            boxShadow: "0 2px 0 rgba(0,0,0,0.55)",
-          }}
-        />
-      ) : null}
     </span>
   );
 };
@@ -60,7 +77,7 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
   const t = page[0].start + frame / fps;
   const cta = page[0].speaker === "YAGO";
   return (
-    <AbsoluteFill style={{ top: cta ? 1520 : 1360, height: "auto", alignItems: "center" }}>
+    <AbsoluteFill style={{ top: cta ? 1400 : 1370, height: "auto", alignItems: "center" }}>
       <div
         style={{
           display: "flex",
@@ -78,6 +95,8 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
           color: "white",
           WebkitTextStroke: "10px rgba(0,0,0,0.92)",
           paintOrder: "stroke fill",
+          // glow sutil
+          textShadow: "0 0 18px rgba(255,255,255,0.28), 0 0 42px rgba(255,255,255,0.1)",
         }}
       >
         {page.map((w, i) => (

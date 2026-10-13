@@ -3,16 +3,17 @@ import "./fonts";
 import { Camera } from "./Camera";
 import { Captions } from "./Captions";
 import { Finish } from "./Finish";
-import { Graphics } from "./Graphics";
+import { Graphics, SceneBackdrops } from "./Graphics";
 import { Sound } from "./Sound";
 import { FPS, HEIGHT, WIDTH } from "./theme";
 import { DURATION_FRAMES } from "./timeline";
 
 export const RutinaOptimizada: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "black" }}>
+    <SceneBackdrops />
     <Camera />
-    <Finish />
     <Graphics />
+    <Finish />
     <Captions />
     <Sound />
   </AbsoluteFill>
