@@ -98,12 +98,11 @@ const MaskUp: React.FC<{
 );
 
 /** Subrayador: trazo verde irregular que pinta de izquierda a derecha detrás del
- *  contenido; el texto pasa a negro justo por donde ya ha pasado el trazo. */
+ *  contenido; el texto se mantiene en blanco y gana glow al pintarse. */
 const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
   p,
   children,
 }) => {
-  const reveal = `inset(-20% ${(1 - p) * 100}% -20% -5%)`;
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
       <svg
@@ -127,14 +126,11 @@ const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
           opacity={0.95}
         />
       </svg>
-      <div style={{ position: "relative" }}>{children}</div>
-      {/* copia en negro que aparece con el trazo */}
+      {/* el texto sigue en blanco y gana glow cuando lo pinta el subrayador */}
       <div
         style={{
-          position: "absolute",
-          inset: 0,
-          clipPath: reveal,
-          filter: "brightness(0)",
+          position: "relative",
+          filter: `drop-shadow(0 0 ${6 + 12 * p}px rgba(255,255,255,${0.25 + 0.45 * p}))`,
         }}
       >
         {children}
@@ -255,7 +251,7 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
           />
         ) : null}
         <AbsoluteFill
-          style={{ boxShadow: "inset 0 0 220px rgba(0,0,0,0.75)" }}
+          style={{ boxShadow: "inset 0 0 200px rgba(0,0,0,0.3)" }}
         />
       </AbsoluteFill>
       {/* borde de la cortinilla */}
@@ -1144,36 +1140,46 @@ const Phone: React.FC<{ at: number; n: number; rot: number }> = ({
 };
 
 const VideosScene: React.FC = () => {
-  const lbl = useSpringAt(rel("videos", 24.5), 14);
-  const mark = useReveal(rel("videos", 24.6), 0.3);
+  const three = useSpringAt(rel("videos", 24.32), 12);
+  const word = useReveal(rel("videos", 24.6) - 0.05, 0.35);
+  const mark = useReveal(rel("videos", 24.6), 0.35);
   return (
     <div
-      style={{ display: "flex", alignItems: "center", gap: 40, height: "100%" }}
+      style={{ display: "flex", alignItems: "center", gap: 46, height: "100%" }}
     >
       <div style={{ display: "flex", gap: 18 }}>
         <Phone at={SCENE_IN - 0.15} n={1} rot={-5} />
         <Phone at={SCENE_IN} n={2} rot={0} />
         <Phone at={SCENE_IN + 0.15} n={3} rot={5} />
       </div>
+      {/* «3» grande y «vídeos» debajo, centrados en vertical; solo «vídeos» se subraya */}
       <div
         style={{
-          transform: `scale(${0.8 + 0.2 * lbl}) rotate(-3deg)`,
-          opacity: Math.min(1, lbl * 2),
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Marker p={mark}>
-          <div
-            style={{
-              ...display,
-              fontSize: 72,
-              padding: "0 8px",
-              lineHeight: 1,
-            }}
-          >
-            3<br />
-            vídeos
-          </div>
-        </Marker>
+        <div
+          style={{
+            ...display,
+            fontSize: 230,
+            lineHeight: 0.85,
+            letterSpacing: -6,
+            transform: `scale(${0.6 + 0.4 * three})`,
+            opacity: Math.min(1, three * 2),
+          }}
+        >
+          3
+        </div>
+        <MaskUp p={word} style={{ marginTop: 6 }}>
+          <Marker p={mark}>
+            <div style={{ ...display, fontSize: 56, padding: "0 8px" }}>
+              vídeos
+            </div>
+          </Marker>
+        </MaskUp>
       </div>
     </div>
   );

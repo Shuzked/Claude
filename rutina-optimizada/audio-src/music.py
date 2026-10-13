@@ -1,7 +1,7 @@
-"""Música del vídeo: intro electrónica rítmica y, desde SWITCH, un chill a medio tiempo.
+"""Música del vídeo: electrónica con ritmo todo el rato (127 BPM).
 
-Todo sintetizado aquí (sin samples). Mismo tempo en las dos partes para que el
-cambio sea limpio: la parte chill usa una batería a medio tiempo.
+Secciones: intro con toda la energía en el hook, groove A, groove B con arpegio,
+subida con redoble y drop justo en el CTA. Todo sintetizado aquí (sin samples).
 
     python3 audio-src/music.py public/audio/music.wav
 """
@@ -222,41 +222,76 @@ R += mel_R
 add(noise_sweep(BAR, up=True), SWITCH - BAR, 0.14)
 add(noise_sweep(2 * BAR, up=False), SWITCH, 0.12)
 
-# --- Chill a medio tiempo ----------------------------------------------------
-chill_prog = [
-    [50, 53, 57, 60, 64],  # Dm9
-    [43, 53, 57, 59, 64],  # G13
-    [48, 52, 55, 59, 62],  # Cmaj9
-    [45, 52, 55, 59, 60],  # Am9 (sin 3ª grave)
-]
-SWING = 0.06
-b = 0
-t0 = SWITCH
-while t0 < LENGTH:
-    chord = chill_prog[(b // 2) % 4]
-    first_of_pair = b % 2 == 0
-    if first_of_pair:
-        add(rhodes(chord[1:], 2 * BAR + 0.3), t0, 0.9)
-        add(sub(chord[0] - 12, 2 * BAR - 0.05), t0, 0.32)
-    # batería a medio tiempo: bombo en 1 y en el «y» del 2, aro en el 3
-    add(soft_kick(), t0, 0.5)
-    add(soft_kick(), t0 + 1.5 * BEAT, 0.35)
-    add(rim(), t0 + 2 * BEAT, 0.3)
-    add(clap(), t0 + 2 * BEAT, 0.08)
-    for q in range(8):
-        sw = SWING if q % 2 else 0.0
-        add(hat(), t0 + q * BEAT / 2 + sw, 0.05 if q % 2 else 0.035, pan=0.3)
-    t0 += BAR
+# --- Grooves con ritmo hasta el final ----------------------------------------
+GROOVE_A_END = 20 * BAR  # ≈ 37,7 s
+BUILD_START = 30 * BAR  # ≈ 56,6 s
+DROP = 32 * BAR  # ≈ 60,4 s: entra el CTA
+
+groove_prog = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65]]
+g_mel_L = np.zeros(N)
+g_mel_R = np.zeros(N)
+
+
+def add_g(x, at, gain=1.0, pan=0.0):
+    s = int(at * SR)
+    if s >= N:
+        return
+    e = min(N, s + len(x))
+    g_mel_L[s:e] += x[: e - s] * gain * np.sqrt((1 - pan) / 2)
+    g_mel_R[s:e] += x[: e - s] * gain * np.sqrt((1 + pan) / 2)
+
+
+pump2 = np.ones(N)
+b = INTRO_BARS
+while b * BAR < LENGTH:
+    t0 = b * BAR
+    chord = groove_prog[b % 4]
+    root = chord[0] - 24
+    building = BUILD_START <= t0 < DROP
+    dropped = t0 >= DROP
+    section_b = t0 >= GROOVE_A_END
+    for k in range(4):
+        beat = t0 + k * BEAT
+        add(kick(), beat, 0.9 if not building else 0.8)
+        s0 = int(beat * SR)
+        e0 = min(N, s0 + int(BEAT * SR))
+        if s0 < N:
+            pump2[s0:e0] = np.minimum(pump2[s0:e0], 0.4 + 0.6 * np.linspace(0, 1, e0 - s0) ** 0.5)
+        add(hat(open_=True), beat + BEAT / 2, 0.18, pan=0.25)
+        for q in range(4):
+            add(hat(), beat + q * BEAT / 4, 0.08 if q % 2 else 0.045, pan=-0.3)
+        if k in (1, 3) and not building:
+            add(clap(), beat, 0.45)
+        # percusión extra en el groove B y en el drop
+        if (section_b or dropped) and k in (0, 2):
+            add(rim(), beat + 0.75 * BEAT, 0.16, pan=0.4)
+    # redoble de subida
+    if building:
+        steps = 8 if t0 < BUILD_START + BAR else 16
+        for q in range(steps):
+            add(clap(), t0 + q * BAR / steps, 0.12 + 0.25 * q / steps)
+    # bajo, acordes y arpegio
+    cut = 1700 if not (section_b or dropped) else 2600
+    for k in range(8):
+        if k % 2 == 1:
+            add_g(pluck_bass(root, BEAT * 0.45), t0 + k * BEAT / 2, 0.55)
+        if k in (1, 4, 6):
+            add_g(lp(stab([m + 12 for m in chord[1:]]), cut), t0 + k * BEAT / 2, 0.85, pan=0.15)
+    if section_b or dropped:
+        for q in range(16):
+            add_g(arp_note(chord[arp[q % 8]] + 24), t0 + q * BEAT / 4, 0.6 if not dropped else 0.75, pan=-0.2 if q % 2 else 0.2)
     b += 1
 
-# crujido de vinilo en la parte chill
-crackle = np.zeros(N)
-idx = rng.integers(intro_end, N, size=int((LENGTH - SWITCH) * 18))
-crackle[idx] = rng.uniform(-1, 1, size=len(idx))
-crackle = hp(crackle, 1500) * 0.5 + hp(lp(rng.standard_normal(N), 6000), 3000) * 0.004
-crackle[:intro_end] = 0
-L += crackle
-R += crackle * 0.9
+g_start = int(SWITCH * SR)
+g_mel_L[g_start:] *= pump2[g_start:]
+g_mel_R[g_start:] *= pump2[g_start:]
+L += g_mel_L
+R += g_mel_R
+
+# subidas de ruido: hacia el groove B y hacia el drop del CTA
+add(noise_sweep(BAR, up=True), GROOVE_A_END - BAR, 0.08)
+add(noise_sweep(2 * BAR, up=True), DROP - 2 * BAR, 0.16)
+add(noise_sweep(2 * BAR, up=False), DROP, 0.1)
 
 # Entrada y salida
 fade = int(2.5 * SR)

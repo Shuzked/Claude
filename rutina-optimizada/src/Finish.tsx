@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { impacts, TRIM } from "./timeline";
 
-// Acabado de imagen: grano de película animado y viñeta suave.
+// Acabado de imagen: grano de película animado y una viñeta muy sutil.
 // Une el metraje y los gráficos para que no parezcan capas pegadas encima.
 export const Finish: React.FC = () => {
   const frame = useCurrentFrame();
@@ -19,7 +19,7 @@ export const Finish: React.FC = () => {
     <AbsoluteFill style={{ pointerEvents: "none" }}>
       <AbsoluteFill
         style={{
-          background: "radial-gradient(ellipse 75% 60% at 50% 38%, transparent 55%, rgba(0,0,0,0.42) 100%)",
+          background: "radial-gradient(ellipse 85% 70% at 50% 40%, transparent 65%, rgba(0,0,0,0.12) 100%)",
         }}
       />
       <AbsoluteFill style={{ mixBlendMode: "overlay", opacity: 0.16 }}>

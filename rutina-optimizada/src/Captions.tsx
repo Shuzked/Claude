@@ -8,7 +8,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { FONT, GREEN, INK } from "./theme";
+import { FONT, GREEN } from "./theme";
 import { f, scenes, TRIM, visiblePages, type Word } from "./timeline";
 
 // Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
@@ -77,22 +77,17 @@ const WordView: React.FC<{ w: Word; t: number }> = ({ w, t }) => {
       }}
     >
       {w.underline ? <Highlighter p={paint} /> : null}
-      {w.text}
-      {w.underline ? (
-        // la palabra pasa a negro por donde ya ha pintado el subrayador
-        <span
-          style={{
-            position: "absolute",
-            inset: 0,
-            color: INK,
-            WebkitTextStroke: "0px",
-            textShadow: "none",
-            clipPath: `inset(-20% ${(1 - paint) * 100}% -20% -5%)`,
-          }}
-        >
-          {w.text}
-        </span>
-      ) : null}
+      <span
+        style={
+          w.underline && paint > 0
+            ? {
+                textShadow: `0 0 ${10 + 14 * paint}px rgba(255,255,255,${0.35 + 0.4 * paint}), 0 0 40px rgba(255,255,255,0.15)`,
+              }
+            : undefined
+        }
+      >
+        {w.text.replace(/\.+$/, "")}
+      </span>
     </span>
   );
 };

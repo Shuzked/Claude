@@ -179,7 +179,7 @@ export const FX_PEAK: Record<FxName, number> = {
 export type Sfx = { at: number; src: FxName | "whoosh"; volume: number };
 
 // Golpes visuales (sacudida + destello) en la apertura.
-export const impacts = [1.47, 3.72, 7.36, 8.72, 24.32];
+export const impacts = [1.47, 3.72];
 
 // Cortes con transición de barrido (desenfoque de movimiento + whoosh).
 export const whips = [3.7, 6.3, 11.0, 23.1, 25.8, 36.0, 50.0, 57.1, 61.7];
@@ -219,28 +219,15 @@ export const sceneAt = (t: number) => scenes.find((s) => t >= s.from && t < s.to
 export const panelIns = scenes.flatMap((s) => (isLast(s) ? [s.from + 0.2] : [s.from + 0.2, s.to - 0.18]));
 
 const designed: Sfx[] = [
-  // Apertura: captación y retención
+  // Hook: captación y retención (los únicos hits y risers del vídeo)
   { at: 1.47, src: "hit", volume: 0.55 },
   { at: 3.72, src: "riser", volume: 0.45 },
-  { at: 3.72, src: "snap", volume: 0.5 },
-  { at: 4.8, src: "snap", volume: 0.35 },
-  { at: 7.36, src: "riser", volume: 0.5 },
-  { at: 7.36, src: "hit", volume: 0.5 },
-  { at: 8.2, src: "snap", volume: 0.4 },
-  { at: 8.72, src: "hit", volume: 0.35 },
-  { at: 11.68, src: "snap", volume: 0.3 },
-  { at: 12.48, src: "snap", volume: 0.3 },
-  { at: 13.76, src: "snap", volume: 0.35 },
-  { at: 16.68, src: "snap", volume: 0.4 },
-  { at: 24.32, src: "riser", volume: 0.45 },
-  { at: 24.32, src: "hit", volume: 0.45 },
-  // Tono útil: solo transiciones suaves
-  { at: 47.32, src: "snap", volume: 0.18 },
-  { at: 48.16, src: "snap", volume: 0.18 },
-  { at: 49.24, src: "snap", volume: 0.18 },
-  // CTA
-  { at: 62.12, src: "riser", volume: 0.45 },
-  { at: 62.12, src: "hit", volume: 0.45 },
+  { at: 3.72, src: "hit", volume: 0.4 },
+  { at: 3.72, src: "snap", volume: 0.45 },
+  { at: 4.8, src: "snap", volume: 0.3 },
+  // Remates puntuales: solo snaps
+  { at: 8.2, src: "snap", volume: 0.3 },
+  { at: 16.68, src: "snap", volume: 0.3 },
 ];
 
 const near = (list: Sfx[], at: number, gap: number) => list.some((x) => Math.abs(x.at - at) < gap);
@@ -279,12 +266,11 @@ export const captionPages: Word[][] = [];
   if (page.length) captionPages.push(page);
 }
 
-// TIC en cada página nueva de subtítulos, salvo que coincida con otro efecto.
 export const visiblePages = captionPages.filter((p) => !sceneAt(p[0].start));
 
-const tics: Sfx[] = visiblePages
-  .map((p) => p[0].start)
-  .filter((at) => !sfx.some((s) => Math.abs(s.at - at) < 0.18))
-  .map((at) => ({ at, src: "tic" as const, volume: 0.3 }));
+// TIC en cada palabra que aparece en pantalla (subtítulos y hook).
+const tics: Sfx[] = words
+  .filter((w) => w.start >= TRIM && !sceneAt(w.start))
+  .map((w) => ({ at: w.start, src: "tic" as const, volume: 0.28 }));
 
 export const allSfx: Sfx[] = [...sfx, ...tics];
