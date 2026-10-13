@@ -1,37 +1,43 @@
 # La rutina «optimizada» · Entrenador y cliente
 
-Edición en Remotion del Short vertical (1080×1920, 25 fps) según el guion PLAN.
+Reel vertical (1080×1920, 25 fps, 64,4 s) editado en Remotion según el guion PLAN (notas E01–E08)
+y la transcripción por palabra de la toma.
 
-## Qué hace
+## Identidad
 
-- Subtítulos palabra a palabra (resaltado en amarillo), fuera de la cara y de la interfaz de Instagram.
-- Etiquetas «ENTRENADOR» y «CLIENTE» solo en su primera intervención (E01).
-- Rótulos de los remates y conceptos, cada uno al pronunciarse: «EL EXCEL», «EL PECHO SIGUE IGUAL»,
-  «VOLUMEN / FRECUENCIA 3 / DROP SETS», «TRES VÍDEOS», «SOLO LO QUE HAGA FALTA»,
-  «HACER MÁS / HACER MENOS / DEJAR DE CAMBIAR» (E02–E07). Sin cruces ni risas enlatadas.
-- Zoom digital suave en «el Excel» (E02).
-- CTA final: «COMENTA PLAN» + «Te escribo por privado» (E08). Sin cortinilla ni segundo CTA.
+- Tipografía: **Montserrat** (600–900, Black Italic para rótulos). Archivos en `public/fonts/` (OFL).
+- Color: verde Heracles Fit `#04E400` sobre negro `#0A0A0A` y blanco roto `#F5F5F0`.
+- Lenguaje gráfico: bordes duros, máscaras y barridos, trazos que se dibujan, grano de película.
+  Sin sombras difusas, degradados ni píldoras redondeadas.
 
-## Dónde se toca todo
+## Qué hay en cada archivo
 
-`src/edit.ts`: cada frase con su inicio y fin en segundos, los rótulos y el zoom.
-Las frases marcadas `"estimado"` necesitan revisarse con el audio (ver abajo).
+| Archivo | Qué controla |
+| --- | --- |
+| `src/timeline.ts` | Recorte inicial, quién habla, correcciones de la transcripción, palabras clave, planos, golpes de zoom y efectos de sonido. Todo en segundos del original. |
+| `src/transcript.json` | Transcripción por palabra de la toma. |
+| `src/Camera.tsx` | Zoom continuo: empuje lento por plano, golpe en cada corte, golpes en los remates y deriva de cámara en mano. |
+| `src/Captions.tsx` | Subtítulos de 3 palabras, palabra activa sobre caja verde, palabras clave en verde. |
+| `src/Graphics.tsx` | Motion graphics de cada nota del guion (Excel, gráfica plana, herramientas, 3 vídeos, checklist, CTA…). |
+| `src/Sound.tsx` | Música y efectos. |
+| `src/Finish.tsx` | Grano y viñeta. |
+| `audio-src/synth.py` | Genera la música y los efectos (originales, sin samples de terceros). |
 
-## Usar el metraje bueno
+## Renderizar
 
-El vídeo no se sube a Git. Pon tu exportación final (sin marca de agua) en `public/video.mp4`.
-Si es 4K, renderiza desde una copia a 1080×1920: el navegador decodifica el 4K muy despacio.
+El metraje no se sube a Git. Pon la toma limpia en `public/video.mp4` a 1080×1920
+(si es 4K, reescálala antes: el navegador decodifica el 4K muy despacio).
 
 ```bash
 npm i
-npx remotion studio            # previsualizar y ajustar
-npx remotion render RutinaOptimizada out/final.mp4
+npx remotion studio                                   # previsualizar
+npx remotion render RutinaOptimizada out/final.mp4    # exportar
 ```
 
-Si cambia la duración del montaje, actualiza `DURATION_SECONDS` en `src/edit.ts`.
+Para regenerar el audio: `python3 audio-src/synth.py public/audio` (necesita numpy y scipy) y
+convertir los `.wav` a `.mp3`.
 
-## Pendiente
+## Antes de publicar (E08)
 
-- Tiempos exactos de 25,9–65,3 s: hace falta transcripción o el `.srt` del vídeo.
-- 44,7–49,8 s: el entrenador dice algo que no está en el guion; sin subtítulo por ahora.
-- Antes de publicar: confirmar quién responde los comentarios PLAN o que el flujo esté probado (E08).
+Confirmar quién responde los comentarios PLAN o que el flujo automático esté configurado y probado
+para esta publicación.

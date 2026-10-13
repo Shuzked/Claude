@@ -1,10 +1,21 @@
 import { loadFont } from "@remotion/fonts";
 import { staticFile } from "remotion";
+import { FONT } from "./theme";
 
-export const FONT = "Inter";
+const faces: { weight: string; style: "normal" | "italic" }[] = [
+  { weight: "600", style: "normal" },
+  { weight: "700", style: "normal" },
+  { weight: "800", style: "normal" },
+  { weight: "900", style: "normal" },
+  { weight: "800", style: "italic" },
+  { weight: "900", style: "italic" },
+];
 
-const weights = { "600": "SemiBold", "800": "ExtraBold", "900": "Black" } as const;
-
-for (const [weight, name] of Object.entries(weights)) {
-  loadFont({ family: FONT, url: staticFile(`fonts/Inter-${name}.otf`), weight });
+for (const { weight, style } of faces) {
+  loadFont({
+    family: FONT,
+    url: staticFile(`fonts/montserrat-latin-${weight}-${style}.woff2`),
+    weight,
+    style,
+  });
 }
