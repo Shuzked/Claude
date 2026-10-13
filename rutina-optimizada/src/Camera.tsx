@@ -171,7 +171,8 @@ export const Camera: React.FC = () => {
     // centro en la cara: los zooms acercan el rostro, no el pecho
     transformOrigin: "50% 32%",
   };
-  const look = `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`;
+  // color original del vídeo: sin etalonaje, solo el desenfoque de los barridos
+  const look = blur > 0.3 ? `blur(${blur}px)` : undefined;
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>
       <AbsoluteFill style={transform}>
