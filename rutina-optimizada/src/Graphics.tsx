@@ -8,9 +8,15 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { WINDOW, useWindow } from "./Camera";
 import { FONT, GREEN, INK, PAPER } from "./theme";
-import { f, SCENE_IN, SCENE_OUT, scenes, SOURCE_END, type Scene } from "./timeline";
+import {
+  f,
+  SCENE_IN,
+  SCENE_OUT,
+  scenes,
+  SOURCE_END,
+  type Scene,
+} from "./timeline";
 
 // ---------------------------------------------------------------------------
 // Estilo y animación
@@ -43,7 +49,11 @@ const useReveal = (at: number, dur = 0.35, ease = easeOut) => {
 const useSpringAt = (at: number, damping = 14) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  return spring({ frame: frame - at * fps, fps, config: { damping, stiffness: 210, mass: 0.6 } });
+  return spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping, stiffness: 210, mass: 0.6 },
+  });
 };
 
 const display: React.CSSProperties = {
@@ -70,72 +80,111 @@ const label: React.CSSProperties = {
 };
 
 /** Texto que sube detrás de una máscara. */
-const MaskUp: React.FC<{ p: number; children: React.ReactNode; style?: React.CSSProperties }> = ({
-  p,
-  children,
-  style,
-}) => (
-  <div style={{ overflow: "hidden", padding: "6px 14px 6px 4px", margin: "-6px -14px -6px -4px", ...style }}>
+const MaskUp: React.FC<{
+  p: number;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}> = ({ p, children, style }) => (
+  <div
+    style={{
+      overflow: "hidden",
+      padding: "6px 14px 6px 4px",
+      margin: "-6px -14px -6px -4px",
+      ...style,
+    }}
+  >
     <div style={{ transform: `translateY(${(1 - p) * 115}%)` }}>{children}</div>
   </div>
 );
 
-/** Subrayador: trazo verde irregular que pinta de izquierda a derecha detrás del contenido. */
-const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({ p, children }) => (
-  <div style={{ position: "relative", display: "inline-block" }}>
-    <svg
-      viewBox="0 0 200 52"
-      preserveAspectRatio="none"
-      style={{
-        position: "absolute",
-        left: -12,
-        top: "14%",
-        width: "calc(100% + 24px)",
-        height: "80%",
-        overflow: "visible",
-        transform: "rotate(-1.5deg)",
-        clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`,
-        filter: GLOW,
-      }}
-    >
-      <path
-        d="M 2 9 C 20 5, 45 7, 70 5 S 120 6, 150 4 L 198 3 L 196 47 C 170 49, 140 46, 110 48 S 50 46, 24 49 L 0 50 Z"
-        fill={GREEN}
-        opacity={0.92}
-      />
-    </svg>
-    <div style={{ position: "relative" }}>{children}</div>
-  </div>
-);
+/** Subrayador: trazo verde irregular que pinta de izquierda a derecha detrás del
+ *  contenido; el texto pasa a negro justo por donde ya ha pasado el trazo. */
+const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
+  p,
+  children,
+}) => {
+  const reveal = `inset(-20% ${(1 - p) * 100}% -20% -5%)`;
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <svg
+        viewBox="0 0 200 52"
+        preserveAspectRatio="none"
+        style={{
+          position: "absolute",
+          left: -12,
+          top: "14%",
+          width: "calc(100% + 24px)",
+          height: "80%",
+          overflow: "visible",
+          transform: "rotate(-1.5deg)",
+          clipPath: `inset(0 ${(1 - p) * 100}% 0 0)`,
+          filter: GLOW,
+        }}
+      >
+        <path
+          d="M 2 9 C 20 5, 45 7, 70 5 S 120 6, 150 4 L 198 3 L 196 47 C 170 49, 140 46, 110 48 S 50 46, 24 49 L 0 50 Z"
+          fill={GREEN}
+          opacity={0.95}
+        />
+      </svg>
+      <div style={{ position: "relative" }}>{children}</div>
+      {/* copia en negro que aparece con el trazo */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          clipPath: reveal,
+          filter: "brightness(0)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Fondo de escena a pantalla completa: textura vintage con detalle
 
-const Backdrop: React.FC<{ scene: Scene; index: number }> = ({ scene, index }) => {
+const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
   const frame = useCurrentFrame();
   const t = useT();
   const { durationInFrames, fps } = useVideoConfig();
   const end = durationInFrames / fps;
   const last = scene.to >= SOURCE_END - 0.05;
-  const inQ = interpolate(t, [0, SCENE_IN], [0, 1], { ...clamp, easing: easeInOut });
-  const outQ = last ? 0 : interpolate(t, [end - SCENE_OUT, end], [0, 1], { ...clamp, easing: easeInOut });
+  const inQ = interpolate(t, [0, SCENE_IN], [0, 1], {
+    ...clamp,
+    easing: easeInOut,
+  });
+  const outQ = last
+    ? 0
+    : interpolate(t, [end - SCENE_OUT, end], [0, 1], {
+        ...clamp,
+        easing: easeInOut,
+      });
   // cortinilla diagonal: entra desde la izquierda y sale hacia la derecha
   const a = inQ * 130;
   const b = outQ * 130;
   const clip = `polygon(${b}% 0, ${a}% 0, ${a - 30}% 100%, ${b - 30}% 100%)`;
 
   const seed = Math.floor(frame / 2) % 9;
-  const flicker = 1 + Math.sin(frame * 1.7) * 0.015 + Math.sin(frame * 0.37) * 0.012;
+  const flicker =
+    1 + Math.sin(frame * 1.7) * 0.015 + Math.sin(frame * 0.37) * 0.012;
   const scratch = (frame * 37) % 97 < 5;
   const scratchX = ((frame * 53) % 89) + 5;
   const drift = t * 26;
 
   return (
     <AbsoluteFill style={{ clipPath: clip }}>
-      <AbsoluteFill style={{ background: BG, filter: `brightness(${flicker})` }}>
+      <AbsoluteFill
+        style={{ background: BG, filter: `brightness(${flicker})` }}
+      >
         {/* luz de estudio muy suave */}
         <AbsoluteFill
-          style={{ background: "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.06), transparent 70%)" }}
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.06), transparent 70%)",
+          }}
         />
         {/* cuadrícula técnica */}
         <AbsoluteFill
@@ -166,12 +215,25 @@ const Backdrop: React.FC<{ scene: Scene; index: number }> = ({ scene, index }) =
           {scene.title} · {scene.title}
         </div>
         {/* grano */}
-        <svg width="100%" height="100%" style={{ position: "absolute", opacity: 0.2, mixBlendMode: "screen" }}>
+        <svg
+          width="100%"
+          height="100%"
+          style={{ position: "absolute", opacity: 0.2, mixBlendMode: "screen" }}
+        >
           <filter id={`bd-${scene.id}-${seed}`}>
-            <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} seed={seed} />
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.8"
+              numOctaves={2}
+              seed={seed}
+            />
             <feColorMatrix type="saturate" values="0" />
           </filter>
-          <rect width="100%" height="100%" filter={`url(#bd-${scene.id}-${seed})`} />
+          <rect
+            width="100%"
+            height="100%"
+            filter={`url(#bd-${scene.id}-${seed})`}
+          />
         </svg>
         {/* líneas de escaneo */}
         <AbsoluteFill
@@ -192,15 +254,9 @@ const Backdrop: React.FC<{ scene: Scene; index: number }> = ({ scene, index }) =
             }}
           />
         ) : null}
-        {/* marcas de registro y metadatos */}
-        <Registration />
-        <div style={{ position: "absolute", top: 70, left: 64, ...label, fontSize: 22, color: PAPER, textShadow: "none", opacity: 0.55 }}>
-          {String(index + 1).padStart(2, "0")} / {String(scenes.length).padStart(2, "0")}
-        </div>
-        <div style={{ position: "absolute", top: 70, right: 64, ...label, fontSize: 22, opacity: 0.85 }}>
-          {scene.title}
-        </div>
-        <AbsoluteFill style={{ boxShadow: "inset 0 0 220px rgba(0,0,0,0.75)" }} />
+        <AbsoluteFill
+          style={{ boxShadow: "inset 0 0 220px rgba(0,0,0,0.75)" }}
+        />
       </AbsoluteFill>
       {/* borde de la cortinilla */}
       {inQ < 1 || outQ > 0 ? (
@@ -218,96 +274,125 @@ const Backdrop: React.FC<{ scene: Scene; index: number }> = ({ scene, index }) =
   );
 };
 
-const Registration: React.FC = () => {
-  const mark = (style: React.CSSProperties) => (
-    <div style={{ position: "absolute", width: 34, height: 34, ...style }} />
-  );
-  const line = "2px solid rgba(255,255,255,0.22)";
-  return (
-    <>
-      {mark({ top: 40, left: 40, borderTop: line, borderLeft: line })}
-      {mark({ top: 40, right: 40, borderTop: line, borderRight: line })}
-      {mark({ bottom: 40, left: 40, borderBottom: line, borderLeft: line })}
-      {mark({ bottom: 40, right: 40, borderBottom: line, borderRight: line })}
-    </>
-  );
-};
-
-// Esquinas verdes alrededor de la ventana del vídeo
-const WindowFrame: React.FC = () => {
-  const { p } = useWindow();
-  if (p < 0.02) return null;
-  const L = 46;
-  const s = 5;
-  const o = (1 - p) * 30;
-  const c = (style: React.CSSProperties) => (
-    <div style={{ position: "absolute", width: L, height: L, borderColor: GREEN, borderStyle: "solid", borderWidth: 0, ...style }} />
-  );
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: WINDOW.x - 12,
-        top: WINDOW.y - 12,
-        width: WINDOW.w + 24,
-        height: WINDOW.h + 24,
-        opacity: p,
-        filter: GLOW,
-      }}
-    >
-      {c({ top: -o, left: -o, borderTopWidth: s, borderLeftWidth: s })}
-      {c({ top: -o, right: -o, borderTopWidth: s, borderRightWidth: s })}
-      {c({ bottom: -o, left: -o, borderBottomWidth: s, borderLeftWidth: s })}
-      {c({ bottom: -o, right: -o, borderBottomWidth: s, borderRightWidth: s })}
-    </div>
-  );
-};
-
-/** Contenedor del contenido: entra tras la cortinilla y sale antes de que se cierre. */
-const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({ scene, children }) => {
+/** Contenedor del contenido. En escenas completas ocupa el centro de la pantalla;
+ *  sobre la persona va en la parte baja con una sombra para que se lea. */
+const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({
+  scene,
+  children,
+}) => {
   const t = useT();
   const { durationInFrames, fps } = useVideoConfig();
   const end = durationInFrames / fps;
   const last = scene.to >= SOURCE_END - 0.05;
-  const out = last ? 0 : interpolate(t, [end - SCENE_OUT - 0.05, end - 0.08], [0, 1], { ...clamp, easing: easeInOut });
+  const overlay = scene.mode === "overlay";
+  const out = last
+    ? 0
+    : interpolate(t, [end - SCENE_OUT - 0.05, end - 0.08], [0, 1], {
+        ...clamp,
+        easing: easeInOut,
+      });
+  const scrimIn = interpolate(t, [0, 0.3], [0, 1], clamp);
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: AREA.x,
-        top: AREA.y,
-        width: AREA.w,
-        height: AREA.h,
-        opacity: 1 - out,
-        transform: `translateX(${out * 60}px)`,
-      }}
-    >
-      {children}
-    </div>
+    <AbsoluteFill>
+      {overlay ? (
+        <AbsoluteFill
+          style={{
+            opacity: scrimIn * (1 - out),
+            background:
+              "linear-gradient(180deg, transparent 0%, transparent 42%, rgba(12,12,12,0.78) 58%, rgba(12,12,12,0.9) 100%)",
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          position: "absolute",
+          left: AREA.x,
+          top: overlay ? 1060 : 0,
+          width: AREA.w,
+          height: overlay ? 520 : 1920,
+          opacity: 1 - out,
+          transform: `translateX(${out * 60}px)`,
+        }}
+      >
+        {children}
+      </div>
+    </AbsoluteFill>
   );
 };
 
 const SceneBlock: React.FC<{ id: string }> = ({ id }) => {
-  const index = scenes.findIndex((s) => s.id === id);
-  const scene = scenes[index];
+  const scene = scenes.find((s) => s.id === id)!;
   return (
-    <Sequence from={f(scene.from)} durationInFrames={f(scene.to) - f(scene.from)} name={`Escena · ${scene.title}`}>
-      <Backdrop scene={scene} index={index} />
+    <Sequence
+      from={f(scene.from)}
+      durationInFrames={f(scene.to) - f(scene.from)}
+      name={`Fondo · ${scene.title}`}
+    >
+      <Backdrop scene={scene} />
     </Sequence>
   );
 };
 
-const SceneContent: React.FC<{ id: string; children: React.ReactNode }> = ({ id, children }) => {
+const SceneContent: React.FC<{ id: string; children: React.ReactNode }> = ({
+  id,
+  children,
+}) => {
   const scene = scenes.find((s) => s.id === id)!;
   return (
-    <Sequence from={f(scene.from)} durationInFrames={f(scene.to) - f(scene.from)} name={`Gráfico · ${scene.title}`}>
+    <Sequence
+      from={f(scene.from)}
+      durationInFrames={f(scene.to) - f(scene.from)}
+      name={`Gráfico · ${scene.title}`}
+    >
       <Content scene={scene}>{children}</Content>
     </Sequence>
   );
 };
 
+// Composición de una escena completa: titular arriba y recurso visual debajo.
+const HEADLINE_TOP = 430;
+const VISUAL_TOP = 880;
+
+type HeadLine = { text: string; at: number; marker?: number };
+
+const Headline: React.FC<{ lines: HeadLine[]; size?: number }> = ({
+  lines,
+  size = 118,
+}) => (
+  <div style={{ position: "absolute", top: HEADLINE_TOP, left: 0, right: 0 }}>
+    {lines.map((l, i) => (
+      <HeadlineLine key={i} {...l} size={size} />
+    ))}
+  </div>
+);
+
+const HeadlineLine: React.FC<HeadLine & { size: number }> = ({
+  text,
+  at,
+  marker,
+  size,
+}) => {
+  const p = useReveal(at, 0.42);
+  const m = useReveal(marker ?? 999, 0.35);
+  const body = (
+    <div style={{ ...display, fontSize: size, padding: "0 10px" }}>{text}</div>
+  );
+  return (
+    <MaskUp p={p} style={{ display: "block", marginBottom: 4 }}>
+      {marker !== undefined ? <Marker p={m}>{body}</Marker> : body}
+    </MaskUp>
+  );
+};
+
+const Visual: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div style={{ position: "absolute", top: VISUAL_TOP, left: 0, right: 0 }}>
+    {children}
+  </div>
+);
+
 /** Tiempo del original → segundos desde el inicio de la escena. */
-const rel = (id: string, sourceSeconds: number) => sourceSeconds - scenes.find((s) => s.id === id)!.from;
+const rel = (id: string, sourceSeconds: number) =>
+  sourceSeconds - scenes.find((s) => s.id === id)!.from;
 
 // ---------------------------------------------------------------------------
 // 01 · E02 «el Excel» → «el pecho sigue igual»
@@ -328,13 +413,32 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
   const cx = x0 + widths.slice(0, cc).reduce((a, b) => a + b, 0);
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, opacity: grid }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          opacity: grid,
+        }}
+      >
         {[0, 1, 2].map((i) => (
-          <div key={i} style={{ width: 12, height: 12, borderRadius: 6, background: i === 0 ? GREEN : "rgba(255,255,255,0.25)" }} />
+          <div
+            key={i}
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 6,
+              background: i === 0 ? GREEN : "rgba(255,255,255,0.25)",
+            }}
+          />
         ))}
         <div style={{ ...label, marginLeft: 8 }}>rutina.xlsx</div>
       </div>
-      <svg width={x0 + W} height={30 + rowH * (rows + 1)} style={{ marginTop: 16, display: "block", overflow: "visible" }}>
+      <svg
+        width={x0 + W}
+        height={30 + rowH * (rows + 1)}
+        style={{ marginTop: 16, display: "block", overflow: "visible" }}
+      >
         {/* letras de columna */}
         {cols.map((_, i) => (
           <text
@@ -351,7 +455,15 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
           </text>
         ))}
         {/* cabecera */}
-        <rect x={x0} y={28} width={W * grid} height={rowH} fill={GREEN} opacity={0.95} style={{ filter: GLOW_SOFT }} />
+        <rect
+          x={x0}
+          y={28}
+          width={W * grid}
+          height={rowH}
+          fill={GREEN}
+          opacity={0.95}
+          style={{ filter: GLOW_SOFT }}
+        />
         {cols.map((c, i) => (
           <text
             key={`h${i}`}
@@ -361,26 +473,65 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
             fontFamily={FONT}
             fontWeight={800}
             fontSize={19}
-            opacity={interpolate(t, [at + 0.15 + i * 0.04, at + 0.3 + i * 0.04], [0, 1], clamp)}
+            opacity={interpolate(
+              t,
+              [at + 0.15 + i * 0.04, at + 0.3 + i * 0.04],
+              [0, 1],
+              clamp,
+            )}
           >
             {c.toUpperCase()}
           </text>
         ))}
         {/* números de fila */}
         {Array.from({ length: rows + 1 }).map((_, r) => (
-          <text key={`n${r}`} x={14} y={28 + rowH * r + 30} fill="rgba(255,255,255,0.35)" fontFamily={FONT} fontWeight={700} fontSize={16} opacity={grid}>
+          <text
+            key={`n${r}`}
+            x={14}
+            y={28 + rowH * r + 30}
+            fill="rgba(255,255,255,0.35)"
+            fontFamily={FONT}
+            fontWeight={700}
+            fontSize={16}
+            opacity={grid}
+          >
             {r + 1}
           </text>
         ))}
         {/* rejilla */}
         {Array.from({ length: rows + 2 }).map((_, r) => (
-          <line key={`r${r}`} x1={x0} x2={x0 + W * grid} y1={28 + rowH * r} y2={28 + rowH * r} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+          <line
+            key={`r${r}`}
+            x1={x0}
+            x2={x0 + W * grid}
+            y1={28 + rowH * r}
+            y2={28 + rowH * r}
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth={1.5}
+          />
         ))}
         {widths.map((_, i) => {
           const x = x0 + widths.slice(0, i).reduce((a, b) => a + b, 0);
-          return <line key={`c${i}`} x1={x} x2={x} y1={28} y2={28 + rowH * (rows + 1) * grid} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />;
+          return (
+            <line
+              key={`c${i}`}
+              x1={x}
+              x2={x}
+              y1={28}
+              y2={28 + rowH * (rows + 1) * grid}
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth={1.5}
+            />
+          );
         })}
-        <line x1={x0 + W} x2={x0 + W} y1={28} y2={28 + rowH * (rows + 1) * grid} stroke="rgba(255,255,255,0.22)" strokeWidth={1.5} />
+        <line
+          x1={x0 + W}
+          x2={x0 + W}
+          y1={28}
+          y2={28 + rowH * (rows + 1) * grid}
+          stroke="rgba(255,255,255,0.22)"
+          strokeWidth={1.5}
+        />
         {/* contenido de celdas: barras como texto difuminado */}
         {Array.from({ length: rows * cols.length }).map((_, i) => {
           const r = Math.floor(i / cols.length);
@@ -389,7 +540,18 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
           const p = interpolate(t, [s0, s0 + 0.1], [0, 1], clamp);
           const w = Math.min(widths[c] - 30, ((i * 41) % 70) + 34);
           const x = x0 + widths.slice(0, c).reduce((a, b) => a + b, 0) + 12;
-          return <rect key={`v${i}`} x={x} y={28 + rowH * (r + 1) + 19} width={w * p} height={9} rx={2} fill={PAPER} opacity={0.55} />;
+          return (
+            <rect
+              key={`v${i}`}
+              x={x}
+              y={28 + rowH * (r + 1) + 19}
+              width={w * p}
+              height={9}
+              rx={2}
+              fill={PAPER}
+              opacity={0.55}
+            />
+          );
         })}
         {/* cursor */}
         {t > at + 0.3 ? (
@@ -427,7 +589,12 @@ const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
     opacity: 0.9,
   };
   return (
-    <svg width={330} height={330} viewBox="0 0 330 330" style={{ overflow: "visible" }}>
+    <svg
+      width={330}
+      height={330}
+      viewBox="0 0 330 330"
+      style={{ overflow: "visible" }}
+    >
       <defs>
         <filter id="pec-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation={10 + 6 * pulse} result="b" />
@@ -440,36 +607,66 @@ const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
       </defs>
       {/* pectorales: relleno que se enciende */}
       <g filter="url(#pec-glow)" opacity={glow}>
-        <path d="M 163 112 C 140 104, 108 104, 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 163 148 Z" fill={GREEN} opacity={0.55 + 0.35 * pulse} />
-        <path d="M 167 112 C 190 104, 222 104, 242 118 C 250 140, 238 162, 212 166 C 190 168, 172 160, 167 148 Z" fill={GREEN} opacity={0.55 + 0.35 * pulse} />
+        <path
+          d="M 163 112 C 140 104, 108 104, 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 163 148 Z"
+          fill={GREEN}
+          opacity={0.55 + 0.35 * pulse}
+        />
+        <path
+          d="M 167 112 C 190 104, 222 104, 242 118 C 250 140, 238 162, 212 166 C 190 168, 172 160, 167 148 Z"
+          fill={GREEN}
+          opacity={0.55 + 0.35 * pulse}
+        />
       </g>
       {/* contorno del torso */}
-      <path {...stroke} d="M 140 40 C 142 58, 140 70, 128 78 C 104 86, 72 88, 56 100 C 40 112, 36 140, 38 176 L 40 240" />
-      <path {...stroke} d="M 190 40 C 188 58, 190 70, 202 78 C 226 86, 258 88, 274 100 C 290 112, 294 140, 292 176 L 290 240" />
+      <path
+        {...stroke}
+        d="M 140 40 C 142 58, 140 70, 128 78 C 104 86, 72 88, 56 100 C 40 112, 36 140, 38 176 L 40 240"
+      />
+      <path
+        {...stroke}
+        d="M 190 40 C 188 58, 190 70, 202 78 C 226 86, 258 88, 274 100 C 290 112, 294 140, 292 176 L 290 240"
+      />
       <path {...stroke} d="M 72 150 C 76 200, 88 250, 100 300" />
       <path {...stroke} d="M 258 150 C 254 200, 242 250, 230 300" />
       {/* línea de pectorales */}
-      <path {...stroke} d="M 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 165 146 C 172 160, 190 168, 212 166 C 238 162, 250 140, 242 118" />
+      <path
+        {...stroke}
+        d="M 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 165 146 C 172 160, 190 168, 212 166 C 238 162, 250 140, 242 118"
+      />
       {/* clavículas */}
-      <path {...stroke} d="M 128 80 C 140 92, 152 96, 165 96 C 178 96, 190 92, 202 80" />
+      <path
+        {...stroke}
+        d="M 128 80 C 140 92, 152 96, 165 96 C 178 96, 190 92, 202 80"
+      />
       {/* abdomen */}
       <path {...stroke} d="M 165 170 L 165 296" strokeWidth={2.5} />
-      <path {...stroke} d="M 135 196 C 150 200, 180 200, 195 196 M 137 232 C 150 236, 180 236, 193 232 M 140 266 C 152 270, 178 270, 190 266" strokeWidth={2.5} />
+      <path
+        {...stroke}
+        d="M 135 196 C 150 200, 180 200, 195 196 M 137 232 C 150 236, 180 236, 193 232 M 140 266 C 152 270, 178 270, 190 266"
+        strokeWidth={2.5}
+      />
       {/* etiqueta de zona */}
       <g opacity={glow}>
-        <line x1={242} y1={130} x2={300} y2={70} stroke={GREEN} strokeWidth={2.5} style={{ filter: GLOW }} />
+        <line
+          x1={242}
+          y1={130}
+          x2={300}
+          y2={70}
+          stroke={GREEN}
+          strokeWidth={2.5}
+          style={{ filter: GLOW }}
+        />
         <circle cx={242} cy={130} r={5} fill={GREEN} />
       </g>
     </svg>
   );
 };
 
-const FlatChart: React.FC<{ at: number; stampAt: number }> = ({ at, stampAt }) => {
+const FlatChart: React.FC<{ at: number }> = ({ at }) => {
   const t = useT();
   const axes = useReveal(at, 0.35);
   const line = useReveal(at + 0.2, 0.6, Easing.linear);
-  const stamp = useSpringAt(stampAt, 13);
-  const mark = useReveal(stampAt + 0.1, 0.3);
   const W = 520;
   const H = 190;
   const y = H * 0.55;
@@ -477,13 +674,42 @@ const FlatChart: React.FC<{ at: number; stampAt: number }> = ({ at, stampAt }) =
   return (
     <div>
       <div style={label}>Pecho · progreso</div>
-      <svg width={W} height={H + 34} style={{ marginTop: 14, display: "block", overflow: "visible" }}>
+      <svg
+        width={W}
+        height={H + 34}
+        style={{ marginTop: 14, display: "block", overflow: "visible" }}
+      >
         {[0.2, 0.4, 0.6, 0.8].map((g) => (
-          <line key={g} x1={30} x2={W} y1={H * g} y2={H * g} stroke="rgba(255,255,255,0.08)" strokeWidth={1.5} opacity={axes} />
+          <line
+            key={g}
+            x1={30}
+            x2={W}
+            y1={H * g}
+            y2={H * g}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1.5}
+            opacity={axes}
+          />
         ))}
-        <path d={`M 30 0 L 30 ${H} L ${W} ${H}`} fill="none" stroke={PAPER} strokeWidth={3} strokeDasharray={W + H} strokeDashoffset={(W + H) * (1 - axes)} />
+        <path
+          d={`M 30 0 L 30 ${H} L ${W} ${H}`}
+          fill="none"
+          stroke={PAPER}
+          strokeWidth={3}
+          strokeDasharray={W + H}
+          strokeDashoffset={(W + H) * (1 - axes)}
+        />
         {Array.from({ length: 8 }).map((_, i) => (
-          <text key={i} x={46 + i * 60} y={H + 28} fill="rgba(255,255,255,0.4)" fontFamily={FONT} fontWeight={700} fontSize={15} opacity={axes}>
+          <text
+            key={i}
+            x={46 + i * 60}
+            y={H + 28}
+            fill="rgba(255,255,255,0.4)"
+            fontFamily={FONT}
+            fontWeight={700}
+            fontSize={15}
+            opacity={axes}
+          >
             S{i + 1}
           </text>
         ))}
@@ -500,41 +726,104 @@ const FlatChart: React.FC<{ at: number; stampAt: number }> = ({ at, stampAt }) =
         {Array.from({ length: 8 }).map((_, i) => {
           const x = 52 + i * 60;
           const vis = line * (W - 60) + 40 > x ? 1 : 0;
-          return <circle key={i} cx={x} cy={y} r={6} fill={BG} stroke={GREEN} strokeWidth={3} opacity={vis} />;
+          return (
+            <circle
+              key={i}
+              cx={x}
+              cy={y}
+              r={6}
+              fill={BG}
+              stroke={GREEN}
+              strokeWidth={3}
+              opacity={vis}
+            />
+          );
         })}
-        <circle cx={40 + (W - 60) * line} cy={y} r={9 * dot + 4} fill={GREEN} opacity={line > 0.02 ? 0.5 : 0} style={{ filter: GLOW }} />
+        <circle
+          cx={40 + (W - 60) * line}
+          cy={y}
+          r={9 * dot + 4}
+          fill={GREEN}
+          opacity={line > 0.02 ? 0.5 : 0}
+          style={{ filter: GLOW }}
+        />
       </svg>
-      <div style={{ marginTop: 10, transform: `scale(${0.85 + 0.15 * stamp})`, transformOrigin: "left center", opacity: Math.min(1, stamp * 2) }}>
-        <Marker p={mark}>
-          <div style={{ ...display, fontSize: 58, padding: "0 6px" }}>Sigue igual</div>
-        </Marker>
-      </div>
     </div>
   );
 };
 
 const ExcelScene: React.FC = () => {
-  const swapAt = rel("excel", 8.1);
+  const swapAt = rel("excel", 8.06);
   const swap = useReveal(swapAt, 0.4, easeInOut);
-  const title = useSpringAt(rel("excel", 7.3), 15);
-  const titleMark = useReveal(rel("excel", 7.4), 0.3);
   const { fps } = useVideoConfig();
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
-      {/* vista A: la hoja de cálculo */}
-      <div style={{ position: "absolute", inset: 0, transform: `translateX(${-swap * 105}%)` }}>
-        <Spreadsheet at={SCENE_IN - 0.12} />
-        <div style={{ position: "absolute", right: 10, bottom: 0, transform: `rotate(-3deg) scale(${0.8 + 0.2 * title})`, opacity: Math.min(1, title * 2) }}>
-          <Marker p={titleMark}>
-            <div style={{ ...display, fontSize: 72, padding: "0 8px", color: PAPER }}>El Excel</div>
-          </Marker>
-        </div>
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
+      {/* vista A: «de momento, el Excel» + hoja de cálculo */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translateX(${-swap * 110}%)`,
+        }}
+      >
+        <Headline
+          lines={[
+            { text: "De momento,", at: SCENE_IN - 0.15 },
+            {
+              text: "el Excel",
+              at: SCENE_IN - 0.02,
+              marker: rel("excel", 7.36),
+            },
+          ]}
+        />
+        <Visual>
+          <Spreadsheet at={SCENE_IN} />
+        </Visual>
       </div>
-      {/* vista B: torso + gráfica plana */}
-      <div style={{ position: "absolute", inset: 0, transform: `translateX(${(1 - swap) * 105}%)`, display: "flex", gap: 40, alignItems: "center" }}>
+      {/* vista B: «el pecho sigue igual» + torso iluminado + gráfica plana */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          transform: `translateX(${(1 - swap) * 110}%)`,
+        }}
+      >
         <Sequence from={Math.round(swapAt * fps)} layout="none">
-          <Torso at={0.05} glowAt={rel("excel", 8.2) - swapAt} />
-          <FlatChart at={0.15} stampAt={rel("excel", 8.48) - swapAt} />
+          <Headline
+            lines={[
+              {
+                text: "El pecho",
+                at: 0.05,
+                marker: rel("excel", 8.2) - swapAt,
+              },
+              {
+                text: "sigue igual",
+                at: 0.2,
+                marker: rel("excel", 8.48) - swapAt,
+              },
+            ]}
+          />
+          <Visual>
+            <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+              <div
+                style={{
+                  transform: "scale(1.15)",
+                  transformOrigin: "left center",
+                  width: 380,
+                }}
+              >
+                <Torso at={0.05} glowAt={rel("excel", 8.2) - swapAt} />
+              </div>
+              <FlatChart at={0.15} />
+            </div>
+          </Visual>
         </Sequence>
       </div>
     </div>
@@ -544,15 +833,18 @@ const ExcelScene: React.FC = () => {
 // ---------------------------------------------------------------------------
 // 02 · E03 herramientas (sin cruces ni valoración)
 
-const Card: React.FC<{ at: number; index: number; title: React.ReactNode; children: React.ReactNode; width?: number }> = ({
-  at,
-  index,
-  title,
-  children,
-  width = 290,
-}) => {
+const Card: React.FC<{
+  at: number;
+  index: number;
+  title: React.ReactNode;
+  children: React.ReactNode;
+  width?: number;
+  // pinta el título con subrayador (destacados del guion)
+  marker?: boolean;
+}> = ({ at, index, title, children, width = 290, marker }) => {
   const p = useSpringAt(at, 15);
   const line = useReveal(at + 0.1, 0.4);
+  const m = useReveal(at + 0.12, 0.35);
   return (
     <div
       style={{
@@ -567,10 +859,46 @@ const Card: React.FC<{ at: number; index: number; title: React.ReactNode; childr
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "absolute", top: 0, left: 0, height: 4, width: `${line * 100}%`, background: GREEN, filter: GLOW }} />
-      <div style={{ ...label, fontSize: 20, color: "rgba(255,255,255,0.45)", textShadow: "none" }}>{String(index).padStart(2, "0")}</div>
-      <div style={{ height: 170, display: "flex", alignItems: "center", justifyContent: "center" }}>{children}</div>
-      <div style={{ ...display, fontSize: 30 }}>{title}</div>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          height: 4,
+          width: `${line * 100}%`,
+          background: GREEN,
+          filter: GLOW,
+        }}
+      />
+      <div
+        style={{
+          ...label,
+          fontSize: 20,
+          color: "rgba(255,255,255,0.45)",
+          textShadow: "none",
+        }}
+      >
+        {String(index).padStart(2, "0")}
+      </div>
+      <div
+        style={{
+          height: 170,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {children}
+      </div>
+      <div style={{ ...display, fontSize: 30 }}>
+        {marker ? (
+          <Marker p={m}>
+            <div style={{ padding: "2px 6px" }}>{title}</div>
+          </Marker>
+        ) : (
+          title
+        )}
+      </div>
     </div>
   );
 };
@@ -580,9 +908,22 @@ const VolumeIcon: React.FC<{ at: number }> = ({ at }) => {
   return (
     <svg width={190} height={140} style={{ overflow: "visible", filter: GLOW }}>
       {[0, 1, 2, 3, 4, 5].map((i) => {
-        const p = interpolate(t, [at + i * 0.06, at + i * 0.06 + 0.3], [0, 1], { ...clamp, easing: easeOut });
+        const p = interpolate(t, [at + i * 0.06, at + i * 0.06 + 0.3], [0, 1], {
+          ...clamp,
+          easing: easeOut,
+        });
         const h = (40 + i * 18) * p;
-        return <rect key={i} x={i * 32} y={140 - h} width={22} height={h} fill={i === 5 ? GREEN : PAPER} opacity={i === 5 ? 1 : 0.85} />;
+        return (
+          <rect
+            key={i}
+            x={i * 32}
+            y={140 - h}
+            width={22}
+            height={h}
+            fill={i === 5 ? GREEN : PAPER}
+            opacity={i === 5 ? 1 : 0.85}
+          />
+        );
       })}
     </svg>
   );
@@ -595,18 +936,51 @@ const CalendarIcon: React.FC<{ at: number }> = ({ at }) => {
   return (
     <svg width={230} height={120} style={{ overflow: "visible" }}>
       {days.map((d, i) => {
-        const p = interpolate(t, [at + i * 0.04, at + i * 0.04 + 0.2], [0, 1], clamp);
+        const p = interpolate(
+          t,
+          [at + i * 0.04, at + i * 0.04 + 0.2],
+          [0, 1],
+          clamp,
+        );
         const lit = on.includes(i) && t > at + 0.35 + on.indexOf(i) * 0.12;
         return (
           <g key={i} opacity={p}>
-            <rect x={i * 33} y={30} width={27} height={60} fill={lit ? GREEN : "none"} stroke={lit ? GREEN : "rgba(255,255,255,0.4)"} strokeWidth={2} style={lit ? { filter: GLOW } : undefined} />
-            <text x={i * 33 + 13.5} y={20} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontFamily={FONT} fontWeight={700} fontSize={15}>
+            <rect
+              x={i * 33}
+              y={30}
+              width={27}
+              height={60}
+              fill={lit ? GREEN : "none"}
+              stroke={lit ? GREEN : "rgba(255,255,255,0.4)"}
+              strokeWidth={2}
+              style={lit ? { filter: GLOW } : undefined}
+            />
+            <text
+              x={i * 33 + 13.5}
+              y={20}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.6)"
+              fontFamily={FONT}
+              fontWeight={700}
+              fontSize={15}
+            >
               {d}
             </text>
           </g>
         );
       })}
-      <text x={115} y={118} textAnchor="middle" fill={GREEN} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={22} opacity={interpolate(t, [at + 0.6, at + 0.8], [0, 1], clamp)} style={{ filter: GLOW }}>
+      <text
+        x={115}
+        y={118}
+        textAnchor="middle"
+        fill={GREEN}
+        fontFamily={FONT}
+        fontWeight={900}
+        fontStyle="italic"
+        fontSize={22}
+        opacity={interpolate(t, [at + 0.6, at + 0.8], [0, 1], clamp)}
+        style={{ filter: GLOW }}
+      >
         3× / SEMANA
       </text>
     </svg>
@@ -618,9 +992,22 @@ const DropIcon: React.FC<{ at: number }> = ({ at }) => {
   return (
     <svg width={200} height={140} style={{ overflow: "visible" }}>
       {[0, 1, 2, 3].map((i) => {
-        const p = interpolate(t, [at + i * 0.1, at + i * 0.1 + 0.25], [0, 1], { ...clamp, easing: easeOut });
+        const p = interpolate(t, [at + i * 0.1, at + i * 0.1 + 0.25], [0, 1], {
+          ...clamp,
+          easing: easeOut,
+        });
         const h = (120 - i * 26) * p;
-        return <rect key={i} x={i * 48} y={140 - h} width={36} height={h} fill={PAPER} opacity={0.9 - i * 0.12} />;
+        return (
+          <rect
+            key={i}
+            x={i * 48}
+            y={140 - h}
+            width={36}
+            height={h}
+            fill={PAPER}
+            opacity={0.9 - i * 0.12}
+          />
+        );
       })}
       <path
         d="M 10 10 L 70 34 L 118 58 L 168 84"
@@ -628,40 +1015,53 @@ const DropIcon: React.FC<{ at: number }> = ({ at }) => {
         stroke={GREEN}
         strokeWidth={5}
         strokeDasharray={200}
-        strokeDashoffset={200 * (1 - interpolate(t, [at + 0.4, at + 0.8], [0, 1], clamp))}
+        strokeDashoffset={
+          200 * (1 - interpolate(t, [at + 0.4, at + 0.8], [0, 1], clamp))
+        }
         style={{ filter: GLOW }}
       />
-      <path d="M 168 84 l -16 -2 M 168 84 l -6 -14" stroke={GREEN} strokeWidth={5} opacity={t > at + 0.8 ? 1 : 0} />
+      <path
+        d="M 168 84 l -16 -2 M 168 84 l -6 -14"
+        stroke={GREEN}
+        strokeWidth={5}
+        opacity={t > at + 0.8 ? 1 : 0}
+      />
     </svg>
   );
 };
 
-const ToolsScene: React.FC = () => {
-  const head = useReveal(SCENE_IN - 0.1, 0.3);
-  return (
-    <div>
-      <MaskUp p={head}>
-        <div style={label}>Lo que ha cambiado</div>
-      </MaskUp>
-      <div style={{ display: "flex", gap: 45, marginTop: 20 }}>
-        <Card at={rel("tools", 11.62)} index={1} title="Volumen">
+const ToolsScene: React.FC = () => (
+  <>
+    <Headline
+      lines={[
+        { text: "Lo que", at: SCENE_IN - 0.15 },
+        { text: "ha cambiado", at: SCENE_IN - 0.02 },
+      ]}
+    />
+    <Visual>
+      <div style={{ display: "flex", gap: 45 }}>
+        <Card at={rel("tools", 11.62)} index={1} title="Volumen" marker>
           <VolumeIcon at={rel("tools", 11.7)} />
         </Card>
-        <Card at={rel("tools", 12.42)} index={2} title="Frecuencia 3">
+        <Card at={rel("tools", 12.42)} index={2} title="Frecuencia 3" marker>
           <CalendarIcon at={rel("tools", 12.5)} />
         </Card>
-        <Card at={rel("tools", 13.7)} index={3} title="Drop sets">
+        <Card at={rel("tools", 13.7)} index={3} title="Drop sets" marker>
           <DropIcon at={rel("tools", 13.78)} />
         </Card>
       </div>
-    </div>
-  );
-};
+    </Visual>
+  </>
+);
 
 // ---------------------------------------------------------------------------
 // 03 · E04 «tres vídeos» (sin creadores ni contenido ajeno)
 
-const Phone: React.FC<{ at: number; n: number; rot: number }> = ({ at, n, rot }) => {
+const Phone: React.FC<{ at: number; n: number; rot: number }> = ({
+  at,
+  n,
+  rot,
+}) => {
   const t = useT();
   const p = useSpringAt(at, 12);
   const prog = interpolate(t, [at + 0.2, at + 1.6], [0, 1], clamp);
@@ -680,16 +1080,63 @@ const Phone: React.FC<{ at: number; n: number; rot: number }> = ({ at, n, rot })
         boxShadow: "0 0 26px rgba(255,255,255,0.08)",
       }}
     >
-      <div style={{ position: "absolute", top: 10, left: "50%", marginLeft: -22, width: 44, height: 7, borderRadius: 4, background: "rgba(255,255,255,0.25)" }} />
-      <div style={{ position: "absolute", inset: "40px 14px 70px", border: "1.5px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 10,
+          left: "50%",
+          marginLeft: -22,
+          width: 44,
+          height: 7,
+          borderRadius: 4,
+          background: "rgba(255,255,255,0.25)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: "40px 14px 70px",
+          border: "1.5px solid rgba(255,255,255,0.12)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <svg width={50} height={56} style={{ filter: GLOW }}>
           <path d="M 6 4 L 46 28 L 6 52 Z" fill={GREEN} />
         </svg>
       </div>
-      <div style={{ position: "absolute", left: 14, right: 14, bottom: 46, height: 5, background: "rgba(255,255,255,0.15)" }}>
-        <div style={{ width: `${prog * 100}%`, height: "100%", background: GREEN, filter: GLOW }} />
+      <div
+        style={{
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: 46,
+          height: 5,
+          background: "rgba(255,255,255,0.15)",
+        }}
+      >
+        <div
+          style={{
+            width: `${prog * 100}%`,
+            height: "100%",
+            background: GREEN,
+            filter: GLOW,
+          }}
+        />
       </div>
-      <div style={{ position: "absolute", left: 14, bottom: 16, ...label, fontSize: 16, letterSpacing: 3, color: PAPER, textShadow: "none" }}>
+      <div
+        style={{
+          position: "absolute",
+          left: 14,
+          bottom: 16,
+          ...label,
+          fontSize: 16,
+          letterSpacing: 3,
+          color: PAPER,
+          textShadow: "none",
+        }}
+      >
         Vídeo {n}
       </div>
     </div>
@@ -700,16 +1147,31 @@ const VideosScene: React.FC = () => {
   const lbl = useSpringAt(rel("videos", 24.5), 14);
   const mark = useReveal(rel("videos", 24.6), 0.3);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 40, height: "100%" }}>
+    <div
+      style={{ display: "flex", alignItems: "center", gap: 40, height: "100%" }}
+    >
       <div style={{ display: "flex", gap: 18 }}>
         <Phone at={SCENE_IN - 0.15} n={1} rot={-5} />
         <Phone at={SCENE_IN} n={2} rot={0} />
         <Phone at={SCENE_IN + 0.15} n={3} rot={5} />
       </div>
-      <div style={{ transform: `scale(${0.8 + 0.2 * lbl}) rotate(-3deg)`, opacity: Math.min(1, lbl * 2) }}>
+      <div
+        style={{
+          transform: `scale(${0.8 + 0.2 * lbl}) rotate(-3deg)`,
+          opacity: Math.min(1, lbl * 2),
+        }}
+      >
         <Marker p={mark}>
-          <div style={{ ...display, fontSize: 72, padding: "0 8px", lineHeight: 1 }}>
-            3<br />vídeos
+          <div
+            style={{
+              ...display,
+              fontSize: 72,
+              padding: "0 8px",
+              lineHeight: 1,
+            }}
+          >
+            3<br />
+            vídeos
           </div>
         </Marker>
       </div>
@@ -722,12 +1184,30 @@ const VideosScene: React.FC = () => {
 
 const TargetIcon: React.FC<{ at: number }> = ({ at }) => {
   const t = useT();
-  const p = interpolate(t, [at, at + 0.6], [0, 1], { ...clamp, easing: easeOut });
+  const p = interpolate(t, [at, at + 0.6], [0, 1], {
+    ...clamp,
+    easing: easeOut,
+  });
   const hit = interpolate(t, [at + 0.5, at + 0.7], [0, 1], clamp);
   return (
-    <svg width={150} height={150} viewBox="-75 -75 150 150" style={{ overflow: "visible" }}>
+    <svg
+      width={150}
+      height={150}
+      viewBox="-75 -75 150 150"
+      style={{ overflow: "visible" }}
+    >
       {[66, 46, 26].map((r, i) => (
-        <circle key={r} r={r} fill="none" stroke={i === 2 ? GREEN : PAPER} strokeWidth={4} strokeDasharray={2 * Math.PI * r} strokeDashoffset={2 * Math.PI * r * (1 - p)} opacity={0.9} style={i === 2 ? { filter: GLOW } : undefined} />
+        <circle
+          key={r}
+          r={r}
+          fill="none"
+          stroke={i === 2 ? GREEN : PAPER}
+          strokeWidth={4}
+          strokeDasharray={2 * Math.PI * r}
+          strokeDashoffset={2 * Math.PI * r * (1 - p)}
+          opacity={0.9}
+          style={i === 2 ? { filter: GLOW } : undefined}
+        />
       ))}
       <circle r={9 * hit} fill={GREEN} style={{ filter: GLOW }} />
     </svg>
@@ -736,37 +1216,92 @@ const TargetIcon: React.FC<{ at: number }> = ({ at }) => {
 
 const ClockIcon: React.FC<{ at: number }> = ({ at }) => {
   const t = useT();
-  const p = interpolate(t, [at, at + 0.5], [0, 1], { ...clamp, easing: easeOut });
+  const p = interpolate(t, [at, at + 0.5], [0, 1], {
+    ...clamp,
+    easing: easeOut,
+  });
   const spin = Math.max(0, t - at) * 220;
   return (
-    <svg width={150} height={150} viewBox="-75 -75 150 150" style={{ overflow: "visible" }}>
-      <circle r={64} fill="none" stroke={PAPER} strokeWidth={4} strokeDasharray={402} strokeDashoffset={402 * (1 - p)} />
+    <svg
+      width={150}
+      height={150}
+      viewBox="-75 -75 150 150"
+      style={{ overflow: "visible" }}
+    >
+      <circle
+        r={64}
+        fill="none"
+        stroke={PAPER}
+        strokeWidth={4}
+        strokeDasharray={402}
+        strokeDashoffset={402 * (1 - p)}
+      />
       {Array.from({ length: 12 }).map((_, i) => (
-        <line key={i} x1={0} y1={-56} x2={0} y2={-48} stroke="rgba(255,255,255,0.5)" strokeWidth={3} transform={`rotate(${i * 30})`} opacity={p} />
+        <line
+          key={i}
+          x1={0}
+          y1={-56}
+          x2={0}
+          y2={-48}
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth={3}
+          transform={`rotate(${i * 30})`}
+          opacity={p}
+        />
       ))}
-      <line x1={0} y1={0} x2={0} y2={-42} stroke={GREEN} strokeWidth={5} strokeLinecap="round" transform={`rotate(${spin})`} opacity={p} style={{ filter: GLOW }} />
-      <line x1={0} y1={0} x2={0} y2={-28} stroke={PAPER} strokeWidth={5} strokeLinecap="round" transform={`rotate(${spin / 12})`} opacity={p} />
+      <line
+        x1={0}
+        y1={0}
+        x2={0}
+        y2={-42}
+        stroke={GREEN}
+        strokeWidth={5}
+        strokeLinecap="round"
+        transform={`rotate(${spin})`}
+        opacity={p}
+        style={{ filter: GLOW }}
+      />
+      <line
+        x1={0}
+        y1={0}
+        x2={0}
+        y2={-28}
+        stroke={PAPER}
+        strokeWidth={5}
+        strokeLinecap="round"
+        transform={`rotate(${spin / 12})`}
+        opacity={p}
+      />
       <circle r={6} fill={GREEN} opacity={p} />
     </svg>
   );
 };
 
 const PrioScene: React.FC = () => {
-  const head = useReveal(SCENE_IN - 0.1, 0.3);
   return (
-    <div>
-      <MaskUp p={head}>
-        <div style={label}>Ajustar el trabajo a</div>
-      </MaskUp>
-      <div style={{ display: "flex", gap: 40, marginTop: 20 }}>
-        <Card at={rel("prio", 33.7)} index={1} title="Tus prioridades" width={460}>
-          <TargetIcon at={rel("prio", 33.8)} />
-        </Card>
-        <Card at={rel("prio", 34.86)} index={2} title="Tu tiempo" width={460}>
-          <ClockIcon at={rel("prio", 34.95)} />
-        </Card>
-      </div>
-    </div>
+    <>
+      <Headline
+        lines={[
+          { text: "Ajustar", at: SCENE_IN - 0.15 },
+          { text: "el trabajo a", at: SCENE_IN - 0.02 },
+        ]}
+      />
+      <Visual>
+        <div style={{ display: "flex", gap: 40 }}>
+          <Card
+            at={rel("prio", 33.7)}
+            index={1}
+            title="Tus prioridades"
+            width={460}
+          >
+            <TargetIcon at={rel("prio", 33.8)} />
+          </Card>
+          <Card at={rel("prio", 34.86)} index={2} title="Tu tiempo" width={460}>
+            <ClockIcon at={rel("prio", 34.95)} />
+          </Card>
+        </div>
+      </Visual>
+    </>
   );
 };
 
@@ -789,14 +1324,30 @@ const FaltaScene: React.FC = () => {
       <div style={{ marginTop: 8 }}>
         <MaskUp p={b} style={{ display: "inline-block" }}>
           <Marker p={mark}>
-            <div style={{ ...display, fontSize: 96, padding: "0 10px", color: PAPER }}>haga falta</div>
+            <div
+              style={{
+                ...display,
+                fontSize: 96,
+                padding: "0 10px",
+                color: PAPER,
+              }}
+            >
+              haga falta
+            </div>
           </Marker>
         </MaskUp>
       </div>
       <div style={{ display: "flex", gap: 14, marginTop: 34 }}>
         {Array.from({ length: blocks }).map((_, i) => {
-          const p = interpolate(t, [SCENE_IN + i * 0.04, SCENE_IN + i * 0.04 + 0.25], [0, 1], clamp);
-          const lit = changed.includes(i) && t > rel("falta", 39.7) + changed.indexOf(i) * 0.15;
+          const p = interpolate(
+            t,
+            [SCENE_IN + i * 0.04, SCENE_IN + i * 0.04 + 0.25],
+            [0, 1],
+            clamp,
+          );
+          const lit =
+            changed.includes(i) &&
+            t > rel("falta", 39.7) + changed.indexOf(i) * 0.15;
           return (
             <div
               key={i}
@@ -804,7 +1355,9 @@ const FaltaScene: React.FC = () => {
                 width: 100,
                 height: 70,
                 border: `2px solid ${lit ? GREEN : "rgba(255,255,255,0.3)"}`,
-                background: lit ? "rgba(4,228,0,0.18)" : "rgba(255,255,255,0.03)",
+                background: lit
+                  ? "rgba(4,228,0,0.18)"
+                  : "rgba(255,255,255,0.03)",
                 opacity: p,
                 transform: `translateY(${(1 - p) * 20}px) scale(${lit ? 1.06 : 1})`,
                 filter: lit ? GLOW : undefined,
@@ -822,8 +1375,20 @@ const FaltaScene: React.FC = () => {
 
 const LogIcon = () => (
   <svg width={44} height={44}>
-    <rect x={4} y={3} width={36} height={38} fill="none" stroke={PAPER} strokeWidth={3} />
-    <path d="M 11 14 H 33 M 11 22 H 33 M 11 30 H 25" stroke={PAPER} strokeWidth={3} />
+    <rect
+      x={4}
+      y={3}
+      width={36}
+      height={38}
+      fill="none"
+      stroke={PAPER}
+      strokeWidth={3}
+    />
+    <path
+      d="M 11 14 H 33 M 11 22 H 33 M 11 30 H 25"
+      stroke={PAPER}
+      strokeWidth={3}
+    />
   </svg>
 );
 const MoveIcon = () => (
@@ -835,13 +1400,32 @@ const MoveIcon = () => (
 );
 const BatteryIcon: React.FC<{ p: number }> = ({ p }) => (
   <svg width={52} height={44}>
-    <rect x={3} y={10} width={40} height={24} fill="none" stroke={PAPER} strokeWidth={3} />
+    <rect
+      x={3}
+      y={10}
+      width={40}
+      height={24}
+      fill="none"
+      stroke={PAPER}
+      strokeWidth={3}
+    />
     <rect x={44} y={17} width={5} height={10} fill={PAPER} />
-    <rect x={8} y={15} width={30 * p} height={14} fill={GREEN} style={{ filter: GLOW }} />
+    <rect
+      x={8}
+      y={15}
+      width={30 * p}
+      height={14}
+      fill={GREEN}
+      style={{ filter: GLOW }}
+    />
   </svg>
 );
 
-const CheckRow: React.FC<{ at: number; text: string; icon: React.ReactNode }> = ({ at, text, icon }) => {
+const CheckRow: React.FC<{
+  at: number;
+  text: string;
+  icon: React.ReactNode;
+}> = ({ at, text, icon }) => {
   const row = useReveal(at - 0.25, 0.35);
   const tick = useReveal(at, 0.3);
   return (
@@ -856,40 +1440,108 @@ const CheckRow: React.FC<{ at: number; text: string; icon: React.ReactNode }> = 
         transform: `translateX(${(1 - row) * -30}px)`,
       }}
     >
-      <div style={{ width: 56, display: "flex", justifyContent: "center" }}>{icon}</div>
-      <div style={{ ...display, fontStyle: "normal", fontWeight: 800, fontSize: 52, flex: 1, textTransform: "none", letterSpacing: 0 }}>{text}</div>
-      <svg width={56} height={56} style={{ filter: tick > 0 ? GLOW : undefined }}>
-        <rect x={3} y={3} width={50} height={50} fill={tick > 0.5 ? "rgba(4,228,0,0.15)" : "none"} stroke={tick > 0 ? GREEN : PAPER} strokeWidth={3.5} />
-        <path d="M 13 29 L 24 40 L 44 16" fill="none" stroke={GREEN} strokeWidth={6} strokeDasharray={50} strokeDashoffset={50 * (1 - tick)} />
+      <div style={{ width: 56, display: "flex", justifyContent: "center" }}>
+        {icon}
+      </div>
+      <div
+        style={{
+          ...display,
+          fontStyle: "normal",
+          fontWeight: 800,
+          fontSize: 52,
+          flex: 1,
+          textTransform: "none",
+          letterSpacing: 0,
+        }}
+      >
+        {text}
+      </div>
+      <svg
+        width={56}
+        height={56}
+        style={{ filter: tick > 0 ? GLOW : undefined }}
+      >
+        <rect
+          x={3}
+          y={3}
+          width={50}
+          height={50}
+          fill={tick > 0.5 ? "rgba(4,228,0,0.15)" : "none"}
+          stroke={tick > 0 ? GREEN : PAPER}
+          strokeWidth={3.5}
+        />
+        <path
+          d="M 13 29 L 24 40 L 44 16"
+          fill="none"
+          stroke={GREEN}
+          strokeWidth={6}
+          strokeDasharray={50}
+          strokeDashoffset={50 * (1 - tick)}
+        />
       </svg>
     </div>
   );
 };
 
 const CheckScene: React.FC = () => {
-  const head = useReveal(SCENE_IN - 0.1, 0.3);
   const battery = useReveal(rel("check", 49.3), 0.6);
   return (
-    <div>
-      <MaskUp p={head}>
-        <div style={label}>Antes de añadir más</div>
-      </MaskUp>
-      <div style={{ marginTop: 14 }}>
-        <CheckRow at={rel("check", 47.32)} text="Registros" icon={<LogIcon />} />
-        <CheckRow at={rel("check", 48.16)} text="Ejecución" icon={<MoveIcon />} />
-        <CheckRow at={rel("check", 49.24)} text="Recuperación" icon={<BatteryIcon p={battery} />} />
-      </div>
-    </div>
+    <>
+      <Headline
+        lines={[
+          { text: "Antes de", at: rel("check", 45.24) },
+          { text: "añadir más", at: rel("check", 45.7) },
+        ]}
+      />
+      <Visual>
+        <CheckRow
+          at={rel("check", 47.32)}
+          text="Registros"
+          icon={<LogIcon />}
+        />
+        <CheckRow
+          at={rel("check", 48.16)}
+          text="Ejecución"
+          icon={<MoveIcon />}
+        />
+        <CheckRow
+          at={rel("check", 49.24)}
+          text="Recuperación"
+          icon={<BatteryIcon p={battery} />}
+        />
+      </Visual>
+    </>
   );
 };
 
 // ---------------------------------------------------------------------------
 // 07 · E07 «hacer más / hacer menos / dejar de cambiar» (una misma línea)
 
-const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({ dir, p }) => (
-  <svg width={110} height={110} viewBox="-55 -55 110 110" style={{ filter: GLOW }}>
-    <circle r={48} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={3} />
-    <circle r={48} fill="none" stroke={GREEN} strokeWidth={4} strokeDasharray={302} strokeDashoffset={302 * (1 - p)} transform="rotate(-90)" />
+const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({
+  dir,
+  p,
+}) => (
+  <svg
+    width={110}
+    height={110}
+    viewBox="-55 -55 110 110"
+    style={{ filter: GLOW }}
+  >
+    <circle
+      r={48}
+      fill="none"
+      stroke="rgba(255,255,255,0.25)"
+      strokeWidth={3}
+    />
+    <circle
+      r={48}
+      fill="none"
+      stroke={GREEN}
+      strokeWidth={4}
+      strokeDasharray={302}
+      strokeDashoffset={302 * (1 - p)}
+      transform="rotate(-90)"
+    />
     {dir === "pause" ? (
       <g opacity={p}>
         <rect x={-16} y={-20} width={10} height={40} fill={PAPER} />
@@ -897,7 +1549,11 @@ const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({ dir,
       </g>
     ) : (
       <path
-        d={dir === "up" ? "M 0 22 V -20 M -16 -4 L 0 -20 L 16 -4" : "M 0 -22 V 20 M -16 4 L 0 20 L 16 4"}
+        d={
+          dir === "up"
+            ? "M 0 22 V -20 M -16 -4 L 0 -20 L 16 -4"
+            : "M 0 -22 V 20 M -16 4 L 0 20 L 16 4"
+        }
         fill="none"
         stroke={PAPER}
         strokeWidth={6}
@@ -910,21 +1566,62 @@ const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({ dir,
   </svg>
 );
 
-const OptionCard: React.FC<{ at: number; dir: "up" | "down" | "pause"; lines: string[]; index: number }> = ({ at, dir, lines, index }) => {
+const OptionCard: React.FC<{
+  at: number;
+  dir: "up" | "down" | "pause";
+  lines: string[];
+  index: number;
+}> = ({ at, dir, lines, index }) => {
   const p = useReveal(at, 0.45);
   return (
-    <Card at={at} index={index} title={<span style={{ fontSize: 32, lineHeight: 1.05 }}>{lines.map((l, i) => <div key={i}>{l}</div>)}</span>}>
+    <Card
+      at={at}
+      index={index}
+      marker
+      title={
+        <span style={{ fontSize: 32, lineHeight: 1.05 }}>
+          {lines.map((l, i) => (
+            <div key={i}>{l}</div>
+          ))}
+        </span>
+      }
+    >
       <ArrowIcon dir={dir} p={p} />
     </Card>
   );
 };
 
 const OptionsScene: React.FC = () => (
-  <div style={{ display: "flex", gap: 45, marginTop: 30 }}>
-    <OptionCard at={rel("options", 54.0)} dir="up" lines={["Hacer", "más"]} index={1} />
-    <OptionCard at={rel("options", 54.72)} dir="down" lines={["Hacer", "menos"]} index={2} />
-    <OptionCard at={rel("options", 55.8)} dir="pause" lines={["Dejar de", "cambiar"]} index={3} />
-  </div>
+  <>
+    <Headline
+      lines={[
+        { text: "¿Qué tengo", at: SCENE_IN - 0.15 },
+        { text: "que hacer?", at: SCENE_IN - 0.02 },
+      ]}
+    />
+    <Visual>
+      <div style={{ display: "flex", gap: 45 }}>
+        <OptionCard
+          at={rel("options", 54.0)}
+          dir="up"
+          lines={["Hacer", "más"]}
+          index={1}
+        />
+        <OptionCard
+          at={rel("options", 54.72)}
+          dir="down"
+          lines={["Hacer", "menos"]}
+          index={2}
+        />
+        <OptionCard
+          at={rel("options", 55.8)}
+          dir="pause"
+          lines={["Dejar de", "cambiar"]}
+          index={3}
+        />
+      </div>
+    </Visual>
+  </>
 );
 
 // ---------------------------------------------------------------------------
@@ -940,9 +1637,11 @@ const CtaScene: React.FC = () => {
   const sent = useSpringAt(typeAt + 0.45, 12);
   const dm = useReveal(rel("cta", 62.6), 0.4);
   const plane = useReveal(rel("cta", 62.6), 0.7, easeInOut);
-  const caret = Math.floor(t * fps / 8) % 2 === 0;
+  const caret = Math.floor((t * fps) / 8) % 2 === 0;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
       <MaskUp p={comenta}>
         <div style={{ ...display, fontSize: 64 }}>Comenta</div>
       </MaskUp>
@@ -963,9 +1662,27 @@ const CtaScene: React.FC = () => {
           background: "rgba(255,255,255,0.03)",
         }}
       >
-        <div style={{ ...display, fontSize: 88, flex: 1, color: typed > 0 ? GREEN : "rgba(255,255,255,0.3)", textShadow: typed > 0 ? GREEN_TEXT_GLOW : "none" }}>
-          {typed > 0 ? "PLAN".slice(0, typed) : "Añade un comentario…".slice(0, 0)}
-          <span style={{ opacity: caret && sent < 0.5 ? 1 : 0, color: PAPER, fontStyle: "normal" }}>|</span>
+        <div
+          style={{
+            ...display,
+            fontSize: 88,
+            flex: 1,
+            color: typed > 0 ? GREEN : "rgba(255,255,255,0.3)",
+            textShadow: typed > 0 ? GREEN_TEXT_GLOW : "none",
+          }}
+        >
+          {typed > 0
+            ? "PLAN".slice(0, typed)
+            : "Añade un comentario…".slice(0, 0)}
+          <span
+            style={{
+              opacity: caret && sent < 0.5 ? 1 : 0,
+              color: PAPER,
+              fontStyle: "normal",
+            }}
+          >
+            |
+          </span>
         </div>
         <div
           style={{
@@ -982,17 +1699,56 @@ const CtaScene: React.FC = () => {
           }}
         >
           <svg width={40} height={40}>
-            <path d="M 20 32 V 8 M 9 18 L 20 7 L 31 18" stroke={INK} strokeWidth={5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M 20 32 V 8 M 9 18 L 20 7 L 31 18"
+              stroke={INK}
+              strokeWidth={5}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       </div>
       {/* te escribo por privado */}
-      <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 40, opacity: dm, transform: `translateY(${(1 - dm) * 20}px)` }}>
-        <svg width={56} height={56} style={{ overflow: "visible", filter: GLOW, transform: `translate(${plane * 6}px, ${-plane * 6}px)` }}>
-          <path d="M 4 26 L 52 6 L 38 50 L 28 32 Z" fill="none" stroke={GREEN} strokeWidth={4} strokeLinejoin="round" />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          marginTop: 40,
+          opacity: dm,
+          transform: `translateY(${(1 - dm) * 20}px)`,
+        }}
+      >
+        <svg
+          width={56}
+          height={56}
+          style={{
+            overflow: "visible",
+            filter: GLOW,
+            transform: `translate(${plane * 6}px, ${-plane * 6}px)`,
+          }}
+        >
+          <path
+            d="M 4 26 L 52 6 L 38 50 L 28 32 Z"
+            fill="none"
+            stroke={GREEN}
+            strokeWidth={4}
+            strokeLinejoin="round"
+          />
           <path d="M 28 32 L 52 6" stroke={GREEN} strokeWidth={4} />
         </svg>
-        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 42, color: PAPER, textShadow: TEXT_GLOW, whiteSpace: "nowrap" }}>
+        <div
+          style={{
+            fontFamily: FONT,
+            fontWeight: 700,
+            fontSize: 42,
+            color: PAPER,
+            textShadow: TEXT_GLOW,
+            whiteSpace: "nowrap",
+          }}
+        >
           Te escribo por privado
         </div>
       </div>
@@ -1005,16 +1761,17 @@ const CtaScene: React.FC = () => {
 /** Capa por debajo del vídeo: fondos de escena a pantalla completa. */
 export const SceneBackdrops: React.FC = () => (
   <AbsoluteFill>
-    {scenes.map((s) => (
-      <SceneBlock key={s.id} id={s.id} />
-    ))}
+    {scenes
+      .filter((s) => s.mode === "full")
+      .map((s) => (
+        <SceneBlock key={s.id} id={s.id} />
+      ))}
   </AbsoluteFill>
 );
 
 /** Capa por encima del vídeo: marco de la ventana y contenido de cada escena. */
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
-    <WindowFrame />
     <SceneContent id="excel">
       <ExcelScene />
     </SceneContent>

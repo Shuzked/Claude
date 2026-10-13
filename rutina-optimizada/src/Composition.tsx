@@ -10,8 +10,8 @@ import { DURATION_FRAMES } from "./timeline";
 
 export const RutinaOptimizada: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "black" }}>
-    <SceneBackdrops />
     <Camera />
+    <SceneBackdrops />
     <Graphics />
     <Finish />
     <Captions />

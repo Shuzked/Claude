@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { impacts, punches, sceneAmount, shots, TRIM, whips } from "./timeline";
+import { impacts, punches, shots, TRIM, whips } from "./timeline";
 
 // Cámara virtual: el vídeo nunca está quieto.
 //  1. Cada plano tiene su encuadre base y un empuje lento (alternando dentro/fuera).
@@ -104,81 +104,29 @@ const useCamera = () => {
   };
 };
 
-// Ventana del vídeo durante las escenas de motion graphics.
-export const WINDOW = { x: 60, y: 140, w: 960, h: 740 };
-const WINDOW_SCALE = 0.9;
-// Punto de la imagen (la cara) que queda centrado en la ventana.
-const FOCUS = { x: 540, y: 740 };
-
-const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
-
-export const useWindow = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const p = sceneAmount(TRIM + frame / fps);
-  const s = lerp(1, WINDOW_SCALE, p);
-  return {
-    p,
-    rect: {
-      x: lerp(0, WINDOW.x, p),
-      y: lerp(0, WINDOW.y, p),
-      w: lerp(1080, WINDOW.w, p),
-      h: lerp(1920, WINDOW.h, p),
-    },
-    // posición de la imagen completa (1080×1920) en pantalla
-    frameX: lerp(0, WINDOW.x + WINDOW.w / 2 - FOCUS.x * WINDOW_SCALE, p),
-    frameY: lerp(0, WINDOW.y + WINDOW.h / 2 - FOCUS.y * WINDOW_SCALE, p),
-    scale: s,
-  };
-};
-
 export const Camera: React.FC = () => {
   const { scale, x, y, rot, blur } = useCamera();
   const { fps } = useVideoConfig();
-  const win = useWindow();
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: win.rect.x,
-        top: win.rect.y,
-        width: win.rect.w,
-        height: win.rect.h,
-        overflow: "hidden",
-        backgroundColor: "black",
-      }}
-    >
-      <div
+    <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>
+      <AbsoluteFill
         style={{
-          position: "absolute",
-          left: win.frameX - win.rect.x,
-          top: win.frameY - win.rect.y,
-          width: 1080,
-          height: 1920,
-          transform: `scale(${win.scale})`,
-          transformOrigin: "0 0",
-          overflow: "hidden",
+          transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
+          // centro en la cara: los zooms acercan el rostro, no el pecho
+          transformOrigin: "50% 32%",
         }}
       >
-        <AbsoluteFill
+        <Video
+          src={staticFile("video.mp4")}
+          trimBefore={Math.round(TRIM * fps)}
+          objectFit="cover"
           style={{
-            transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
-            // centro en la cara: los zooms acercan el rostro, no el pecho
-            transformOrigin: "50% 32%",
+            width: "100%",
+            height: "100%",
+            filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
           }}
-        >
-          <Video
-            src={staticFile("video.mp4")}
-            trimBefore={Math.round(TRIM * fps)}
-            objectFit="cover"
-            style={{
-              width: "100%",
-              height: "100%",
-              filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
-            }}
-          />
-        </AbsoluteFill>
-      </div>
-    </div>
+        />
+      </AbsoluteFill>
+    </AbsoluteFill>
   );
 };

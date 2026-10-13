@@ -8,8 +8,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { FONT, GREEN } from "./theme";
-import { captionPages, f, TRIM, type Word } from "./timeline";
+import { FONT, GREEN, INK } from "./theme";
+import { f, scenes, TRIM, visiblePages, type Word } from "./timeline";
 
 // Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
 const MARKER_PATH =
@@ -36,7 +36,12 @@ const Highlighter: React.FC<{ p: number }> = ({ p }) => (
   >
     <path d={MARKER_PATH} fill={GREEN} opacity={0.92} />
     {/* segunda pasada más fina: textura de rotulador */}
-    <path d="M 4 14 C 60 11, 120 13, 194 9" stroke="rgba(255,255,255,0.18)" strokeWidth={3} fill="none" />
+    <path
+      d="M 4 14 C 60 11, 120 13, 194 9"
+      stroke="rgba(255,255,255,0.18)"
+      strokeWidth={3}
+      fill="none"
+    />
   </svg>
 );
 
@@ -47,7 +52,13 @@ const WordView: React.FC<{ w: Word; t: number }> = ({ w, t }) => {
   const { fps } = useVideoConfig();
   const local = (t - w.start) * fps;
   const shown = local >= 0;
-  const pop = shown ? spring({ frame: local, fps, config: { damping: 16, stiffness: 320, mass: 0.5 } }) : 0;
+  const pop = shown
+    ? spring({
+        frame: local,
+        fps,
+        config: { damping: 16, stiffness: 320, mass: 0.5 },
+      })
+    : 0;
   // el trazo dura lo que dura la palabra (entre 0,18 y 0,4 s)
   const dur = Math.min(0.4, Math.max(0.18, w.end - w.start));
   const paint = interpolate(t, [w.start, w.start + dur], [0, 1], {
@@ -67,6 +78,21 @@ const WordView: React.FC<{ w: Word; t: number }> = ({ w, t }) => {
     >
       {w.underline ? <Highlighter p={paint} /> : null}
       {w.text}
+      {w.underline ? (
+        // la palabra pasa a negro por donde ya ha pintado el subrayador
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            color: INK,
+            WebkitTextStroke: "0px",
+            textShadow: "none",
+            clipPath: `inset(-20% ${(1 - paint) * 100}% -20% -5%)`,
+          }}
+        >
+          {w.text}
+        </span>
+      ) : null}
     </span>
   );
 };
@@ -77,7 +103,9 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
   const t = page[0].start + frame / fps;
   const cta = page[0].speaker === "YAGO";
   return (
-    <AbsoluteFill style={{ top: cta ? 1400 : 1370, height: "auto", alignItems: "center" }}>
+    <AbsoluteFill
+      style={{ top: cta ? 1400 : 1360, height: "auto", alignItems: "center" }}
+    >
       <div
         style={{
           display: "flex",
@@ -96,7 +124,8 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
           WebkitTextStroke: "10px rgba(0,0,0,0.92)",
           paintOrder: "stroke fill",
           // glow sutil
-          textShadow: "0 0 18px rgba(255,255,255,0.28), 0 0 42px rgba(255,255,255,0.1)",
+          textShadow:
+            "0 0 18px rgba(255,255,255,0.28), 0 0 42px rgba(255,255,255,0.1)",
         }}
       >
         {page.map((w, i) => (
@@ -109,14 +138,25 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
 
 export const Captions: React.FC = () => (
   <AbsoluteFill>
-    {captionPages.map((page, i) => {
-      const next = captionPages[i + 1];
+    {visiblePages.map((page, i) => {
+      const next = visiblePages[i + 1];
       const from = f(Math.max(TRIM, page[0].start));
-      const endS = Math.min(page[page.length - 1].end + 0.35, next ? next[0].start : Infinity);
+      // los subtítulos se ocultan en cuanto entra una escena de motion graphics
+      const nextScene = scenes.find((s) => s.from > page[0].start);
+      const endS = Math.min(
+        page[page.length - 1].end + 0.35,
+        next ? next[0].start : Infinity,
+        nextScene ? nextScene.from + 0.1 : Infinity,
+      );
       const dur = f(endS) - from;
       if (dur <= 0) return null;
       return (
-        <Sequence key={i} from={from} durationInFrames={dur} name={`Subtítulo · ${page.map((w) => w.text).join(" ")}`}>
+        <Sequence
+          key={i}
+          from={from}
+          durationInFrames={dur}
+          name={`Subtítulo · ${page.map((w) => w.text).join(" ")}`}
+        >
           <Page page={page} />
         </Sequence>
       );

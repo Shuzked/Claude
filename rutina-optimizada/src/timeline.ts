@@ -185,41 +185,35 @@ export const impacts = [1.47, 3.72, 7.36, 8.72, 24.32];
 export const whips = [3.7, 6.3, 11.0, 23.1, 25.8, 36.0, 50.0, 57.1, 61.7];
 
 // --- Escenas de motion graphics a pantalla completa ---------------------------
-// Durante una escena el fondo texturizado ocupa toda la pantalla y el vídeo se
-// encoge a una ventana (así se mantiene la cara que pide el guion: E02, E06, E07, E08).
-export type Scene = { id: string; from: number; to: number; title: string };
+// Durante una escena todo es motion graphics: el fondo texturizado tapa el vídeo
+// (la voz sigue sonando) y no se muestran subtítulos.
+export type Scene = {
+  id: string;
+  from: number;
+  to: number;
+  title: string;
+  // "full": todo motion graphics, tapa el vídeo. "overlay": gráficos encima de la persona.
+  mode: "full" | "overlay";
+};
 
 export const SCENE_IN = 0.42;
 export const SCENE_OUT = 0.36;
 
+// Se alternan escenas completas y gráficos sobre la persona; el final es la persona.
 export const scenes: Scene[] = [
-  { id: "excel", from: 6.94, to: 9.66, title: "Excel" },
-  { id: "tools", from: 11.4, to: 14.62, title: "Cambios" },
-  { id: "videos", from: 23.95, to: 25.92, title: "Vídeos" },
-  { id: "prio", from: 33.5, to: 36.05, title: "Ajuste" },
-  { id: "falta", from: 38.6, to: 40.75, title: "Falta" },
-  { id: "check", from: 45.1, to: 50.0, title: "Revisar" },
-  { id: "options", from: 53.5, to: 57.1, title: "Decidir" },
-  { id: "cta", from: 61.6, to: 65.6, title: "Plan" },
+  { id: "excel", from: 6.94, to: 9.66, title: "Excel", mode: "full" },
+  { id: "tools", from: 11.0, to: 14.62, title: "Cambios", mode: "full" },
+  { id: "videos", from: 23.2, to: 25.85, title: "Vídeos", mode: "overlay" },
+  { id: "prio", from: 31.8, to: 36.0, title: "Ajuste", mode: "full" },
+  { id: "falta", from: 38.5, to: 40.75, title: "Falta", mode: "overlay" },
+  { id: "check", from: 44.6, to: 49.98, title: "Revisar", mode: "full" },
+  { id: "options", from: 52.2, to: 57.1, title: "Decidir", mode: "full" },
+  { id: "cta", from: 61.6, to: 65.6, title: "Plan", mode: "overlay" },
 ];
-
-const smooth = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2;
-};
 
 const isLast = (s: Scene) => s.to >= SOURCE_END - 0.05;
 
-/** 0 = vídeo a pantalla completa, 1 = vídeo en ventana (escena activa). */
-export const sceneAmount = (t: number) => {
-  for (const s of scenes) {
-    if (t >= s.from && t <= s.to) {
-      const out = isLast(s) ? 1 : smooth((s.to - t) / SCENE_OUT);
-      return Math.min(smooth((t - s.from) / SCENE_IN), out);
-    }
-  }
-  return 0;
-};
+export const sceneAt = (t: number) => scenes.find((s) => t >= s.from && t < s.to);
 
 // Mitad de la entrada y de la salida de cada escena (llevan whoosh salvo que ya tengan golpe).
 export const panelIns = scenes.flatMap((s) => (isLast(s) ? [s.from + 0.2] : [s.from + 0.2, s.to - 0.18]));
@@ -286,7 +280,9 @@ export const captionPages: Word[][] = [];
 }
 
 // TIC en cada página nueva de subtítulos, salvo que coincida con otro efecto.
-const tics: Sfx[] = captionPages
+export const visiblePages = captionPages.filter((p) => !sceneAt(p[0].start));
+
+const tics: Sfx[] = visiblePages
   .map((p) => p[0].start)
   .filter((at) => !sfx.some((s) => Math.abs(s.at - at) < 0.18))
   .map((at) => ({ at, src: "tic" as const, volume: 0.3 }));
