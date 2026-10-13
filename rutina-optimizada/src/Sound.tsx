@@ -2,7 +2,7 @@ import { Audio } from "@remotion/media";
 import React from "react";
 import { interpolate, Sequence, staticFile } from "remotion";
 import { FPS } from "./theme";
-import { allSfx, DURATION_FRAMES, f, FX_PEAK, words, type FxName } from "./timeline";
+import { allSfx, DURATION_FRAMES, f, FX_DIR, FX_PEAK, words, type FxName } from "./timeline";
 
 // Mezcla: la voz (ya procesada en el vídeo) manda; la música baja cuando se
 // habla y sube en las pausas; los efectos van por encima de la música.
@@ -37,6 +37,8 @@ const SFX_GAIN: Record<FxName, number> = {
   hit: 1.1,
   riser: 1,
   snap: 1,
+  marker: 1,
+  pop: 1,
 };
 
 export const Sound: React.FC = () => (
@@ -59,7 +61,7 @@ export const Sound: React.FC = () => (
       const from = Math.max(0, f(s.at - FX_PEAK[name]));
       return (
         <Sequence key={i} from={from} durationInFrames={4 * FPS} name={`SFX · ${name}`} layout="none">
-          <Audio src={staticFile(`audio/fx/${name}.wav`)} volume={s.volume * SFX_GAIN[name]} />
+          <Audio src={staticFile(`audio/${FX_DIR[name]}/${name}.wav`)} volume={s.volume * SFX_GAIN[name]} />
         </Sequence>
       );
     })}

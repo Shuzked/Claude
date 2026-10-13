@@ -165,7 +165,7 @@ export const punches: Punch[] = [
 // `at` es el momento del IMPACTO en segundos del original; Sound.tsx adelanta
 // cada archivo lo necesario para que su pico caiga ahí.
 
-export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b";
+export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b" | "marker" | "pop";
 
 export const FX_PEAK: Record<FxName, number> = {
   hit: 0.27,
@@ -174,6 +174,21 @@ export const FX_PEAK: Record<FxName, number> = {
   tic: 0.03,
   "whoosh-a": 0.5,
   "whoosh-b": 0.58,
+  marker: 0.02,
+  pop: 0.005,
+};
+
+// Carpeta de cada efecto: fx/ son los aportados (no se suben al repo),
+// ui/ son los sintetizados en audio-src/ui_sfx.py.
+export const FX_DIR: Record<FxName, "fx" | "ui"> = {
+  hit: "fx",
+  riser: "fx",
+  snap: "fx",
+  tic: "fx",
+  "whoosh-a": "fx",
+  "whoosh-b": "fx",
+  marker: "ui",
+  pop: "ui",
 };
 
 export type Sfx = { at: number; src: FxName | "whoosh"; volume: number };
@@ -240,7 +255,50 @@ for (const at of [...whips, ...panelIns].sort((a, b) => a - b)) {
 }
 whooshes.forEach((w, i) => (w.src = i % 2 === 0 ? "whoosh-a" : "whoosh-b"));
 
-export const sfx: Sfx[] = [...designed, ...whooshes];
+// Motion graphics: tic en cada línea de titular, trazo en cada subrayado y pop
+// suave en cada elemento que aparece. Tiempos en segundos del original.
+const headline = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "tic", volume: 0.3 }));
+const marker = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "marker", volume: 0.4 }));
+const pop = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "pop", volume: 0.22 }));
+
+const graphicsSfx: Sfx[] = [
+  // 01 · Excel → pecho
+  ...headline(7.21, 7.34, 8.11, 8.26),
+  ...marker(7.36, 8.2, 8.48),
+  ...pop(7.4, 8.25),
+  // 02 · lo que ha cambiado
+  ...headline(11.27, 11.4),
+  ...pop(11.62, 12.42, 13.7),
+  ...marker(11.74, 12.54, 13.82),
+  // 03 · tres vídeos (sobre la persona)
+  ...pop(23.47, 23.62, 23.77, 24.32),
+  ...marker(24.6),
+  // 04 · ajustar el trabajo a
+  ...headline(32.07, 32.2),
+  ...pop(33.7, 34.86),
+  // 05 · solo lo que haga falta (sobre la persona)
+  ...headline(38.91, 39.5),
+  ...marker(39.6),
+  ...pop(39.7, 39.85),
+  // 06 · antes de añadir más
+  ...headline(45.24, 45.7),
+  ...pop(47.07, 47.91, 48.99),
+  { at: 47.32, src: "snap", volume: 0.14 },
+  { at: 48.16, src: "snap", volume: 0.14 },
+  { at: 49.24, src: "snap", volume: 0.14 },
+  // 07 · ¿qué tengo que hacer?
+  ...headline(52.47, 52.6),
+  ...pop(54.0, 54.72, 55.8),
+  ...marker(54.12, 54.84, 55.92),
+  // 08 · CTA: «Comenta», caja, tecleo de PLAN, enviar
+  ...headline(61.92),
+  ...pop(62.02),
+  ...[0, 1, 2, 3].map((i) => ({ at: 62.12 + i * 0.07, src: "tic" as const, volume: 0.22 })),
+  { at: 62.57, src: "snap", volume: 0.25 },
+  ...pop(62.6),
+];
+
+export const sfx: Sfx[] = [...designed, ...whooshes, ...graphicsSfx];
 
 // --- Páginas de subtítulos ---------------------------------------------------
 // Máximo 3 palabras; se corta al final de frase, en coma, al cambiar de
