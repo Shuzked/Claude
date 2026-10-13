@@ -94,24 +94,6 @@ const label: React.CSSProperties = {
   textShadow: GREEN_TEXT_GLOW,
 };
 
-/** Texto que sube detrás de una máscara. */
-const MaskUp: React.FC<{
-  p: number;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}> = ({ p, children, style }) => (
-  <div
-    style={{
-      overflow: "hidden",
-      padding: "6px 14px 6px 4px",
-      margin: "-6px -14px -6px -4px",
-      ...style,
-    }}
-  >
-    <div style={{ transform: `translateY(${(1 - p) * 115}%)` }}>{children}</div>
-  </div>
-);
-
 /** Subrayador: trazo verde irregular que pinta de izquierda a derecha detrás del
  *  contenido; el texto se mantiene en blanco y gana glow al pintarse. */
 const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
@@ -1357,7 +1339,7 @@ const ToolsScene: React.FC = () => (
 
 const VideosScene: React.FC = () => {
   const three = useSpringAt(rel("videos", 24.32), 12);
-  const word = useReveal(rel("videos", 24.6) - 0.05, 0.35);
+  const word = useSpringAt(rel("videos", 24.6) - 0.05, 12);
   const mark = useReveal(rel("videos", 24.6), 0.35);
   return (
     <div
@@ -1389,13 +1371,19 @@ const VideosScene: React.FC = () => {
         >
           <RollingNumber value={3} at={rel("videos", 24.32)} size={230} />
         </div>
-        <MaskUp p={word} style={{ marginTop: 6 }}>
+        <div
+          style={{
+            marginTop: 10,
+            transform: `translateY(${(1 - word) * 30}px) scale(${0.8 + 0.2 * word})`,
+            opacity: word,
+          }}
+        >
           <Marker p={mark}>
             <div style={{ ...display, fontSize: 56, padding: "0 8px" }}>
               vídeos
             </div>
           </Marker>
-        </MaskUp>
+        </div>
       </div>
     </div>
   );
