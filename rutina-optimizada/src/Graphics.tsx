@@ -20,7 +20,6 @@ import {
   TargetIcon,
   VolumeIcon,
 } from "./Icons";
-import { Character, QuestionMarks, type Mood, type Pose } from "./Characters";
 import { FONT, GREEN, INK, PAPER } from "./theme";
 import {
   f,
@@ -37,10 +36,10 @@ import {
 // ---------------------------------------------------------------------------
 // Estilo y animación
 
-const BG = "#E9E9E5"; // gris claro neutro de las escenas completas
+const BG = "#121212"; // negro neutro, no puro
 const GLOW = "drop-shadow(0 0 10px rgba(4, 228, 0, 0.55))";
 const GLOW_SOFT = "drop-shadow(0 0 18px rgba(4, 228, 0, 0.35))";
-const TEXT_GLOW = "var(--text-glow)";
+const TEXT_GLOW = "0 0 22px rgba(255,255,255,0.22)";
 const GREEN_TEXT_GLOW = "0 0 18px rgba(4,228,0,0.55)";
 
 // Zona de contenido bajo la ventana del vídeo (encima de los subtítulos).
@@ -80,7 +79,7 @@ const display: React.CSSProperties = {
   letterSpacing: -1,
   lineHeight: 0.95,
   whiteSpace: "nowrap",
-  color: "var(--fg)",
+  color: PAPER,
   textShadow: TEXT_GLOW,
 };
 
@@ -90,9 +89,9 @@ const label: React.CSSProperties = {
   fontSize: 24,
   letterSpacing: 6,
   textTransform: "uppercase",
-  color: "var(--accent-text)",
+  color: GREEN,
   whiteSpace: "nowrap",
-  textShadow: "var(--accent-glow)",
+  textShadow: GREEN_TEXT_GLOW,
 };
 
 /** Texto que sube detrás de una máscara. */
@@ -146,7 +145,7 @@ const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
       <div
         style={{
           position: "relative",
-          filter: `drop-shadow(0 0 ${6 + 12 * p}px rgba(var(--glow-rgb),${0.25 + 0.45 * p}))`,
+          filter: `drop-shadow(0 0 ${6 + 12 * p}px rgba(255,255,255,${0.25 + 0.45 * p}))`,
         }}
       >
         {children}
@@ -195,14 +194,14 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
         <AbsoluteFill
           style={{
             background:
-              "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.6), transparent 70%)",
+              "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.06), transparent 70%)",
           }}
         />
         {/* cuadrícula técnica */}
         <AbsoluteFill
           style={{
             backgroundImage:
-              "linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px)",
+              "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
             backgroundSize: "60px 60px",
             backgroundPosition: `${-drift * 0.3}px ${-drift * 0.15}px`,
           }}
@@ -240,7 +239,7 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
                 operator="out"
                 result="ring"
               />
-              <feFlood floodColor="#000000" floodOpacity={0.06} />
+              <feFlood floodColor="#ffffff" floodOpacity={0.08} />
               <feComposite in2="ring" operator="in" />
             </filter>
           </defs>
@@ -261,11 +260,7 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
         <svg
           width="100%"
           height="100%"
-          style={{
-            position: "absolute",
-            opacity: 0.1,
-            mixBlendMode: "multiply",
-          }}
+          style={{ position: "absolute", opacity: 0.2, mixBlendMode: "screen" }}
         >
           <filter id={`bd-${scene.id}-${seed}`}>
             <feTurbulence
@@ -286,7 +281,7 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
         <AbsoluteFill
           style={{
             background:
-              "repeating-linear-gradient(0deg, rgba(0,0,0,0.012) 0px, rgba(0,0,0,0.012) 1px, transparent 1px, transparent 4px)",
+              "repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px)",
           }}
         />
         {scratch ? (
@@ -297,12 +292,12 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
               bottom: 0,
               left: `${scratchX}%`,
               width: 1.5,
-              background: "rgba(0,0,0,0.07)",
+              background: "rgba(255,255,255,0.14)",
             }}
           />
         ) : null}
         <AbsoluteFill
-          style={{ boxShadow: "inset 0 0 200px rgba(0,0,0,0.06)" }}
+          style={{ boxShadow: "inset 0 0 200px rgba(0,0,0,0.3)" }}
         />
       </AbsoluteFill>
       {/* borde de la cortinilla */}
@@ -339,34 +334,8 @@ const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({
         easing: easeInOut,
       });
   const scrimIn = interpolate(t, [0, 0.3], [0, 1], clamp);
-  // Variables de tema: escenas completas en claro, gráficos sobre la persona en oscuro.
-  const vars = (
-    overlay
-      ? {
-          "--fg": PAPER,
-          "--muted": "rgba(255,255,255,0.5)",
-          "--text-glow": "0 0 22px rgba(255,255,255,0.22)",
-          "--glow-rgb": "255,255,255",
-          "--accent-text": GREEN,
-          "--accent-glow": "0 0 18px rgba(4,228,0,0.55)",
-          "--card-bg": "rgba(255,255,255,0.035)",
-          "--card-border": "1.5px solid rgba(255,255,255,0.1)",
-          "--rule": "1.5px solid rgba(255,255,255,0.08)",
-        }
-      : {
-          "--fg": INK,
-          "--muted": "rgba(0,0,0,0.45)",
-          "--text-glow": "none",
-          "--glow-rgb": "255,255,255",
-          "--accent-text": INK,
-          "--accent-glow": "none",
-          "--card-bg": "#FFFFFF",
-          "--card-border": "1.5px solid rgba(0,0,0,0.08)",
-          "--rule": "1.5px solid rgba(0,0,0,0.08)",
-        }
-  ) as React.CSSProperties;
   return (
-    <AbsoluteFill style={vars}>
+    <AbsoluteFill>
       {overlay ? (
         <AbsoluteFill
           style={{
@@ -384,7 +353,7 @@ const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({
           width: AREA.w,
           height: overlay ? 520 : 1920,
           opacity: 1 - out,
-          transform: `translateX(${out * 60}px)`,
+          transform: `scale(${1 - 0.12 * out}) translateY(${out * 30}px)`,
         }}
       >
         {children}
@@ -423,8 +392,8 @@ const SceneContent: React.FC<{ id: string; children: React.ReactNode }> = ({
 };
 
 // Composición de una escena completa: titular arriba y recurso visual debajo.
-const HEADLINE_TOP = 330;
-const VISUAL_TOP = 690;
+const HEADLINE_TOP = 430;
+const VISUAL_TOP = 880;
 
 /** Titular palabra a palabra. `lines` en segundos del original; `origin` es el
  *  segundo del original en el que empieza la Sequence donde se pinta. */
@@ -452,11 +421,20 @@ const HeadlineWord: React.FC<{ text: string; at: number; size: number }> = ({
   at,
   size,
 }) => {
-  const p = useReveal(at, 0.32);
+  // pop elástico: escala con rebote, giro que se asienta y pequeño salto
+  const p = useSpringAt(at, 9);
+  const shown = useT() >= at;
   return (
-    <MaskUp p={p} style={{ display: "inline-block" }}>
+    <div
+      style={{
+        display: "inline-block",
+        transform: `translateY(${(1 - p) * 40}px) scale(${0.3 + 0.7 * p}) rotate(${(1 - p) * -10}deg)`,
+        opacity: shown ? Math.min(1, p * 2.5) : 0,
+        transformOrigin: "50% 80%",
+      }}
+    >
       <div style={{ ...display, fontSize: size }}>{text}</div>
-    </MaskUp>
+    </div>
   );
 };
 
@@ -501,39 +479,84 @@ const Visual: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </div>
 );
 
-/** Personaje en la parte baja de una escena completa. `talkFrom`/`talkTo` en s del original. */
-const Actor: React.FC<{
-  who: "trainer" | "client";
-  pose?: Pose;
-  mood?: Mood;
-  at?: number;
-  questions?: number; // segundos desde el inicio de la escena en que salen los «?»
-}> = ({ who, pose, mood, at = SCENE_IN, questions }) => (
-  <div
-    style={{
-      position: "absolute",
-      top: 1150,
-      left: 0,
-      right: 0,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-    }}
-  >
-    {questions !== undefined ? (
-      <div style={{ position: "absolute", top: -70 }}>
-        <QuestionMarks at={questions} />
-      </div>
-    ) : null}
-    <Character who={who} pose={pose} mood={mood} at={at} talking scale={1.45} />
-  </div>
-);
-
 const sceneFrom = (id: string) => scenes.find((s) => s.id === id)!.from;
 
 /** Tiempo del original → segundos desde el inicio de la escena. */
 const rel = (id: string, sourceSeconds: number) =>
   sourceSeconds - scenes.find((s) => s.id === id)!.from;
+
+/** Número que rueda dígito a dígito hasta su valor (estilo cuentakilómetros). */
+const RollingNumber: React.FC<{
+  value: number;
+  at: number;
+  size: number;
+  color?: string;
+}> = ({ value, at, size, color }) => {
+  const t = useT();
+  const p = interpolate(t, [at, at + 0.55], [0, 1], {
+    ...clamp,
+    easing: Easing.bezier(0.2, 0.8, 0.2, 1.08),
+  });
+  const pos = p * value;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        height: size * 0.95,
+        overflow: "hidden",
+        verticalAlign: "bottom",
+        lineHeight: 0.95,
+      }}
+    >
+      <span
+        style={{
+          display: "block",
+          transform: `translateY(${-pos * size * 0.95}px)`,
+        }}
+      >
+        {Array.from({ length: value + 2 }).map((_, d) => (
+          <span
+            key={d}
+            style={{ display: "block", height: size * 0.95, color }}
+          >
+            {d}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+};
+
+/** Sello que cae de golpe sobre un elemento. */
+const Stamp: React.FC<{ at: number; text: string }> = ({ at, text }) => {
+  const t = useT();
+  const p = interpolate(t, [at, at + 0.12], [0, 1], {
+    ...clamp,
+    easing: Easing.in(Easing.quad),
+  });
+  if (t < at) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: -10,
+        top: 40,
+        transform: `rotate(-12deg) scale(${2.2 - 1.2 * p})`,
+        opacity: Math.min(1, p * 1.5),
+        border: `6px solid ${GREEN}`,
+        borderRadius: 10,
+        padding: "6px 18px",
+        ...display,
+        fontSize: 44,
+        color: GREEN,
+        textShadow: "0 0 18px rgba(4,228,0,0.55)",
+        filter: GLOW,
+      }}
+    >
+      {text}
+    </div>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // 01 · E02 «el Excel» → «el pecho sigue igual»
@@ -569,7 +592,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
               width: 12,
               height: 12,
               borderRadius: 6,
-              background: i === 0 ? GREEN : "rgba(0,0,0,0.18)",
+              background: i === 0 ? GREEN : "rgba(255,255,255,0.25)",
             }}
           />
         ))}
@@ -586,7 +609,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
             key={`l${i}`}
             x={x0 + widths.slice(0, i).reduce((a, b) => a + b, 0) + 10}
             y={18}
-            fill="rgba(0,0,0,0.4)"
+            fill="rgba(255,255,255,0.35)"
             fontFamily={FONT}
             fontWeight={700}
             fontSize={16}
@@ -630,7 +653,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
             key={`n${r}`}
             x={14}
             y={28 + rowH * r + 30}
-            fill="rgba(0,0,0,0.4)"
+            fill="rgba(255,255,255,0.35)"
             fontFamily={FONT}
             fontWeight={700}
             fontSize={16}
@@ -647,7 +670,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
             x2={x0 + W * grid}
             y1={28 + rowH * r}
             y2={28 + rowH * r}
-            stroke="rgba(0,0,0,0.14)"
+            stroke="rgba(255,255,255,0.22)"
             strokeWidth={1.5}
           />
         ))}
@@ -660,7 +683,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
               x2={x}
               y1={28}
               y2={28 + rowH * (rows + 1) * grid}
-              stroke="rgba(0,0,0,0.14)"
+              stroke="rgba(255,255,255,0.22)"
               strokeWidth={1.5}
             />
           );
@@ -670,7 +693,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
           x2={x0 + W}
           y1={28}
           y2={28 + rowH * (rows + 1) * grid}
-          stroke="rgba(0,0,0,0.14)"
+          stroke="rgba(255,255,255,0.22)"
           strokeWidth={1.5}
         />
         {/* contenido de celdas: barras como texto difuminado */}
@@ -689,7 +712,7 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
               width={w * p}
               height={9}
               rx={2}
-              fill="#C4C8CE"
+              fill={PAPER}
               opacity={0.55}
             />
           );
@@ -1000,7 +1023,10 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
   );
 };
 
-const FlatChart: React.FC<{ at: number }> = ({ at }) => {
+const FlatChart: React.FC<{ at: number; stampAt: number }> = ({
+  at,
+  stampAt,
+}) => {
   const t = useT();
   const axes = useReveal(at, 0.35);
   const line = useReveal(at + 0.2, 0.6, Easing.linear);
@@ -1008,8 +1034,17 @@ const FlatChart: React.FC<{ at: number }> = ({ at }) => {
   const H = 190;
   const y = H * 0.55;
   const dot = 0.6 + 0.4 * Math.sin(t * 10);
+  const hit = (t - stampAt) * 25;
+  const shake =
+    hit > 0 && hit < 10 ? Math.sin(hit * 2.6) * 8 * Math.exp(-hit / 3) : 0;
   return (
-    <div>
+    <div
+      style={{
+        position: "relative",
+        transform: `translate(${shake}px, ${-shake * 0.5}px)`,
+      }}
+    >
+      <Stamp at={stampAt} text="Sin cambios" />
       <div style={label}>Pecho · progreso</div>
       <svg
         width={W}
@@ -1023,7 +1058,7 @@ const FlatChart: React.FC<{ at: number }> = ({ at }) => {
             x2={W}
             y1={H * g}
             y2={H * g}
-            stroke="rgba(0,0,0,0.07)"
+            stroke="rgba(255,255,255,0.08)"
             strokeWidth={1.5}
             opacity={axes}
           />
@@ -1031,7 +1066,7 @@ const FlatChart: React.FC<{ at: number }> = ({ at }) => {
         <path
           d={`M 30 0 L 30 ${H} L ${W} ${H}`}
           fill="none"
-          stroke={INK}
+          stroke={PAPER}
           strokeWidth={3}
           strokeDasharray={W + H}
           strokeDashoffset={(W + H) * (1 - axes)}
@@ -1041,7 +1076,7 @@ const FlatChart: React.FC<{ at: number }> = ({ at }) => {
             key={i}
             x={46 + i * 60}
             y={H + 28}
-            fill="rgba(0,0,0,0.45)"
+            fill="rgba(255,255,255,0.4)"
             fontFamily={FONT}
             fontWeight={700}
             fontSize={15}
@@ -1112,25 +1147,8 @@ const ExcelScene: React.FC = () => {
       >
         <Headline lines={headlines.excelA} origin={sceneFrom("excel")} />
         <Visual>
-          <div
-            style={{
-              margin: "0 auto",
-              width: 930,
-              padding: "22px 0 16px 6px",
-              background: "#FFFFFF",
-              borderRadius: 18,
-              boxShadow: "0 18px 40px rgba(0,0,0,0.08)",
-              transform: "rotate(-1.2deg)",
-            }}
-          >
-            <div
-              style={{ transform: "scale(0.95)", transformOrigin: "top left" }}
-            >
-              <Spreadsheet at={SCENE_IN} />
-            </div>
-          </div>
+          <Spreadsheet at={SCENE_IN} />
         </Visual>
-        <Actor who="client" pose="laptop" mood="smug" at={SCENE_IN - 0.05} />
       </div>
       {/* vista B: «el pecho sigue igual» + torso iluminado + gráfica plana */}
       <div
@@ -1160,7 +1178,7 @@ const ExcelScene: React.FC = () => {
                 glowAt={rel("excel", 8.2) - swapAt}
                 zoomAt={rel("excel", 8.48) - swapAt}
               />
-              <FlatChart at={0.15} />
+              <FlatChart at={0.15} stampAt={rel("excel", 8.72) - swapAt} />
             </div>
           </Visual>
         </Sequence>
@@ -1181,7 +1199,12 @@ const Card: React.FC<{
   // pinta el título con subrayador (destacados del guion)
   marker?: boolean;
 }> = ({ at, index, title, children, width = 290, marker }) => {
-  const p = useSpringAt(at, 15);
+  const p = useSpringAt(at, 10);
+  const t = useT();
+  const float =
+    Math.sin((t - at) * 2.4 + index * 1.7) *
+    6 *
+    Math.min(1, Math.max(0, t - at - 0.4));
   const line = useReveal(at + 0.1, 0.4);
   const m = useReveal(at + 0.12, 0.35);
   return (
@@ -1190,9 +1213,9 @@ const Card: React.FC<{
         position: "relative",
         width,
         height: 380,
-        background: "var(--card-bg)",
-        border: "var(--card-border)",
-        transform: `translateY(${(1 - p) * 60}px)`,
+        background: "rgba(255,255,255,0.035)",
+        border: "1.5px solid rgba(255,255,255,0.1)",
+        transform: `translateY(${(1 - p) * 60 + float}px) scale(${0.85 + 0.15 * p})`,
         opacity: Math.min(1, p * 2),
         padding: "20px 18px 34px",
         overflow: "hidden",
@@ -1219,7 +1242,7 @@ const Card: React.FC<{
         style={{
           ...label,
           fontSize: 20,
-          color: "var(--muted)",
+          color: "rgba(255,255,255,0.45)",
           textShadow: "none",
           letterSpacing: 4,
           paddingLeft: 4,
@@ -1268,7 +1291,17 @@ const ToolsScene: React.FC = () => (
         <Card at={rel("tools", 11.62)} index={1} title="Volumen" marker>
           <VolumeIcon at={rel("tools", 11.7)} />
         </Card>
-        <Card at={rel("tools", 12.42)} index={2} title="Frecuencia 3" marker>
+        <Card
+          at={rel("tools", 12.42)}
+          index={2}
+          title={
+            <>
+              Frecuencia{" "}
+              <RollingNumber value={3} at={rel("tools", 12.96)} size={30} />
+            </>
+          }
+          marker
+        >
           <CalendarIcon at={rel("tools", 12.5)} />
         </Card>
         <Card at={rel("tools", 13.7)} index={3} title="Drop sets" marker>
@@ -1276,7 +1309,6 @@ const ToolsScene: React.FC = () => (
         </Card>
       </div>
     </Visual>
-    <Actor who="client" pose="phone" mood="happy" at={SCENE_IN} />
   </>
 );
 
@@ -1315,7 +1347,7 @@ const VideosScene: React.FC = () => {
             opacity: Math.min(1, three * 2),
           }}
         >
-          3
+          <RollingNumber value={3} at={rel("videos", 24.32)} size={230} />
         </div>
         <MaskUp p={word} style={{ marginTop: 6 }}>
           <Marker p={mark}>
@@ -1351,7 +1383,6 @@ const PrioScene: React.FC = () => {
           </Card>
         </div>
       </Visual>
-      <Actor who="trainer" pose="point" mood="neutral" at={SCENE_IN} />
     </>
   );
 };
@@ -1438,7 +1469,7 @@ const CheckRow: React.FC<{
         alignItems: "center",
         gap: 40,
         height: 104,
-        borderBottom: "var(--rule)",
+        borderBottom: "1.5px solid rgba(255,255,255,0.08)",
         opacity: row,
         transform: `translateX(${(1 - row) * -30}px)`,
       }}
@@ -1470,7 +1501,7 @@ const CheckRow: React.FC<{
           width={50}
           height={50}
           fill={tick > 0.5 ? "rgba(4,228,0,0.15)" : "none"}
-          stroke={tick > 0 ? GREEN : INK}
+          stroke={tick > 0 ? GREEN : PAPER}
           strokeWidth={3.5}
         />
         <path
@@ -1510,7 +1541,6 @@ const CheckScene: React.FC = () => {
           />
         </div>
       </Visual>
-      <Actor who="trainer" pose="think" mood="neutral" at={SCENE_IN} />
     </>
   );
 };
@@ -1568,13 +1598,6 @@ const OptionsScene: React.FC = () => (
         />
       </div>
     </Visual>
-    <Actor
-      who="client"
-      pose="shrug"
-      mood="doubt"
-      at={SCENE_IN}
-      questions={SCENE_IN + 0.3}
-    />
   </>
 );
 
