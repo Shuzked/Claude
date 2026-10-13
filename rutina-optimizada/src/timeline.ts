@@ -255,39 +255,80 @@ for (const at of [...whips, ...panelIns].sort((a, b) => a - b)) {
 }
 whooshes.forEach((w, i) => (w.src = i % 2 === 0 ? "whoosh-a" : "whoosh-b"));
 
-// Motion graphics: tic en cada línea de titular, trazo en cada subrayado y pop
+// --- Titulares de las escenas -----------------------------------------------
+// Aparecen palabra a palabra (una cada HEADLINE_STAGGER s), con un tic en cada una.
+// `at` y `marker` en segundos del original.
+export type HeadlineLine = { text: string; at: number; marker?: number };
+export const HEADLINE_STAGGER = 0.11;
+
+export const headlines: Record<string, HeadlineLine[]> = {
+  excelA: [
+    { text: "De momento,", at: 7.2 },
+    { text: "el Excel", at: 7.42, marker: 7.62 },
+  ],
+  excelB: [
+    { text: "El pecho", at: 8.12, marker: 8.3 },
+    { text: "sigue igual", at: 8.38, marker: 8.56 },
+  ],
+  tools: [
+    { text: "Lo que", at: 11.27 },
+    { text: "ha cambiado", at: 11.5 },
+  ],
+  prio: [
+    { text: "Ajustar", at: 32.07 },
+    { text: "el trabajo a", at: 32.2 },
+  ],
+  falta: [
+    { text: "Solo lo que", at: 38.91 },
+    { text: "haga falta", at: 39.4, marker: 39.62 },
+  ],
+  check: [
+    { text: "Antes de", at: 45.24 },
+    { text: "añadir más", at: 45.7 },
+  ],
+  options: [
+    { text: "¿Qué tengo", at: 52.47 },
+    { text: "que hacer?", at: 52.75 },
+  ],
+};
+
+/** Momento (segundos del original) en que aparece cada palabra de cada titular. */
+export const headlineWordTimes = Object.values(headlines).flatMap((lines) =>
+  lines.flatMap((l) => l.text.split(" ").map((_, i) => l.at + i * HEADLINE_STAGGER)),
+);
+
+// Motion graphics: tic en cada palabra de titular, trazo en cada subrayado y pop
 // suave en cada elemento que aparece. Tiempos en segundos del original.
 const headline = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "tic", volume: 0.3 }));
+const headlineMarkers = Object.values(headlines).flatMap((lines) =>
+  lines.filter((l) => l.marker !== undefined).map((l) => l.marker as number),
+);
 const marker = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "marker", volume: 0.4 }));
 const pop = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "pop", volume: 0.22 }));
 
 const graphicsSfx: Sfx[] = [
+  // titulares: un tic por palabra y el trazo de cada subrayado
+  ...headline(...headlineWordTimes),
+  ...marker(...headlineMarkers),
   // 01 · Excel → pecho
-  ...headline(7.21, 7.34, 8.11, 8.26),
-  ...marker(7.36, 8.2, 8.48),
   ...pop(7.4, 8.25),
   // 02 · lo que ha cambiado
-  ...headline(11.27, 11.4),
   ...pop(11.62, 12.42, 13.7),
   ...marker(11.74, 12.54, 13.82),
   // 03 · tres vídeos (sobre la persona)
   ...pop(23.47, 23.62, 23.77, 24.32),
+  ...headline(24.55),
   ...marker(24.6),
   // 04 · ajustar el trabajo a
-  ...headline(32.07, 32.2),
   ...pop(33.7, 34.86),
   // 05 · solo lo que haga falta (sobre la persona)
-  ...headline(38.91, 39.5),
-  ...marker(39.6),
   ...pop(39.7, 39.85),
   // 06 · antes de añadir más
-  ...headline(45.24, 45.7),
   ...pop(47.07, 47.91, 48.99),
   { at: 47.32, src: "snap", volume: 0.14 },
   { at: 48.16, src: "snap", volume: 0.14 },
   { at: 49.24, src: "snap", volume: 0.14 },
   // 07 · ¿qué tengo que hacer?
-  ...headline(52.47, 52.6),
   ...pop(54.0, 54.72, 55.8),
   ...marker(54.12, 54.84, 55.92),
   // 08 · CTA: «Comenta», caja, tecleo de PLAN, enviar

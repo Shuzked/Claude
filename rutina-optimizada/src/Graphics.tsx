@@ -11,10 +11,13 @@ import {
 import { FONT, GREEN, INK, PAPER } from "./theme";
 import {
   f,
+  HEADLINE_STAGGER,
+  headlines,
   SCENE_IN,
   SCENE_OUT,
   scenes,
   SOURCE_END,
+  type HeadlineLine,
   type Scene,
 } from "./timeline";
 
@@ -349,34 +352,65 @@ const SceneContent: React.FC<{ id: string; children: React.ReactNode }> = ({
 const HEADLINE_TOP = 430;
 const VISUAL_TOP = 880;
 
-type HeadLine = { text: string; at: number; marker?: number };
-
-const Headline: React.FC<{ lines: HeadLine[]; size?: number }> = ({
-  lines,
-  size = 118,
-}) => (
-  <div style={{ position: "absolute", top: HEADLINE_TOP, left: 0, right: 0 }}>
+/** Titular palabra a palabra. `lines` en segundos del original; `origin` es el
+ *  segundo del original en el que empieza la Sequence donde se pinta. */
+const Headline: React.FC<{
+  lines: HeadlineLine[];
+  origin: number;
+  size?: number;
+  absolute?: boolean;
+}> = ({ lines, origin, size = 118, absolute = true }) => (
+  <div
+    style={
+      absolute
+        ? { position: "absolute", top: HEADLINE_TOP, left: 0, right: 0 }
+        : undefined
+    }
+  >
     {lines.map((l, i) => (
-      <HeadlineLine key={i} {...l} size={size} />
+      <HeadlineRow key={i} line={l} origin={origin} size={size} />
     ))}
   </div>
 );
 
-const HeadlineLine: React.FC<HeadLine & { size: number }> = ({
+const HeadlineWord: React.FC<{ text: string; at: number; size: number }> = ({
   text,
   at,
-  marker,
   size,
 }) => {
-  const p = useReveal(at, 0.42);
-  const m = useReveal(marker ?? 999, 0.35);
-  const body = (
-    <div style={{ ...display, fontSize: size, padding: "0 10px" }}>{text}</div>
+  const p = useReveal(at, 0.32);
+  return (
+    <MaskUp p={p} style={{ display: "inline-block" }}>
+      <div style={{ ...display, fontSize: size }}>{text}</div>
+    </MaskUp>
+  );
+};
+
+const HeadlineRow: React.FC<{
+  line: HeadlineLine;
+  origin: number;
+  size: number;
+}> = ({ line, origin, size }) => {
+  const m = useReveal(
+    line.marker !== undefined ? line.marker - origin : 999,
+    0.35,
+  );
+  const row = (
+    <div style={{ display: "flex", gap: size * 0.22, padding: "0 10px" }}>
+      {line.text.split(" ").map((w, i) => (
+        <HeadlineWord
+          key={i}
+          text={w}
+          at={line.at - origin + i * HEADLINE_STAGGER}
+          size={size}
+        />
+      ))}
+    </div>
   );
   return (
-    <MaskUp p={p} style={{ display: "block", marginBottom: 4 }}>
-      {marker !== undefined ? <Marker p={m}>{body}</Marker> : body}
-    </MaskUp>
+    <div style={{ marginBottom: 4 }}>
+      {line.marker !== undefined ? <Marker p={m}>{row}</Marker> : row}
+    </div>
   );
 };
 
@@ -385,6 +419,8 @@ const Visual: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     {children}
   </div>
 );
+
+const sceneFrom = (id: string) => scenes.find((s) => s.id === id)!.from;
 
 /** Tiempo del original → segundos desde el inicio de la escena. */
 const rel = (id: string, sourceSeconds: number) =>
@@ -769,16 +805,7 @@ const ExcelScene: React.FC = () => {
           transform: `translateX(${-swap * 110}%)`,
         }}
       >
-        <Headline
-          lines={[
-            { text: "De momento,", at: SCENE_IN - 0.15 },
-            {
-              text: "el Excel",
-              at: SCENE_IN - 0.02,
-              marker: rel("excel", 7.36),
-            },
-          ]}
-        />
+        <Headline lines={headlines.excelA} origin={sceneFrom("excel")} />
         <Visual>
           <Spreadsheet at={SCENE_IN} />
         </Visual>
@@ -793,18 +820,8 @@ const ExcelScene: React.FC = () => {
       >
         <Sequence from={Math.round(swapAt * fps)} layout="none">
           <Headline
-            lines={[
-              {
-                text: "El pecho",
-                at: 0.05,
-                marker: rel("excel", 8.2) - swapAt,
-              },
-              {
-                text: "sigue igual",
-                at: 0.2,
-                marker: rel("excel", 8.48) - swapAt,
-              },
-            ]}
+            lines={headlines.excelB}
+            origin={sceneFrom("excel") + swapAt}
           />
           <Visual>
             <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
@@ -1036,12 +1053,7 @@ const DropIcon: React.FC<{ at: number }> = ({ at }) => {
 
 const ToolsScene: React.FC = () => (
   <>
-    <Headline
-      lines={[
-        { text: "Lo que", at: SCENE_IN - 0.15 },
-        { text: "ha cambiado", at: SCENE_IN - 0.02 },
-      ]}
-    />
+    <Headline lines={headlines.tools} origin={sceneFrom("tools")} />
     <Visual>
       <div style={{ display: "flex", gap: 45 }}>
         <Card at={rel("tools", 11.62)} index={1} title="Volumen" marker>
@@ -1294,12 +1306,7 @@ const ClockIcon: React.FC<{ at: number }> = ({ at }) => {
 const PrioScene: React.FC = () => {
   return (
     <>
-      <Headline
-        lines={[
-          { text: "Ajustar", at: SCENE_IN - 0.15 },
-          { text: "el trabajo a", at: SCENE_IN - 0.02 },
-        ]}
-      />
+      <Headline lines={headlines.prio} origin={sceneFrom("prio")} />
       <Visual>
         <div style={{ display: "flex", gap: 40 }}>
           <Card
@@ -1324,32 +1331,25 @@ const PrioScene: React.FC = () => {
 
 const FaltaScene: React.FC = () => {
   const t = useT();
-  const a = useReveal(rel("falta", 38.96) - 0.05, 0.35);
-  const b = useReveal(rel("falta", 39.5), 0.35);
-  const mark = useReveal(rel("falta", 39.6), 0.35);
+  const [first, second] = headlines.falta;
   // la rutina se mantiene y solo se ajustan dos piezas
   const blocks = 8;
   const changed = [2, 5];
   return (
     <div>
-      <MaskUp p={a}>
-        <div style={{ ...display, fontSize: 70 }}>Solo lo que</div>
-      </MaskUp>
-      <div style={{ marginTop: 8 }}>
-        <MaskUp p={b} style={{ display: "inline-block" }}>
-          <Marker p={mark}>
-            <div
-              style={{
-                ...display,
-                fontSize: 96,
-                padding: "0 10px",
-                color: PAPER,
-              }}
-            >
-              haga falta
-            </div>
-          </Marker>
-        </MaskUp>
+      <Headline
+        lines={[first]}
+        origin={sceneFrom("falta")}
+        size={70}
+        absolute={false}
+      />
+      <div style={{ display: "inline-block", marginTop: 8 }}>
+        <Headline
+          lines={[second]}
+          origin={sceneFrom("falta")}
+          size={96}
+          absolute={false}
+        />
       </div>
       <div style={{ display: "flex", gap: 14, marginTop: 34 }}>
         {Array.from({ length: blocks }).map((_, i) => {
@@ -1501,12 +1501,7 @@ const CheckScene: React.FC = () => {
   const battery = useReveal(rel("check", 49.3), 0.6);
   return (
     <>
-      <Headline
-        lines={[
-          { text: "Antes de", at: rel("check", 45.24) },
-          { text: "añadir más", at: rel("check", 45.7) },
-        ]}
-      />
+      <Headline lines={headlines.check} origin={sceneFrom("check")} />
       <Visual>
         <CheckRow
           at={rel("check", 47.32)}
@@ -1609,12 +1604,7 @@ const OptionCard: React.FC<{
 
 const OptionsScene: React.FC = () => (
   <>
-    <Headline
-      lines={[
-        { text: "¿Qué tengo", at: SCENE_IN - 0.15 },
-        { text: "que hacer?", at: SCENE_IN - 0.02 },
-      ]}
-    />
+    <Headline lines={headlines.options} origin={sceneFrom("options")} />
     <Visual>
       <div style={{ display: "flex", gap: 24 }}>
         <OptionCard
