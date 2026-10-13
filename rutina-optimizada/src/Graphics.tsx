@@ -1684,8 +1684,8 @@ const CtaScene: React.FC = () => {
         style={{
           position: "relative",
           marginTop: 14,
-          width: 400,
-          height: 190,
+          width: 440,
+          height: 200,
           transform: `scale(${(0.3 + 0.7 * plan) * breathe}) rotate(${-4 + 2 * plan + wiggle}deg)`,
           opacity: Math.min(1, plan * 2.5),
           filter: GLOW_SOFT,
@@ -1697,7 +1697,7 @@ const CtaScene: React.FC = () => {
           style={{ position: "absolute", inset: 0 }}
         >
           <path
-            d="M 10 10 L 392 4 L 384 140 L 132 148 L 74 186 L 82 148 L 16 150 Z"
+            d="M 10 10 L 432 4 L 424 150 L 142 158 L 80 196 L 88 158 L 16 160 Z"
             fill={GREEN}
           />
         </svg>
@@ -1707,9 +1707,13 @@ const CtaScene: React.FC = () => {
             position: "absolute",
             left: 0,
             right: 0,
-            top: 14,
-            textAlign: "center",
-            fontSize: 128,
+            top: 6,
+            height: 152,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 104,
+            paddingRight: 8,
             color: INK,
             textShadow: "none",
           }}
