@@ -14,14 +14,14 @@ y la transcripción por palabra de la toma.
 
 | Archivo | Qué controla |
 | --- | --- |
-| `src/timeline.ts` | Recorte inicial, quién habla, correcciones de la transcripción, palabras clave, planos, golpes de zoom y efectos de sonido. Todo en segundos del original. |
+| `src/timeline.ts` | Recorte inicial, quién habla, correcciones de la transcripción, palabras subrayadas, planos, golpes de zoom, sacudidas, barridos y efectos de sonido. Todo en segundos del original. |
 | `src/transcript.json` | Transcripción por palabra de la toma. |
-| `src/Camera.tsx` | Zoom continuo: empuje lento por plano, golpe en cada corte, golpes en los remates y deriva de cámara en mano. |
-| `src/Captions.tsx` | Subtítulos de 3 palabras, palabra activa sobre caja verde, palabras clave en verde. |
-| `src/Graphics.tsx` | Motion graphics de cada nota del guion (Excel, gráfica plana, herramientas, 3 vídeos, checklist, CTA…). |
-| `src/Sound.tsx` | Música y efectos. |
-| `src/Finish.tsx` | Grano y viñeta. |
-| `audio-src/synth.py` | Genera la música y los efectos (originales, sin samples de terceros). |
+| `src/Camera.tsx` | Zoom continuo: empuje lento por plano, golpe en cada corte, golpes en los remates, deriva de cámara en mano, entrada de golpe, sacudidas y barridos con desenfoque. |
+| `src/Captions.tsx` | Subtítulos palabra a palabra (1 a 3 en pantalla), sin relleno; los destacados del guion se subrayan en verde. |
+| `src/Graphics.tsx` | Motion graphics de cada nota del guion sobre paneles negro neutro con textura vintage y transiciones de entrada y salida. |
+| `src/Sound.tsx` | Música y efectos (cada efecto se alinea por su punto de impacto). |
+| `src/Finish.tsx` | Grano, viñeta y destellos en los golpes. |
+| `audio-src/music.py` | Genera la música: intro electrónica a 127 BPM y parte chill a medio tiempo. |
 
 ## Renderizar
 
@@ -34,8 +34,11 @@ npx remotion studio                                   # previsualizar
 npx remotion render RutinaOptimizada out/final.mp4    # exportar
 ```
 
-Para regenerar el audio: `python3 audio-src/synth.py public/audio` (necesita numpy y scipy) y
-convertir los `.wav` a `.mp3`.
+Efectos de sonido: van en `public/audio/fx/` (`tic`, `whoosh-a`, `whoosh-b`, `hit`, `snap`, `riser`,
+en `.wav`). Son de Epidemic Sound y blogovs (licencia de quien edita), así que no se suben al repo.
+
+Para regenerar la música: `python3 audio-src/music.py music.wav` (necesita numpy y scipy) y
+convertirla a `public/audio/music.mp3`.
 
 ## Antes de publicar (E08)
 

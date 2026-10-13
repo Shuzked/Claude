@@ -24,8 +24,8 @@ export type Word = {
   speaker: Speaker;
   // Fin de frase: los subtítulos no juntan palabras de frases distintas.
   eos: boolean;
-  // Palabra clave: va en verde aunque no sea la que suena.
-  key?: boolean;
+  // Se subraya al pronunciarse (destacados del guion).
+  underline: boolean;
 };
 
 // Quién habla en cada tramo (cortes de plano + guion).
@@ -75,34 +75,20 @@ const fixes: Record<string, string> = {
 // Preguntas que la transcripción dejó sin signo de apertura.
 const openQuestion = new Set(["36"]);
 
-const keywords = new Set([
-  "excel,",
-  "pecho",
-  "igual.",
-  "volumen.",
-  "frecuencia",
-  "tres",
-  "drop",
-  "sets.",
-  "realmente",
-  "vídeos,",
-  "funcionar.",
-  "prioridades",
-  "tiempo",
-  "toda",
-  "falta.",
-  "comprobar",
-  "registros,",
-  "ejecutas,",
-  "recuperas.",
-  "serio",
-  "más,",
-  "menos",
-  "cambiar",
-  "decidir,",
-  "adivinar.",
-  "plan",
-  "privado",
+// Palabras que se subrayan al pronunciarse: exactamente las que el guion pide
+// destacar (E02, E03, E04, E06, E07, E08). Identificadas por su inicio.
+const underlined = new Set([
+  "7.12", "7.36", // el Excel
+  "8.04", "8.2", "8.48", "8.72", // el pecho sigue igual
+  "11.68", // volumen
+  "12.48", "12.96", // frecuencia tres
+  "13.76", "14.04", // drop sets
+  "24.32", "24.6", // tres vídeos
+  "38.96", "39.4", "39.52", "39.6", "39.8", // solo lo que haga falta
+  "54", "54.36", // hacer más
+  "54.72", "55.12", // hacer menos
+  "55.8", "56.12", "56.2", // dejar de cambiar
+  "61.68", "62.12", // comenta PLAN
 ]);
 
 type RawWord = { text: string; start: number; duration: number; eos: boolean };
@@ -115,18 +101,13 @@ export const words: Word[] = (
     const id = String(Math.round(w.start * 100) / 100);
     let text = fixes[id] ?? w.text;
     if (openQuestion.has(id)) text = "¿" + text;
-    const speaker = speakerAt(w.start);
-    // «tres» solo es clave en «frecuencia tres» y «tres vídeos».
-    const lower = text.toLowerCase();
     return {
       text,
       start: w.start,
       end: w.start + w.duration,
-      speaker,
+      speaker: speakerAt(w.start),
       eos: w.eos || /[.?]$/.test(text),
-      key:
-        keywords.has(lower) &&
-        !((lower === "cambiar" || lower === "más,") && w.start < 50),
+      underline: underlined.has(id),
     };
   });
 
@@ -180,29 +161,97 @@ export const punches: Punch[] = [
   { at: 62.12, amount: 0.05, hold: 3.4 }, // «PLAN»
 ];
 
-// Efectos de sonido. Desde 25,84 (cambio de tono, E04) se reducen.
-export type Sfx = { at: number; src: string; volume: number };
+// --- Diseño de sonido y transiciones --------------------------------------
+// `at` es el momento del IMPACTO en segundos del original; Sound.tsx adelanta
+// cada archivo lo necesario para que su pico caiga ahí.
 
-export const sfx: Sfx[] = [
-  { at: 3.72, src: "swipe", volume: 0.25 },
-  { at: 7.3, src: "keys", volume: 0.45 },
-  { at: 8.2, src: "whoosh", volume: 0.28 },
-  { at: 8.72, src: "thump", volume: 0.5 },
-  { at: 11.68, src: "pop", volume: 0.35 },
-  { at: 12.48, src: "pop", volume: 0.35 },
-  { at: 13.76, src: "pop", volume: 0.4 },
-  { at: 16.68, src: "pop-low", volume: 0.35 },
-  { at: 24.32, src: "pop", volume: 0.3 },
-  { at: 24.5, src: "pop", volume: 0.3 },
-  { at: 24.68, src: "pop", volume: 0.3 },
-  { at: 33.76, src: "tick", volume: 0.25 },
-  { at: 34.92, src: "tick", volume: 0.25 },
-  { at: 38.96, src: "swipe", volume: 0.2 },
-  { at: 47.32, src: "tick", volume: 0.3 },
-  { at: 48.16, src: "tick", volume: 0.3 },
-  { at: 49.24, src: "tick", volume: 0.3 },
-  { at: 54.0, src: "tick", volume: 0.25 },
-  { at: 54.72, src: "tick", volume: 0.25 },
-  { at: 55.8, src: "tick", volume: 0.25 },
-  { at: 62.12, src: "ding", volume: 0.35 },
+export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b";
+
+export const FX_PEAK: Record<FxName, number> = {
+  hit: 0.27,
+  riser: 0.85,
+  snap: 0.02,
+  tic: 0.03,
+  "whoosh-a": 0.5,
+  "whoosh-b": 0.58,
+};
+
+export type Sfx = { at: number; src: FxName | "whoosh"; volume: number };
+
+// Golpes visuales (sacudida + destello) en la apertura.
+export const impacts = [1.47, 3.72, 7.36, 8.72, 24.32];
+
+// Cortes con transición de barrido (desenfoque de movimiento + whoosh).
+export const whips = [3.7, 6.3, 11.0, 23.1, 25.8, 36.0, 50.0, 57.1, 61.7];
+
+// Mitad de la entrada de cada panel gráfico (llevan whoosh salvo que ya tengan golpe).
+export const panelIns = [11.65, 33.75, 38.79, 45.39, 54.05];
+
+const designed: Sfx[] = [
+  // Apertura: captación y retención
+  { at: 1.47, src: "hit", volume: 0.55 },
+  { at: 3.72, src: "riser", volume: 0.45 },
+  { at: 3.72, src: "snap", volume: 0.5 },
+  { at: 4.8, src: "snap", volume: 0.35 },
+  { at: 7.36, src: "riser", volume: 0.5 },
+  { at: 7.36, src: "hit", volume: 0.5 },
+  { at: 8.2, src: "snap", volume: 0.4 },
+  { at: 8.72, src: "hit", volume: 0.35 },
+  { at: 11.68, src: "snap", volume: 0.3 },
+  { at: 12.48, src: "snap", volume: 0.3 },
+  { at: 13.76, src: "snap", volume: 0.35 },
+  { at: 16.68, src: "snap", volume: 0.4 },
+  { at: 24.32, src: "riser", volume: 0.45 },
+  { at: 24.32, src: "hit", volume: 0.45 },
+  // Tono útil: solo transiciones suaves
+  { at: 47.32, src: "snap", volume: 0.18 },
+  { at: 48.16, src: "snap", volume: 0.18 },
+  { at: 49.24, src: "snap", volume: 0.18 },
+  // CTA
+  { at: 62.12, src: "riser", volume: 0.45 },
+  { at: 62.12, src: "hit", volume: 0.45 },
 ];
+
+const near = (list: Sfx[], at: number, gap: number) => list.some((x) => Math.abs(x.at - at) < gap);
+
+// Whooshes en barridos y paneles, alternando las dos muestras.
+const whooshes: Sfx[] = [];
+for (const at of [...whips, ...panelIns].sort((a, b) => a - b)) {
+  if (near(designed, at, 0.35) || near(whooshes, at, 0.5)) continue;
+  whooshes.push({ at, src: "whoosh", volume: at < 26 ? 0.45 : 0.32 });
+}
+whooshes.forEach((w, i) => (w.src = i % 2 === 0 ? "whoosh-a" : "whoosh-b"));
+
+export const sfx: Sfx[] = [...designed, ...whooshes];
+
+// --- Páginas de subtítulos ---------------------------------------------------
+// Máximo 3 palabras; se corta al final de frase, en coma, al cambiar de
+// personaje o si hay una pausa.
+const MAX_WORDS = 3;
+const MAX_GAP = 0.3;
+
+export const captionPages: Word[][] = [];
+{
+  let page: Word[] = [];
+  for (const w of words) {
+    const prev = page[page.length - 1];
+    if (prev && (prev.speaker !== w.speaker || w.start - prev.end > MAX_GAP)) {
+      captionPages.push(page);
+      page = [];
+    }
+    page.push(w);
+    if (page.length >= MAX_WORDS || w.eos || /,$/.test(w.text)) {
+      captionPages.push(page);
+      page = [];
+    }
+  }
+  if (page.length) captionPages.push(page);
+}
+
+// TIC en cada página nueva de subtítulos, salvo que coincida con otro efecto.
+const tics: Sfx[] = captionPages
+  .map((p) => p[0].start)
+  .filter((at) => !sfx.some((s) => Math.abs(s.at - at) < 0.18))
+  .map((at) => ({ at, src: "tic" as const, volume: 0.3 }));
+
+export const allSfx: Sfx[] = [...sfx, ...tics];

@@ -1,123 +1,106 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Easing,
   interpolate,
   Sequence,
   spring,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { FONT, GREEN, INK } from "./theme";
-import { f, TRIM, words, type Word } from "./timeline";
+import { FONT, GREEN } from "./theme";
+import { captionPages, f, TRIM, type Word } from "./timeline";
 
-const MAX_WORDS = 3;
-const MAX_GAP = 0.3;
+// Palabra a palabra: cada palabra aparece cuando se pronuncia (mínimo 1 en
+// pantalla, máximo 3). Las que aún no se han dicho ocupan su sitio invisibles
+// para que la línea no salte. Sin relleno: los destacados del guion se subrayan.
 
-// Agrupa palabras en páginas: corta al llenarse, al final de frase,
-// al cambiar de personaje o si hay una pausa.
-const pages: Word[][] = [];
-{
-  let page: Word[] = [];
-  for (const w of words) {
-    const prev = page[page.length - 1];
-    if (prev && (prev.speaker !== w.speaker || w.start - prev.end > MAX_GAP)) {
-      pages.push(page);
-      page = [];
-    }
-    page.push(w);
-    if (page.length >= MAX_WORDS || w.eos || /,$/.test(w.text)) {
-      pages.push(page);
-      page = [];
-    }
-  }
-  if (page.length) pages.push(page);
-}
+const WordView: React.FC<{ w: Word; t: number }> = ({ w, t }) => {
+  const { fps } = useVideoConfig();
+  const local = (t - w.start) * fps;
+  const shown = local >= 0;
+  const pop = shown ? spring({ frame: local, fps, config: { damping: 16, stiffness: 320, mass: 0.5 } }) : 0;
+  const line = interpolate(t, [w.start + 0.02, w.start + 0.22], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.16, 1, 0.3, 1),
+  });
+  return (
+    <span
+      style={{
+        position: "relative",
+        display: "inline-block",
+        opacity: shown ? Math.min(1, pop * 1.6) : 0,
+        transform: `translateY(${(1 - pop) * 22}px) scale(${0.9 + 0.1 * pop})`,
+      }}
+    >
+      {w.text}
+      {w.underline ? (
+        <span
+          style={{
+            position: "absolute",
+            left: 2,
+            right: 2,
+            bottom: -4,
+            height: 8,
+            background: GREEN,
+            transformOrigin: "left center",
+            transform: `scaleX(${line}) skewX(-12deg)`,
+            boxShadow: "0 2px 0 rgba(0,0,0,0.55)",
+          }}
+        />
+      ) : null}
+    </span>
+  );
+};
 
 const Page: React.FC<{ page: Word[] }> = ({ page }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = page[0].start + frame / fps;
-  const enter = spring({ frame, fps, config: { damping: 18, stiffness: 260, mass: 0.6 } });
   const cta = page[0].speaker === "YAGO";
-
   return (
-    <AbsoluteFill
-      style={{
-        top: cta ? 1500 : 1330,
-        height: "auto",
-        alignItems: "center",
-      }}
-    >
+    <AbsoluteFill style={{ top: cta ? 1520 : 1360, height: "auto", alignItems: "center" }}>
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
-          columnGap: 20,
-          rowGap: 4,
-          maxWidth: 900,
-          transform: `translateY(${(1 - enter) * 18}px) scale(${0.92 + 0.08 * enter})`,
-          opacity: interpolate(enter, [0, 0.4], [0, 1], { extrapolateRight: "clamp" }),
+          columnGap: 22,
+          rowGap: 6,
+          maxWidth: 880,
+          fontFamily: FONT,
+          fontWeight: 800,
+          fontSize: 72,
+          lineHeight: 1.1,
+          letterSpacing: -0.5,
+          textTransform: "uppercase",
+          color: "white",
+          WebkitTextStroke: "10px rgba(0,0,0,0.92)",
+          paintOrder: "stroke fill",
         }}
       >
-        {page.map((w, i) => {
-          const active = t >= w.start && t < w.end + 0.04;
-          const local = (t - w.start) * fps;
-          const hit = active ? spring({ frame: local, fps, config: { damping: 12, stiffness: 300 } }) : 0;
-          return (
-            <span
-              key={i}
-              style={{
-                position: "relative",
-                fontFamily: FONT,
-                fontWeight: 800,
-                fontSize: 70,
-                lineHeight: 1.12,
-                letterSpacing: -0.5,
-                textTransform: "uppercase",
-                color: active ? INK : w.key ? GREEN : "white",
-                padding: "0 8px",
-                WebkitTextStroke: active ? "0px" : "9px rgba(0,0,0,0.9)",
-                paintOrder: "stroke fill",
-                transform: `scale(${1 + hit * 0.04})`,
-                zIndex: active ? 1 : 0,
-              }}
-            >
-              {active ? (
-                <span
-                  style={{
-                    position: "absolute",
-                    inset: "4px 0 2px 0",
-                    background: GREEN,
-                    zIndex: -1,
-                    transform: `scaleX(${0.6 + 0.4 * hit})`,
-                  }}
-                />
-              ) : null}
-              {w.text}
-            </span>
-          );
-        })}
+        {page.map((w, i) => (
+          <WordView key={i} w={w} t={t} />
+        ))}
       </div>
     </AbsoluteFill>
   );
 };
 
-export const Captions: React.FC = () => {
-  return (
-    <AbsoluteFill>
-      {pages.map((page, i) => {
-        const next = pages[i + 1];
-        const from = f(Math.max(TRIM, page[0].start));
-        const endS = Math.min(page[page.length - 1].end + 0.3, next ? next[0].start : Infinity);
-        const dur = f(endS) - from;
-        if (dur <= 0) return null;
-        return (
-          <Sequence key={i} from={from} durationInFrames={dur} name={`Subtítulo · ${page.map((w) => w.text).join(" ")}`}>
-            <Page page={page} />
-          </Sequence>
-        );
-      })}
-    </AbsoluteFill>
-  );
-};
+export const Captions: React.FC = () => (
+  <AbsoluteFill>
+    {captionPages.map((page, i) => {
+      const next = captionPages[i + 1];
+      const from = f(Math.max(TRIM, page[0].start));
+      const endS = Math.min(page[page.length - 1].end + 0.35, next ? next[0].start : Infinity);
+      const dur = f(endS) - from;
+      if (dur <= 0) return null;
+      return (
+        <Sequence key={i} from={from} durationInFrames={dur} name={`Subtítulo · ${page.map((w) => w.text).join(" ")}`}>
+          <Page page={page} />
+        </Sequence>
+      );
+    })}
+  </AbsoluteFill>
+);
