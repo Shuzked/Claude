@@ -40,4 +40,17 @@ f = 260 + 520 * np.exp(-t * 55)
 body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 38)
 click = bp(rng.standard_normal(n), 2500, 9000) * np.exp(-t * 400) * 0.25
 save("pop.wav", body + click, 0.6)
+# Papel: hoja que entra (ruido filtrado con dos «pasadas»)
+n = int(0.35 * SR)
+t = np.arange(n) / SR
+paper = bp(rng.standard_normal(n), 900, 6500)
+env = (np.exp(-((t - 0.05) / 0.05) ** 2) + 0.6 * np.exp(-((t - 0.17) / 0.07) ** 2))
+save("paper.wav", paper * env, 0.6)
+
+# Ding corto y limpio para cada check
+n = int(0.6 * SR)
+t = np.arange(n) / SR
+tone = np.sin(2 * np.pi * 1568 * t) + 0.4 * np.sin(2 * np.pi * 3136 * t) + 0.15 * np.sin(2 * np.pi * 4704 * t)
+save("ding.wav", tone * np.exp(-t * 7) * np.minimum(1, t / 0.003), 0.5)
+
 print("ok", sorted(os.listdir(OUT)))

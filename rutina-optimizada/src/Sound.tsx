@@ -39,6 +39,8 @@ const SFX_GAIN: Record<FxName, number> = {
   snap: 1,
   marker: 1,
   pop: 1,
+  paper: 1,
+  ding: 1,
 };
 
 export const Sound: React.FC = () => (

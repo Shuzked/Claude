@@ -165,7 +165,7 @@ export const punches: Punch[] = [
 // `at` es el momento del IMPACTO en segundos del original; Sound.tsx adelanta
 // cada archivo lo necesario para que su pico caiga ahí.
 
-export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b" | "marker" | "pop";
+export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b" | "marker" | "pop" | "paper" | "ding";
 
 export const FX_PEAK: Record<FxName, number> = {
   hit: 0.27,
@@ -176,6 +176,8 @@ export const FX_PEAK: Record<FxName, number> = {
   "whoosh-b": 0.58,
   marker: 0.02,
   pop: 0.005,
+  paper: 0.05,
+  ding: 0.003,
 };
 
 // Carpeta de cada efecto: fx/ son los aportados (no se suben al repo),
@@ -189,6 +191,8 @@ export const FX_DIR: Record<FxName, "fx" | "ui"> = {
   "whoosh-b": "fx",
   marker: "ui",
   pop: "ui",
+  paper: "ui",
+  ding: "ui",
 };
 
 export type Sfx = { at: number; src: FxName | "whoosh"; volume: number };
@@ -311,6 +315,7 @@ const graphicsSfx: Sfx[] = [
   ...headline(...headlineWordTimes),
   ...marker(...headlineMarkers),
   // 01 · Excel → pecho
+  { at: 7.36, src: "paper", volume: 0.3 },
   ...pop(7.4, 8.25),
   // 02 · lo que ha cambiado
   ...pop(11.62, 12.42, 13.7),
@@ -325,10 +330,11 @@ const graphicsSfx: Sfx[] = [
   ...pop(39.7, 39.85),
   // 06 · antes de añadir más
   ...pop(47.07, 47.91, 48.99),
-  { at: 47.32, src: "snap", volume: 0.14 },
-  { at: 48.16, src: "snap", volume: 0.14 },
-  { at: 49.24, src: "snap", volume: 0.14 },
+  { at: 47.32, src: "ding", volume: 0.18 },
+  { at: 48.16, src: "ding", volume: 0.18 },
+  { at: 49.24, src: "ding", volume: 0.18 },
   // 07 · ¿qué tengo que hacer?
+  ...pop(52.92, 53.04, 53.16),
   ...pop(54.0, 54.72, 55.8),
   ...marker(54.12, 54.84, 55.92),
   // 08 · CTA: «Comenta», caja, tecleo de PLAN, enviar

@@ -550,7 +550,7 @@ export const MoveIcon: React.FC<{ at: number }> = ({ at }) => {
     <svg width={60} height={56} viewBox="0 0 60 56">
       <Pop at={at} ox={30} oy={28}>
         <g transform={`translate(0 ${-lift})`}>
-          <rect x={10} y={25} width={40} height={6} rx={3} fill={PAPER} />
+          <rect x={10} y={25} width={40} height={6} rx={3} fill={ICON_DARK} />
           <rect x={4} y={14} width={10} height={28} rx={5} fill={GREEN} />
           <rect x={46} y={14} width={10} height={28} rx={5} fill={GREEN} />
           <rect x={0} y={19} width={6} height={18} rx={3} fill={ICON_MID} />
@@ -574,7 +574,7 @@ export const BatteryIcon: React.FC<{ at: number; p: number }> = ({ at, p }) => (
         stroke={PAPER}
         strokeWidth={3}
       />
-      <rect x={56} y={22} width={6} height={12} rx={3} fill={PAPER} />
+      <rect x={56} y={22} width={6} height={12} rx={3} fill={ICON_DARK} />
       <rect
         x={9}
         y={19}
