@@ -206,25 +206,56 @@ const Backdrop: React.FC<{ scene: Scene }> = ({ scene }) => {
             backgroundPosition: `${-drift * 0.3}px ${-drift * 0.15}px`,
           }}
         />
-        {/* título gigante en contorno, desplazándose */}
-        <div
+        {/* título gigante en contorno, desplazándose. El contorno sale de dilatar la
+            silueta y restarle la palabra rellena: solo queda el borde exterior, sin
+            las líneas internas que deja text-stroke en los glifos solapados. */}
+        <svg
+          width={4200}
+          height={400}
           style={{
             position: "absolute",
-            top: 1500,
+            top: 1470,
             left: 60 - drift,
-            fontFamily: FONT,
-            fontWeight: 900,
-            fontStyle: "italic",
-            fontSize: 330,
-            lineHeight: 1,
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-            color: "transparent",
-            WebkitTextStroke: "2px rgba(255,255,255,0.07)",
+            overflow: "visible",
           }}
         >
-          {scene.title} · {scene.title}
-        </div>
+          <defs>
+            <filter
+              id={`outline-${scene.id}`}
+              x="-5%"
+              y="-20%"
+              width="110%"
+              height="140%"
+            >
+              <feMorphology
+                in="SourceAlpha"
+                operator="dilate"
+                radius={2.5}
+                result="grown"
+              />
+              <feComposite
+                in="grown"
+                in2="SourceAlpha"
+                operator="out"
+                result="ring"
+              />
+              <feFlood floodColor="#ffffff" floodOpacity={0.08} />
+              <feComposite in2="ring" operator="in" />
+            </filter>
+          </defs>
+          <text
+            x={0}
+            y={330}
+            fill="#ffffff"
+            filter={`url(#outline-${scene.id})`}
+            fontFamily={FONT}
+            fontWeight={900}
+            fontStyle="italic"
+            fontSize={330}
+          >
+            {`${scene.title} · ${scene.title}`.toUpperCase()}
+          </text>
+        </svg>
         {/* grano */}
         <svg
           width="100%"
