@@ -8,6 +8,18 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import {
+  ArrowIcon,
+  BatteryIcon,
+  CalendarIcon,
+  ClockIcon,
+  DropIcon,
+  LogIcon,
+  MoveIcon,
+  Phone,
+  TargetIcon,
+  VolumeIcon,
+} from "./Icons";
 import { FONT, GREEN, INK, PAPER } from "./theme";
 import {
   f,
@@ -603,23 +615,61 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
   );
 };
 
-// Torso minimalista de línea: el pecho se ilumina
+// Torso estilo Lottie: formas planas redondeadas que entran con rebote; al decir
+// «pecho» los pectorales se rellenan de verde, laten y emiten ondas.
+const SKIN = "#2c2c2c";
+const SKIN_LIGHT = "#363636";
+const EDGE = "rgba(255,255,255,0.28)";
+
+const usePop = (at: number) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping: 9, stiffness: 180, mass: 0.6 },
+  });
+};
+
+const Part: React.FC<{
+  at: number;
+  ox: number;
+  oy: number;
+  children: React.ReactNode;
+}> = ({ at, ox, oy, children }) => {
+  const p = usePop(at);
+  return (
+    <g
+      style={{
+        transformOrigin: `${ox}px ${oy}px`,
+        transform: `scale(${p})`,
+        opacity: Math.min(1, p * 3),
+      }}
+    >
+      {children}
+    </g>
+  );
+};
+
+const PEC_L =
+  "M 163 106 C 143 96, 106 98, 95 116 C 90 140, 108 162, 138 162 C 154 162, 163 152, 163 140 Z";
+const PEC_R =
+  "M 167 106 C 187 96, 224 98, 235 116 C 240 140, 222 162, 192 162 C 176 162, 167 152, 167 140 Z";
+
 const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
   const t = useT();
-  const draw = useReveal(at, 0.7, easeInOut);
-  const glow = useReveal(glowAt, 0.35);
-  const pulse = glow * (0.75 + 0.25 * Math.sin((t - glowAt) * 9));
-  const L = 1400;
-  const stroke = {
-    fill: "none",
-    stroke: PAPER,
-    strokeWidth: 3.5,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    strokeDasharray: L,
-    strokeDashoffset: L * (1 - draw),
-    opacity: 0.9,
-  };
+  const fill = interpolate(t, [glowAt, glowAt + 0.45], [0, 1], {
+    ...clamp,
+    easing: easeOut,
+  });
+  const lit = t >= glowAt;
+  const pulse = lit ? 0.5 + 0.5 * Math.sin((t - glowAt) * 8) : 0;
+  const breathe = 1 + Math.sin(t * 3) * 0.008;
+  // ondas que salen del pecho
+  const rings = [0, 0.45, 0.9].map((o) => {
+    const k = ((t - glowAt - o) % 1.35) / 1.35;
+    return lit && t - glowAt - o > 0 ? k : -1;
+  });
   return (
     <svg
       width={330}
@@ -628,68 +678,171 @@ const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
       style={{ overflow: "visible" }}
     >
       <defs>
-        <filter id="pec-glow" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation={10 + 6 * pulse} result="b" />
+        <filter id="pec-glow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation={8 + 8 * pulse} result="b" />
           <feMerge>
-            <feMergeNode in="b" />
             <feMergeNode in="b" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        <clipPath id="pec-fill">
+          <rect x={80} y={170 - 80 * fill} width={170} height={80 * fill + 2} />
+        </clipPath>
+        <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={SKIN_LIGHT} />
+          <stop offset="1" stopColor={SKIN} />
+        </linearGradient>
       </defs>
-      {/* pectorales: relleno que se enciende */}
-      <g filter="url(#pec-glow)" opacity={glow}>
-        <path
-          d="M 163 112 C 140 104, 108 104, 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 163 148 Z"
-          fill={GREEN}
-          opacity={0.55 + 0.35 * pulse}
-        />
-        <path
-          d="M 167 112 C 190 104, 222 104, 242 118 C 250 140, 238 162, 212 166 C 190 168, 172 160, 167 148 Z"
-          fill={GREEN}
-          opacity={0.55 + 0.35 * pulse}
-        />
-      </g>
-      {/* contorno del torso */}
-      <path
-        {...stroke}
-        d="M 140 40 C 142 58, 140 70, 128 78 C 104 86, 72 88, 56 100 C 40 112, 36 140, 38 176 L 40 240"
-      />
-      <path
-        {...stroke}
-        d="M 190 40 C 188 58, 190 70, 202 78 C 226 86, 258 88, 274 100 C 290 112, 294 140, 292 176 L 290 240"
-      />
-      <path {...stroke} d="M 72 150 C 76 200, 88 250, 100 300" />
-      <path {...stroke} d="M 258 150 C 254 200, 242 250, 230 300" />
-      {/* línea de pectorales */}
-      <path
-        {...stroke}
-        d="M 88 118 C 80 140, 92 162, 118 166 C 140 168, 158 160, 165 146 C 172 160, 190 168, 212 166 C 238 162, 250 140, 242 118"
-      />
-      {/* clavículas */}
-      <path
-        {...stroke}
-        d="M 128 80 C 140 92, 152 96, 165 96 C 178 96, 190 92, 202 80"
-      />
-      {/* abdomen */}
-      <path {...stroke} d="M 165 170 L 165 296" strokeWidth={2.5} />
-      <path
-        {...stroke}
-        d="M 135 196 C 150 200, 180 200, 195 196 M 137 232 C 150 236, 180 236, 193 232 M 140 266 C 152 270, 178 270, 190 266"
-        strokeWidth={2.5}
-      />
-      {/* etiqueta de zona */}
-      <g opacity={glow}>
-        <line
-          x1={242}
-          y1={130}
-          x2={300}
-          y2={70}
-          stroke={GREEN}
-          strokeWidth={2.5}
-          style={{ filter: GLOW }}
-        />
-        <circle cx={242} cy={130} r={5} fill={GREEN} />
+      <g
+        style={{
+          transformOrigin: "165px 180px",
+          transform: `scale(${breathe})`,
+        }}
+      >
+        {/* brazos */}
+        <Part at={at + 0.12} ox={62} oy={118}>
+          <rect
+            x={40}
+            y={112}
+            width={42}
+            height={160}
+            rx={21}
+            fill={SKIN}
+            stroke={EDGE}
+            strokeWidth={2.5}
+            transform="rotate(9 61 118)"
+          />
+        </Part>
+        <Part at={at + 0.12} ox={268} oy={118}>
+          <rect
+            x={248}
+            y={112}
+            width={42}
+            height={160}
+            rx={21}
+            fill={SKIN}
+            stroke={EDGE}
+            strokeWidth={2.5}
+            transform="rotate(-9 269 118)"
+          />
+        </Part>
+        {/* cuello */}
+        <Part at={at + 0.05} ox={165} oy={70}>
+          <rect
+            x={145}
+            y={34}
+            width={40}
+            height={46}
+            rx={16}
+            fill={SKIN}
+            stroke={EDGE}
+            strokeWidth={2.5}
+          />
+          <circle
+            cx={165}
+            cy={22}
+            r={26}
+            fill={SKIN_LIGHT}
+            stroke={EDGE}
+            strokeWidth={2.5}
+          />
+        </Part>
+        {/* tronco en V */}
+        <Part at={at} ox={165} oy={190}>
+          <path
+            d="M 72 96 C 74 80, 118 70, 165 70 C 212 70, 256 80, 258 96 L 248 188 C 243 248, 212 300, 165 306 C 118 300, 87 248, 82 188 Z"
+            fill="url(#skin)"
+            stroke={EDGE}
+            strokeWidth={3}
+          />
+        </Part>
+        {/* hombros */}
+        <Part at={at + 0.08} ox={78} oy={108}>
+          <circle
+            cx={78}
+            cy={108}
+            r={30}
+            fill={SKIN_LIGHT}
+            stroke={EDGE}
+            strokeWidth={2.5}
+          />
+        </Part>
+        <Part at={at + 0.08} ox={252} oy={108}>
+          <circle
+            cx={252}
+            cy={108}
+            r={30}
+            fill={SKIN_LIGHT}
+            stroke={EDGE}
+            strokeWidth={2.5}
+          />
+        </Part>
+        {/* abdominales */}
+        {[0, 1, 2].map((r) =>
+          [0, 1].map((c) => (
+            <Part
+              key={`${r}${c}`}
+              at={at + 0.22 + r * 0.05}
+              ox={c ? 186 : 144}
+              oy={190 + r * 34}
+            >
+              <rect
+                x={c ? 170 : 128}
+                y={178 + r * 34}
+                width={32}
+                height={26}
+                rx={11}
+                fill={SKIN_LIGHT}
+              />
+            </Part>
+          )),
+        )}
+        {/* pectorales: base y relleno verde que sube */}
+        <Part at={at + 0.16} ox={165} oy={130}>
+          <path d={PEC_L} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
+          <path d={PEC_R} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
+          <g
+            clipPath="url(#pec-fill)"
+            filter="url(#pec-glow)"
+            opacity={0.85 + 0.15 * pulse}
+          >
+            <path d={PEC_L} fill={GREEN} />
+            <path d={PEC_R} fill={GREEN} />
+          </g>
+          {/* brillo */}
+          <path
+            d="M 108 116 C 118 108, 134 106, 146 109"
+            fill="none"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth={4}
+            strokeLinecap="round"
+            opacity={fill}
+          />
+          <path
+            d="M 184 109 C 196 106, 212 108, 222 116"
+            fill="none"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth={4}
+            strokeLinecap="round"
+            opacity={fill}
+          />
+        </Part>
+        {/* ondas */}
+        {rings.map((k, i) =>
+          k >= 0 ? (
+            <ellipse
+              key={i}
+              cx={165}
+              cy={132}
+              rx={40 + 120 * k}
+              ry={26 + 80 * k}
+              fill="none"
+              stroke={GREEN}
+              strokeWidth={3 * (1 - k) + 0.5}
+              opacity={(1 - k) * 0.7}
+            />
+          ) : null,
+        )}
       </g>
     </svg>
   );
@@ -924,133 +1077,6 @@ const Card: React.FC<{
   );
 };
 
-const VolumeIcon: React.FC<{ at: number }> = ({ at }) => {
-  const t = useT();
-  return (
-    <svg width={190} height={140} style={{ overflow: "visible", filter: GLOW }}>
-      {[0, 1, 2, 3, 4, 5].map((i) => {
-        const p = interpolate(t, [at + i * 0.06, at + i * 0.06 + 0.3], [0, 1], {
-          ...clamp,
-          easing: easeOut,
-        });
-        const h = (40 + i * 18) * p;
-        return (
-          <rect
-            key={i}
-            x={i * 32}
-            y={140 - h}
-            width={22}
-            height={h}
-            fill={i === 5 ? GREEN : PAPER}
-            opacity={i === 5 ? 1 : 0.85}
-          />
-        );
-      })}
-    </svg>
-  );
-};
-
-const CalendarIcon: React.FC<{ at: number }> = ({ at }) => {
-  const t = useT();
-  const days = ["L", "M", "X", "J", "V", "S", "D"];
-  const on = [0, 2, 4];
-  return (
-    <svg width={230} height={120} style={{ overflow: "visible" }}>
-      {days.map((d, i) => {
-        const p = interpolate(
-          t,
-          [at + i * 0.04, at + i * 0.04 + 0.2],
-          [0, 1],
-          clamp,
-        );
-        const lit = on.includes(i) && t > at + 0.35 + on.indexOf(i) * 0.12;
-        return (
-          <g key={i} opacity={p}>
-            <rect
-              x={i * 33}
-              y={30}
-              width={27}
-              height={60}
-              fill={lit ? GREEN : "none"}
-              stroke={lit ? GREEN : "rgba(255,255,255,0.4)"}
-              strokeWidth={2}
-              style={lit ? { filter: GLOW } : undefined}
-            />
-            <text
-              x={i * 33 + 13.5}
-              y={20}
-              textAnchor="middle"
-              fill="rgba(255,255,255,0.6)"
-              fontFamily={FONT}
-              fontWeight={700}
-              fontSize={15}
-            >
-              {d}
-            </text>
-          </g>
-        );
-      })}
-      <text
-        x={115}
-        y={118}
-        textAnchor="middle"
-        fill={GREEN}
-        fontFamily={FONT}
-        fontWeight={900}
-        fontStyle="italic"
-        fontSize={22}
-        opacity={interpolate(t, [at + 0.6, at + 0.8], [0, 1], clamp)}
-        style={{ filter: GLOW }}
-      >
-        3× / SEMANA
-      </text>
-    </svg>
-  );
-};
-
-const DropIcon: React.FC<{ at: number }> = ({ at }) => {
-  const t = useT();
-  return (
-    <svg width={200} height={140} style={{ overflow: "visible" }}>
-      {[0, 1, 2, 3].map((i) => {
-        const p = interpolate(t, [at + i * 0.1, at + i * 0.1 + 0.25], [0, 1], {
-          ...clamp,
-          easing: easeOut,
-        });
-        const h = (120 - i * 26) * p;
-        return (
-          <rect
-            key={i}
-            x={i * 48}
-            y={140 - h}
-            width={36}
-            height={h}
-            fill={PAPER}
-            opacity={0.9 - i * 0.12}
-          />
-        );
-      })}
-      <path
-        d="M 10 10 L 70 34 L 118 58 L 168 84"
-        fill="none"
-        stroke={GREEN}
-        strokeWidth={5}
-        strokeDasharray={200}
-        strokeDashoffset={
-          200 * (1 - interpolate(t, [at + 0.4, at + 0.8], [0, 1], clamp))
-        }
-        style={{ filter: GLOW }}
-      />
-      <path
-        d="M 168 84 l -16 -2 M 168 84 l -6 -14"
-        stroke={GREEN}
-        strokeWidth={5}
-        opacity={t > at + 0.8 ? 1 : 0}
-      />
-    </svg>
-  );
-};
-
 const ToolsScene: React.FC = () => (
   <>
     <Headline lines={headlines.tools} origin={sceneFrom("tools")} />
@@ -1072,92 +1098,6 @@ const ToolsScene: React.FC = () => (
 
 // ---------------------------------------------------------------------------
 // 03 · E04 «tres vídeos» (sin creadores ni contenido ajeno)
-
-const Phone: React.FC<{ at: number; n: number; rot: number }> = ({
-  at,
-  n,
-  rot,
-}) => {
-  const t = useT();
-  const p = useSpringAt(at, 12);
-  const prog = interpolate(t, [at + 0.2, at + 1.6], [0, 1], clamp);
-  return (
-    <div
-      style={{
-        width: 170,
-        height: 300,
-        border: `5px solid ${PAPER}`,
-        borderRadius: 26,
-        background: "#1a1a1a",
-        position: "relative",
-        transform: `translateY(${(1 - p) * 80}px) rotate(${rot * p}deg)`,
-        opacity: Math.min(1, p * 2),
-        overflow: "hidden",
-        boxShadow: "0 0 26px rgba(255,255,255,0.08)",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          top: 10,
-          left: "50%",
-          marginLeft: -22,
-          width: 44,
-          height: 7,
-          borderRadius: 4,
-          background: "rgba(255,255,255,0.25)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: "40px 14px 70px",
-          border: "1.5px solid rgba(255,255,255,0.12)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <svg width={50} height={56} style={{ filter: GLOW }}>
-          <path d="M 6 4 L 46 28 L 6 52 Z" fill={GREEN} />
-        </svg>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          bottom: 46,
-          height: 5,
-          background: "rgba(255,255,255,0.15)",
-        }}
-      >
-        <div
-          style={{
-            width: `${prog * 100}%`,
-            height: "100%",
-            background: GREEN,
-            filter: GLOW,
-          }}
-        />
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          left: 14,
-          bottom: 16,
-          ...label,
-          fontSize: 16,
-          letterSpacing: 3,
-          color: PAPER,
-          textShadow: "none",
-        }}
-      >
-        Vídeo {n}
-      </div>
-    </div>
-  );
-};
 
 const VideosScene: React.FC = () => {
   const three = useSpringAt(rel("videos", 24.32), 12);
@@ -1207,101 +1147,6 @@ const VideosScene: React.FC = () => {
 
 // ---------------------------------------------------------------------------
 // 04 · ajustar el trabajo a tus prioridades y al tiempo que tienes
-
-const TargetIcon: React.FC<{ at: number }> = ({ at }) => {
-  const t = useT();
-  const p = interpolate(t, [at, at + 0.6], [0, 1], {
-    ...clamp,
-    easing: easeOut,
-  });
-  const hit = interpolate(t, [at + 0.5, at + 0.7], [0, 1], clamp);
-  return (
-    <svg
-      width={150}
-      height={150}
-      viewBox="-75 -75 150 150"
-      style={{ overflow: "visible" }}
-    >
-      {[66, 46, 26].map((r, i) => (
-        <circle
-          key={r}
-          r={r}
-          fill="none"
-          stroke={i === 2 ? GREEN : PAPER}
-          strokeWidth={4}
-          strokeDasharray={2 * Math.PI * r}
-          strokeDashoffset={2 * Math.PI * r * (1 - p)}
-          opacity={0.9}
-          style={i === 2 ? { filter: GLOW } : undefined}
-        />
-      ))}
-      <circle r={9 * hit} fill={GREEN} style={{ filter: GLOW }} />
-    </svg>
-  );
-};
-
-const ClockIcon: React.FC<{ at: number }> = ({ at }) => {
-  const t = useT();
-  const p = interpolate(t, [at, at + 0.5], [0, 1], {
-    ...clamp,
-    easing: easeOut,
-  });
-  const spin = Math.max(0, t - at) * 220;
-  return (
-    <svg
-      width={150}
-      height={150}
-      viewBox="-75 -75 150 150"
-      style={{ overflow: "visible" }}
-    >
-      <circle
-        r={64}
-        fill="none"
-        stroke={PAPER}
-        strokeWidth={4}
-        strokeDasharray={402}
-        strokeDashoffset={402 * (1 - p)}
-      />
-      {Array.from({ length: 12 }).map((_, i) => (
-        <line
-          key={i}
-          x1={0}
-          y1={-56}
-          x2={0}
-          y2={-48}
-          stroke="rgba(255,255,255,0.5)"
-          strokeWidth={3}
-          transform={`rotate(${i * 30})`}
-          opacity={p}
-        />
-      ))}
-      <line
-        x1={0}
-        y1={0}
-        x2={0}
-        y2={-42}
-        stroke={GREEN}
-        strokeWidth={5}
-        strokeLinecap="round"
-        transform={`rotate(${spin})`}
-        opacity={p}
-        style={{ filter: GLOW }}
-      />
-      <line
-        x1={0}
-        y1={0}
-        x2={0}
-        y2={-28}
-        stroke={PAPER}
-        strokeWidth={5}
-        strokeLinecap="round"
-        transform={`rotate(${spin / 12})`}
-        opacity={p}
-      />
-      <circle r={6} fill={GREEN} opacity={p} />
-    </svg>
-  );
-};
 
 const PrioScene: React.FC = () => {
   return (
@@ -1387,54 +1232,6 @@ const FaltaScene: React.FC = () => {
 // ---------------------------------------------------------------------------
 // 06 · antes de añadir más: registros, ejecución, recuperación
 
-const LogIcon = () => (
-  <svg width={44} height={44}>
-    <rect
-      x={4}
-      y={3}
-      width={36}
-      height={38}
-      fill="none"
-      stroke={PAPER}
-      strokeWidth={3}
-    />
-    <path
-      d="M 11 14 H 33 M 11 22 H 33 M 11 30 H 25"
-      stroke={PAPER}
-      strokeWidth={3}
-    />
-  </svg>
-);
-const MoveIcon = () => (
-  <svg width={44} height={44}>
-    <path d="M 4 22 H 40" stroke={PAPER} strokeWidth={4} />
-    <rect x={6} y={10} width={7} height={24} fill={PAPER} />
-    <rect x={31} y={10} width={7} height={24} fill={PAPER} />
-  </svg>
-);
-const BatteryIcon: React.FC<{ p: number }> = ({ p }) => (
-  <svg width={52} height={44}>
-    <rect
-      x={3}
-      y={10}
-      width={40}
-      height={24}
-      fill="none"
-      stroke={PAPER}
-      strokeWidth={3}
-    />
-    <rect x={44} y={17} width={5} height={10} fill={PAPER} />
-    <rect
-      x={8}
-      y={15}
-      width={30 * p}
-      height={14}
-      fill={GREEN}
-      style={{ filter: GLOW }}
-    />
-  </svg>
-);
-
 const CheckRow: React.FC<{
   at: number;
   text: string;
@@ -1506,17 +1303,17 @@ const CheckScene: React.FC = () => {
         <CheckRow
           at={rel("check", 47.32)}
           text="Registros"
-          icon={<LogIcon />}
+          icon={<LogIcon at={rel("check", 47.32) - 0.25} />}
         />
         <CheckRow
           at={rel("check", 48.16)}
           text="Ejecución"
-          icon={<MoveIcon />}
+          icon={<MoveIcon at={rel("check", 48.16) - 0.25} />}
         />
         <CheckRow
           at={rel("check", 49.24)}
           text="Recuperación"
-          icon={<BatteryIcon p={battery} />}
+          icon={<BatteryIcon at={rel("check", 49.24) - 0.25} p={battery} />}
         />
       </Visual>
     </>
@@ -1526,62 +1323,12 @@ const CheckScene: React.FC = () => {
 // ---------------------------------------------------------------------------
 // 07 · E07 «hacer más / hacer menos / dejar de cambiar» (una misma línea)
 
-const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({
-  dir,
-  p,
-}) => (
-  <svg
-    width={110}
-    height={110}
-    viewBox="-55 -55 110 110"
-    style={{ filter: GLOW }}
-  >
-    <circle
-      r={48}
-      fill="none"
-      stroke="rgba(255,255,255,0.25)"
-      strokeWidth={3}
-    />
-    <circle
-      r={48}
-      fill="none"
-      stroke={GREEN}
-      strokeWidth={4}
-      strokeDasharray={302}
-      strokeDashoffset={302 * (1 - p)}
-      transform="rotate(-90)"
-    />
-    {dir === "pause" ? (
-      <g opacity={p}>
-        <rect x={-16} y={-20} width={10} height={40} fill={PAPER} />
-        <rect x={6} y={-20} width={10} height={40} fill={PAPER} />
-      </g>
-    ) : (
-      <path
-        d={
-          dir === "up"
-            ? "M 0 22 V -20 M -16 -4 L 0 -20 L 16 -4"
-            : "M 0 -22 V 20 M -16 4 L 0 20 L 16 4"
-        }
-        fill="none"
-        stroke={PAPER}
-        strokeWidth={6}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={p}
-        transform={`translate(0 ${(1 - p) * (dir === "up" ? 10 : -10)})`}
-      />
-    )}
-  </svg>
-);
-
 const OptionCard: React.FC<{
   at: number;
   dir: "up" | "down" | "pause";
   text: string;
   index: number;
 }> = ({ at, dir, text, index }) => {
-  const p = useReveal(at, 0.45);
   return (
     <Card
       at={at}
@@ -1597,7 +1344,7 @@ const OptionCard: React.FC<{
         </span>
       }
     >
-      <ArrowIcon dir={dir} p={p} />
+      <ArrowIcon dir={dir} at={at + 0.05} />
     </Card>
   );
 };
