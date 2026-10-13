@@ -9,7 +9,14 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT, GREEN } from "./theme";
-import { f, scenes, TRIM, visiblePages, type Word } from "./timeline";
+import {
+  f,
+  pageStart,
+  scenes,
+  TRIM,
+  visiblePages,
+  type Word,
+} from "./timeline";
 
 // Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
 const MARKER_PATH =
@@ -135,9 +142,9 @@ export const Captions: React.FC = () => (
   <AbsoluteFill>
     {visiblePages.map((page, i) => {
       const next = visiblePages[i + 1];
-      const from = f(Math.max(TRIM, page[0].start));
+      const from = f(Math.max(TRIM, pageStart(page)));
       // los subtítulos se ocultan en cuanto entra una escena de motion graphics
-      const nextScene = scenes.find((s) => s.from > page[0].start);
+      const nextScene = scenes.find((s) => s.from > pageStart(page));
       const endS = Math.min(
         page[page.length - 1].end + 0.35,
         next ? next[0].start : Infinity,

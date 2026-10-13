@@ -13,7 +13,8 @@ export const SOURCE_END = 65.6;
 export const DURATION_FRAMES = Math.round((SOURCE_END - TRIM) * FPS);
 
 /** Segundo del original -> fotograma de la composición. */
-export const f = (sourceSeconds: number) => Math.round((sourceSeconds - TRIM) * FPS);
+export const f = (sourceSeconds: number) =>
+  Math.round((sourceSeconds - TRIM) * FPS);
 
 export type Speaker = "ENTRENADOR" | "CLIENTE" | "YAGO";
 
@@ -78,17 +79,33 @@ const openQuestion = new Set(["36"]);
 // Palabras que se pintan con subrayador al pronunciarse: las que el guion pide
 // destacar (E02, E03, E04, E06, E07, E08). Identificadas por su inicio.
 const underlined = new Set([
-  "7.12", "7.36", // el Excel
-  "8.04", "8.2", "8.48", "8.72", // el pecho sigue igual
+  "7.12",
+  "7.36", // el Excel
+  "8.04",
+  "8.2",
+  "8.48",
+  "8.72", // el pecho sigue igual
   "11.68", // volumen
-  "12.48", "12.96", // frecuencia tres
-  "13.76", "14.04", // drop sets
-  "24.32", "24.6", // tres vídeos
-  "38.96", "39.4", "39.52", "39.6", "39.8", // solo lo que haga falta
-  "54", "54.36", // hacer más
-  "54.72", "55.12", // hacer menos
-  "55.8", "56.12", "56.2", // dejar de cambiar
-  "61.68", "62.12", // comenta PLAN
+  "12.48",
+  "12.96", // frecuencia tres
+  "13.76",
+  "14.04", // drop sets
+  "24.32",
+  "24.6", // tres vídeos
+  "38.96",
+  "39.4",
+  "39.52",
+  "39.6",
+  "39.8", // solo lo que haga falta
+  "54",
+  "54.36", // hacer más
+  "54.72",
+  "55.12", // hacer menos
+  "55.8",
+  "56.12",
+  "56.2", // dejar de cambiar
+  "61.68",
+  "62.12", // comenta PLAN
 ]);
 
 type RawWord = { text: string; start: number; duration: number; eos: boolean };
@@ -165,7 +182,18 @@ export const punches: Punch[] = [
 // `at` es el momento del IMPACTO en segundos del original; Sound.tsx adelanta
 // cada archivo lo necesario para que su pico caiga ahí.
 
-export type FxName = "hit" | "riser" | "snap" | "tic" | "whoosh-a" | "whoosh-b" | "marker" | "pop" | "paper" | "ding" | "stamp";
+export type FxName =
+  | "hit"
+  | "riser"
+  | "snap"
+  | "tic"
+  | "whoosh-a"
+  | "whoosh-b"
+  | "marker"
+  | "pop"
+  | "paper"
+  | "ding"
+  | "stamp";
 
 export const FX_PEAK: Record<FxName, number> = {
   hit: 0.27,
@@ -221,23 +249,55 @@ export const SCENE_IN = 0.42;
 export const SCENE_OUT = 0.36;
 
 // Se alternan escenas completas y gráficos sobre la persona; el final es la persona.
+// Las salidas de las escenas completas terminan DESPUÉS del corte de cámara
+// siguiente (cortes medidos: 14.44, 36.04, 49.96, 57.12), así la cortinilla
+// revela directamente el plano nuevo y el corte nunca se ve.
+const OUT_AFTER_CUT = (cut: number) => cut + 0.38;
+
 export const scenes: Scene[] = [
-  { id: "excel", from: 6.94, to: 9.66, title: "Excel", mode: "full" },
-  { id: "tools", from: 11.0, to: 14.62, title: "Cambios", mode: "full" },
+  { id: "excel", from: 6.94, to: 9.66, title: "Excel", mode: "overlay" },
+  {
+    id: "tools",
+    from: 11.04,
+    to: OUT_AFTER_CUT(14.44),
+    title: "Cambios",
+    mode: "full",
+  },
   { id: "videos", from: 23.2, to: 25.85, title: "Vídeos", mode: "overlay" },
-  { id: "prio", from: 31.8, to: 36.0, title: "Ajuste", mode: "full" },
+  {
+    id: "prio",
+    from: 31.8,
+    to: OUT_AFTER_CUT(36.04),
+    title: "Ajuste",
+    mode: "full",
+  },
   { id: "falta", from: 38.5, to: 40.75, title: "Falta", mode: "overlay" },
-  { id: "check", from: 44.6, to: 49.98, title: "Revisar", mode: "full" },
-  { id: "options", from: 52.2, to: 57.1, title: "Decidir", mode: "full" },
+  {
+    id: "check",
+    from: 44.6,
+    to: OUT_AFTER_CUT(49.96),
+    title: "Revisar",
+    mode: "full",
+  },
+  {
+    id: "options",
+    from: 52.2,
+    to: OUT_AFTER_CUT(57.12),
+    title: "Decidir",
+    mode: "full",
+  },
   { id: "cta", from: 61.6, to: 65.6, title: "Plan", mode: "overlay" },
 ];
 
 const isLast = (s: Scene) => s.to >= SOURCE_END - 0.05;
 
-export const sceneAt = (t: number) => scenes.find((s) => t >= s.from && t < s.to);
+export const sceneAt = (t: number) =>
+  scenes.find((s) => t >= s.from && t < s.to);
 
 // Mitad de la entrada y de la salida de cada escena (llevan whoosh salvo que ya tengan golpe).
-export const panelIns = scenes.flatMap((s) => (isLast(s) ? [s.from + 0.2] : [s.from + 0.2, s.to - 0.18]));
+export const panelIns = scenes.flatMap((s) =>
+  isLast(s) ? [s.from + 0.2] : [s.from + 0.2, s.to - 0.18],
+);
 
 const designed: Sfx[] = [
   // Hook: captación y retención (los únicos hits y risers del vídeo)
@@ -251,7 +311,8 @@ const designed: Sfx[] = [
   { at: 16.68, src: "snap", volume: 0.3 },
 ];
 
-const near = (list: Sfx[], at: number, gap: number) => list.some((x) => Math.abs(x.at - at) < gap);
+const near = (list: Sfx[], at: number, gap: number) =>
+  list.some((x) => Math.abs(x.at - at) < gap);
 
 // Whooshes en barridos y paneles, alternando las dos muestras.
 const whooshes: Sfx[] = [];
@@ -300,17 +361,22 @@ export const headlines: Record<string, HeadlineLine[]> = {
 
 /** Momento (segundos del original) en que aparece cada palabra de cada titular. */
 export const headlineWordTimes = Object.values(headlines).flatMap((lines) =>
-  lines.flatMap((l) => l.text.split(" ").map((_, i) => l.at + i * HEADLINE_STAGGER)),
+  lines.flatMap((l) =>
+    l.text.split(" ").map((_, i) => l.at + i * HEADLINE_STAGGER),
+  ),
 );
 
 // Motion graphics: tic en cada palabra de titular, trazo en cada subrayado y pop
 // suave en cada elemento que aparece. Tiempos en segundos del original.
-const headline = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "tic", volume: 0.3 }));
+const headline = (...at: number[]): Sfx[] =>
+  at.map((t) => ({ at: t, src: "tic", volume: 0.3 }));
 const headlineMarkers = Object.values(headlines).flatMap((lines) =>
   lines.filter((l) => l.marker !== undefined).map((l) => l.marker as number),
 );
-const marker = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "marker", volume: 0.4 }));
-const pop = (...at: number[]): Sfx[] => at.map((t) => ({ at: t, src: "pop", volume: 0.22 }));
+const marker = (...at: number[]): Sfx[] =>
+  at.map((t) => ({ at: t, src: "marker", volume: 0.4 }));
+const pop = (...at: number[]): Sfx[] =>
+  at.map((t) => ({ at: t, src: "pop", volume: 0.22 }));
 
 const graphicsSfx: Sfx[] = [
   // titulares: un tic por palabra y el trazo de cada subrayado
@@ -342,12 +408,12 @@ const graphicsSfx: Sfx[] = [
   ...pop(52.92, 53.04, 53.16),
   ...pop(54.0, 54.72, 55.8),
   ...marker(54.12, 54.84, 55.92),
-  // 08 · CTA: «Comenta», caja, tecleo de PLAN, enviar
-  ...headline(61.92),
-  ...pop(62.02),
-  ...[0, 1, 2, 3].map((i) => ({ at: 62.12 + i * 0.07, src: "tic" as const, volume: 0.22 })),
-  { at: 62.57, src: "snap", volume: 0.25 },
-  ...pop(62.6),
+  // 08 · CTA: panel de comentarios, tecleo de PLAN, envío, cascada y aviso de DM
+  ...pop(61.62),
+  ...[0, 1, 2, 3].map((i) => ({ at: 62.12 + i * 0.07, src: "tic" as const, volume: 0.18 })),
+  { at: 62.52, src: "snap", volume: 0.22 },
+  { at: 62.64, src: "ding", volume: 0.2 },
+  ...Array.from({ length: 10 }).map((_, i) => ({ at: 62.77 + i * 0.2, src: "pop" as const, volume: 0.14 })),
 ];
 
 export const sfx: Sfx[] = [...designed, ...whooshes, ...graphicsSfx];
@@ -382,7 +448,15 @@ export const captionPages: Word[][] = [];
 export const HOOK_END = 3.7;
 export const ROTO_FRAMES = 64; // public/roto/p_000.png … desde TRIM
 
-export const visiblePages = captionPages.filter((p) => !sceneAt(p[0].start) && p[0].start >= HOOK_END);
+// Una página que empieza durante una escena se muestra en cuanto la escena acaba
+// (si aún le quedan palabras por decir); si no, se omite.
+export const pageStart = (p: Word[]) => {
+  const sc = sceneAt(p[0].start);
+  return sc ? sc.to : p[0].start;
+};
+export const visiblePages = captionPages.filter(
+  (p) => p[0].start >= HOOK_END && pageStart(p) < p[p.length - 1].end + 0.1,
+);
 
 // TIC en cada palabra que aparece en pantalla (subtítulos y hook).
 const tics: Sfx[] = words

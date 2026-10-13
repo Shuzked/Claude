@@ -21,12 +21,14 @@ const hookWords = words.filter((w) => w.start < HOOK_END);
 const LINES = [
   [0, 1],
   [2, 3],
-  [4, 5],
 ]; // índices de palabra por línea (detrás de la persona)
 // La frase final va DELANTE de la persona y más abajo, a la altura del pecho,
 // para que se lea entera y nunca tape la cara.
-const FRONT_LINE = [6, 7];
-const FRONT_TOP = 1190;
+const FRONT_LINES = [
+  [4, 5],
+  [6, 7],
+];
+const FRONT_TOP = 1120;
 const MAX_W = 1000;
 const CHAR_W = 0.7; // ancho medio de Montserrat Black Italic en em
 const TOP = 170;
@@ -89,15 +91,15 @@ export const HookFront: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   if (TRIM + frame / fps >= HOOK_END) return null;
+  let y = FRONT_TOP;
   return (
     <AbsoluteFill>
-      {renderLine(
-        FRONT_LINE,
-        FRONT_TOP,
-        lineSize(FRONT_LINE) * 0.95,
-        "front",
-        true,
-      )}
+      {FRONT_LINES.map((idx, li) => {
+        const size = lineSize(idx) * 0.92;
+        const top = y;
+        y += size * 0.98;
+        return renderLine(idx, top, size, `front-${li}`, true);
+      })}
     </AbsoluteFill>
   );
 };

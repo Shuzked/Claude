@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { HookCutout, HookFront, HookWords } from "./Hook";
+import faceTrack from "./faceTrack.json";
 import { impacts, punches, shots, TRIM, whips } from "./timeline";
 
 // Cámara virtual: el vídeo nunca está quieto.
@@ -18,6 +19,24 @@ import { impacts, punches, shots, TRIM, whips } from "./timeline";
 //  3. Los remates llevan un golpe de zoom con muelle que se mantiene y se suelta.
 //  4. Una deriva mínima de cámara en mano para que no parezca un plano fijo.
 //  5–7. Entrada de golpe, sacudidas en los golpes y barridos en los cortes.
+//  8. Tracking de cabeza: el encuadre sigue la cara (faceTrack.json, detectada y
+//     suavizada por plano) y la lleva hacia el centro; sube el zoom solo lo
+//     necesario para no enseñar bordes.
+
+const ORIGIN = { x: 540, y: 1920 * 0.32 };
+const TARGET = { x: 540, y: 700 }; // dónde queremos la cara en pantalla
+const CENTERING = 0.5; // cuánto se corrige el descentrado (0 = nada, 1 = centrado total)
+const MAX_TRACK_ZOOM = 1.4;
+const EDGE_MARGIN = 14; // px de margen para la deriva y las sacudidas
+
+const track = faceTrack as { fps: number; points: [number, number][] };
+const faceAt = (sourceSeconds: number) => {
+  const i = Math.min(
+    track.points.length - 1,
+    Math.max(0, Math.round(sourceSeconds * track.fps)),
+  );
+  return { x: track.points[i][0], y: track.points[i][1] };
+};
 
 const BASE = 1.04; // margen para que la deriva nunca enseñe bordes
 
@@ -100,11 +119,45 @@ const useCamera = () => {
     whipY += (k < 0 ? -1 : 1) * 40 * a;
   }
 
+  // 8. tracking de cabeza
+  const face = faceAt(t);
+  const want = {
+    x: face.x + (TARGET.x - face.x) * CENTERING,
+    y: face.y + (TARGET.y - face.y) * CENTERING,
+  };
+  const camScale =
+    BASE + tight + drift + cutKick + punch + ctaRelax + slam + impactZoom;
+  // zoom mínimo para poder desplazar la cara hasta `want` sin enseñar bordes
+  const ax = Math.abs(face.x - ORIGIN.x);
+  const bx = Math.abs(want.x - ORIGIN.x);
+  const needX =
+    ORIGIN.x - ax > 1
+      ? (ORIGIN.x - bx + EDGE_MARGIN) / (ORIGIN.x - ax)
+      : MAX_TRACK_ZOOM;
+  const scale = Math.min(
+    MAX_TRACK_ZOOM + slam + punch + impactZoom,
+    Math.max(camScale, needX),
+  );
+  const clampAxis = (tr: number, o: number, size: number) =>
+    Math.max(
+      -(scale - 1) * (size - o) + EDGE_MARGIN,
+      Math.min((scale - 1) * o - EDGE_MARGIN, tr),
+    );
+  const trX = clampAxis(
+    want.x - ORIGIN.x - scale * (face.x - ORIGIN.x),
+    ORIGIN.x,
+    1080,
+  );
+  const trY = clampAxis(
+    want.y - ORIGIN.y - scale * (face.y - ORIGIN.y),
+    ORIGIN.y,
+    1920,
+  );
+
   return {
-    scale:
-      BASE + tight + drift + cutKick + punch + ctaRelax + slam + impactZoom,
-    x: x + shakeX,
-    y: y + shakeY + whipY,
+    scale,
+    x: trX + x + shakeX,
+    y: trY + y + shakeY + whipY,
     rot,
     blur,
   };
@@ -113,36 +166,30 @@ const useCamera = () => {
 export const Camera: React.FC = () => {
   const { scale, x, y, rot, blur } = useCamera();
   const { fps } = useVideoConfig();
+  const transform: React.CSSProperties = {
+    transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
+    // centro en la cara: los zooms acercan el rostro, no el pecho
+    transformOrigin: "50% 32%",
+  };
+  const look = `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`;
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>
-      <AbsoluteFill
-        style={{
-          transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
-          // centro en la cara: los zooms acercan el rostro, no el pecho
-          transformOrigin: "50% 32%",
-        }}
-      >
+      <AbsoluteFill style={transform}>
         <Video
           src={staticFile("video.mp4")}
           trimBefore={Math.round(TRIM * fps)}
           objectFit="cover"
-          style={{
-            width: "100%",
-            height: "100%",
-            filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
-          }}
+          style={{ width: "100%", height: "100%", filter: look }}
         />
-        {/* hook: palabras detrás de la persona recortada */}
-        <HookWords />
-        <AbsoluteFill
-          style={{
-            filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
-          }}
-        >
-          <HookCutout />
-        </AbsoluteFill>
-        <HookFront />
       </AbsoluteFill>
+      {/* hook: las palabras van en coordenadas de pantalla (siempre caben) y el
+          recorte de la persona se pinta encima con la MISMA transformación que
+          el vídeo, así queda perfectamente alineado */}
+      <HookWords />
+      <AbsoluteFill style={{ ...transform, filter: look }}>
+        <HookCutout />
+      </AbsoluteFill>
+      <HookFront />
     </AbsoluteFill>
   );
 };

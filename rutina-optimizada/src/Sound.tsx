@@ -2,12 +2,20 @@ import { Audio } from "@remotion/media";
 import React from "react";
 import { interpolate, Sequence, staticFile } from "remotion";
 import { FPS } from "./theme";
-import { allSfx, DURATION_FRAMES, f, FX_DIR, FX_PEAK, words, type FxName } from "./timeline";
+import {
+  allSfx,
+  DURATION_FRAMES,
+  f,
+  FX_DIR,
+  FX_PEAK,
+  words,
+  type FxName,
+} from "./timeline";
 
 // Mezcla: la voz (ya procesada en el vídeo) manda; la música baja cuando se
 // habla y sube en las pausas; los efectos van por encima de la música.
-const MUSIC_GAP = 0.3; // nivel en pausas
-const MUSIC_UNDER_VOICE = 0.17; // nivel mientras se habla
+const MUSIC_GAP = 0.15; // nivel en pausas (cama sutil)
+const MUSIC_UNDER_VOICE = 0.075; // nivel mientras se habla: la voz manda
 const ATTACK = 0.08; // s que tarda en bajar
 const RELEASE = 0.35; // s que tarda en recuperarse
 
@@ -30,8 +38,10 @@ const duck: number[] = (() => {
   return out;
 })();
 
+// Los efectos acompañan, no compiten con la voz.
+const SFX_MASTER = 0.55;
 const SFX_GAIN: Record<FxName, number> = {
-  tic: 0.8,
+  tic: 0.7,
   "whoosh-a": 1,
   "whoosh-b": 1,
   hit: 1.1,
@@ -51,10 +61,15 @@ export const Sound: React.FC = () => (
       volume={(frame) => {
         const d = duck[Math.min(frame, DURATION_FRAMES - 1)] ?? 0;
         const base = MUSIC_GAP + (MUSIC_UNDER_VOICE - MUSIC_GAP) * d;
-        const fades = interpolate(frame, [0, 3, DURATION_FRAMES - 2.5 * FPS, DURATION_FRAMES], [0, 1, 1, 0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        });
+        const fades = interpolate(
+          frame,
+          [0, 3, DURATION_FRAMES - 2.5 * FPS, DURATION_FRAMES],
+          [0, 1, 1, 0],
+          {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+          },
+        );
         return base * fades;
       }}
     />
@@ -63,8 +78,17 @@ export const Sound: React.FC = () => (
       // adelanta el archivo para que su pico caiga en `at`
       const from = Math.max(0, f(s.at - FX_PEAK[name]));
       return (
-        <Sequence key={i} from={from} durationInFrames={4 * FPS} name={`SFX · ${name}`} layout="none">
-          <Audio src={staticFile(`audio/${FX_DIR[name]}/${name}.wav`)} volume={s.volume * SFX_GAIN[name]} />
+        <Sequence
+          key={i}
+          from={from}
+          durationInFrames={4 * FPS}
+          name={`SFX · ${name}`}
+          layout="none"
+        >
+          <Audio
+            src={staticFile(`audio/${FX_DIR[name]}/${name}.wav`)}
+            volume={s.volume * SFX_GAIN[name] * SFX_MASTER}
+          />
         </Sequence>
       );
     })}

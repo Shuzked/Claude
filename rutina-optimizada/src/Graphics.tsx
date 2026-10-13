@@ -351,7 +351,7 @@ const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({
           left: AREA.x,
           top: overlay ? 1060 : 0,
           width: AREA.w,
-          height: overlay ? 520 : 1920,
+          height: overlay ? 860 : 1920,
           opacity: 1 - out,
           transform: `scale(${1 - 0.12 * out}) translateY(${out * 30}px)`,
         }}
@@ -402,12 +402,11 @@ const Headline: React.FC<{
   origin: number;
   size?: number;
   absolute?: boolean;
-}> = ({ lines, origin, size = 118, absolute = true }) => (
+  top?: number;
+}> = ({ lines, origin, size = 118, absolute = true, top = HEADLINE_TOP }) => (
   <div
     style={
-      absolute
-        ? { position: "absolute", top: HEADLINE_TOP, left: 0, right: 0 }
-        : undefined
+      absolute ? { position: "absolute", top, left: 0, right: 0 } : undefined
     }
   >
     {lines.map((l, i) => (
@@ -473,10 +472,11 @@ const HeadlineRow: React.FC<{
   );
 };
 
-const Visual: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{ position: "absolute", top: VISUAL_TOP, left: 0, right: 0 }}>
-    {children}
-  </div>
+const Visual: React.FC<{ children: React.ReactNode; top?: number }> = ({
+  children,
+  top = VISUAL_TOP,
+}) => (
+  <div style={{ position: "absolute", top, left: 0, right: 0 }}>{children}</div>
 );
 
 const sceneFrom = (id: string) => scenes.find((s) => s.id === id)!.from;
@@ -531,7 +531,11 @@ const RollingNumber: React.FC<{
 const RED = "#FF2E3A";
 
 /** Sello rojo que cae de golpe en el centro de la pantalla. */
-const Stamp: React.FC<{ at: number; text: string }> = ({ at, text }) => {
+const Stamp: React.FC<{ at: number; text: string; top?: number }> = ({
+  at,
+  text,
+  top = 800,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
@@ -547,7 +551,7 @@ const Stamp: React.FC<{ at: number; text: string }> = ({ at, text }) => {
     <div
       style={{
         position: "absolute",
-        top: 800,
+        top,
         left: 0,
         right: 0,
         display: "flex",
@@ -572,30 +576,6 @@ const Stamp: React.FC<{ at: number; text: string }> = ({ at, text }) => {
       >
         {text}
       </div>
-    </div>
-  );
-};
-
-/** Todo lo que no es el sello cae por gravedad, con un poco de giro. */
-const Fall: React.FC<{
-  at: number;
-  delay?: number;
-  rot?: number;
-  fill?: boolean;
-  children: React.ReactNode;
-}> = ({ at, delay = 0, rot = 0, fill = false, children }) => {
-  const t = useT();
-  const dt = Math.max(0, t - at - delay);
-  const y = 0.5 * 5200 * dt * dt;
-  return (
-    <div
-      style={{
-        ...(fill ? { position: "absolute", inset: 0 } : {}),
-        transform: `translateY(${y}px) rotate(${rot * dt}deg)`,
-        opacity: 1 - Math.min(1, Math.max(0, dt - 0.35) / 0.3),
-      }}
-    >
-      {children}
     </div>
   );
 };
@@ -1154,6 +1134,7 @@ const FlatChart: React.FC<{ at: number }> = ({ at }) => {
   );
 };
 
+// Sobre el vídeo original (sin cortinilla), en la mitad baja: no tapa la cara.
 const ExcelScene: React.FC = () => {
   const swapAt = rel("excel", 8.06);
   const stampLocal = rel("excel", 8.72) - rel("excel", 8.06);
@@ -1176,12 +1157,21 @@ const ExcelScene: React.FC = () => {
           transform: `translateX(${-swap * 110}%)`,
         }}
       >
-        <Headline lines={headlines.excelA} origin={sceneFrom("excel")} />
-        <Visual>
-          <Spreadsheet at={SCENE_IN} />
+        <Headline
+          lines={headlines.excelA}
+          origin={sceneFrom("excel")}
+          size={96}
+          top={0}
+        />
+        <Visual top={230}>
+          <div
+            style={{ transform: "scale(0.9)", transformOrigin: "top center" }}
+          >
+            <Spreadsheet at={SCENE_IN} />
+          </div>
         </Visual>
       </div>
-      {/* vista B: «el pecho sigue igual» + torso iluminado + gráfica plana */}
+      {/* vista B: «el pecho sigue igual» + maniquí + gráfica plana, fijos */}
       <div
         style={{
           position: "absolute",
@@ -1190,36 +1180,47 @@ const ExcelScene: React.FC = () => {
         }}
       >
         <Sequence from={Math.round(swapAt * fps)} layout="none">
-          <Fall at={stampLocal} delay={0.06} rot={-12} fill>
-            <Headline
-              lines={headlines.excelB}
-              origin={sceneFrom("excel") + swapAt}
-            />
-          </Fall>
-          <Visual>
-            {/* pecho arriba y gráfica debajo, centrados y con aire */}
+          <Headline
+            lines={headlines.excelB}
+            origin={sceneFrom("excel") + swapAt}
+            size={96}
+            top={0}
+          />
+          <Visual top={230}>
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                gap: 56,
+                justifyContent: "center",
+                gap: 30,
               }}
             >
-              <Fall at={stampLocal} rot={14}>
-                <Torso
-                  at={0.02}
-                  glowAt={rel("excel", 8.2) - swapAt}
-                  zoomAt={rel("excel", 8.48) - swapAt}
-                />
-              </Fall>
-              <Fall at={stampLocal} delay={0.1} rot={-18}>
-                <FlatChart at={0.15} />
-              </Fall>
+              <div
+                style={{
+                  width: 300,
+                  height: 400,
+                  display: "flex",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  style={{
+                    transform: "scale(0.72)",
+                    transformOrigin: "top center",
+                  }}
+                >
+                  <Torso
+                    at={0.02}
+                    glowAt={rel("excel", 8.2) - swapAt}
+                    zoomAt={rel("excel", 8.48) - swapAt}
+                  />
+                </div>
+              </div>
+              <FlatChart at={0.15} />
             </div>
           </Visual>
-          {/* «sin cambios»: sello rojo en el centro mientras todo cae */}
-          <Stamp at={stampLocal} text="Sin cambios" />
+          {/* «sin cambios»: sello rojo en el centro; todo lo demás se queda fijo */}
+          <Stamp at={stampLocal} text="Sin cambios" top={300} />
         </Sequence>
       </div>
     </div>
@@ -1643,109 +1644,170 @@ const OptionsScene: React.FC = () => (
 // ---------------------------------------------------------------------------
 // 08 · E08 CTA: «Comenta PLAN» + «Te escribo por privado»
 
-const CtaScene: React.FC = () => {
-  const t = useT();
-  const { fps } = useVideoConfig();
-  const comenta = useReveal(SCENE_IN - 0.1, 0.35);
-  const box = useReveal(SCENE_IN, 0.4);
-  const typeAt = rel("cta", 62.12);
-  const typed = Math.max(0, Math.min(4, Math.floor((t - typeAt) / 0.07) + 1));
-  const sent = useSpringAt(typeAt + 0.45, 12);
-  const dm = useReveal(rel("cta", 62.6), 0.4);
-  const plane = useReveal(rel("cta", 62.6), 0.7, easeInOut);
-  const caret = Math.floor((t * fps) / 8) % 2 === 0;
+// Panel de comentarios genérico: se teclea PLAN, se envía y llega una cascada de
+// usuarios comentando PLAN; al decir «te escribo por privado» entra un aviso de mensaje.
+const COMMENTERS = [
+  ["dani.entrena", "#4F7CFF"],
+  ["laura_fit", "#FF6B8B"],
+  ["marcos.gym", "#FFB547"],
+  ["sara.lifts", "#9B6BFF"],
+  ["javi_pr", "#2EC4B6"],
+  ["noe.runs", "#FF7A45"],
+  ["alex.press", "#5BC0EB"],
+  ["irene.sq", "#E05FD8"],
+  ["pablo_rm", "#7BD389"],
+  ["clara.fit", "#F2C14E"],
+] as const;
+
+const Avatar: React.FC<{ name: string; color: string; size?: number }> = ({
+  name,
+  color,
+  size = 52,
+}) => (
+  <div
+    style={{
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      background: color,
+      flexShrink: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: FONT,
+      fontWeight: 800,
+      fontSize: size * 0.42,
+      color: INK,
+    }}
+  >
+    {name[0].toUpperCase()}
+  </div>
+);
+
+const CommentRow: React.FC<{
+  name: string;
+  color: string;
+  at: number;
+  mine?: boolean;
+}> = ({ name, color, at, mine }) => {
+  const p = useSpringAt(at, 12);
+  const heart = useSpringAt(at + 0.25, 8);
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 18,
+        height: 74,
+        padding: "0 22px",
+        transform: `translateX(${(1 - p) * -60}px) scale(${0.9 + 0.1 * p})`,
+        opacity: Math.min(1, p * 2),
+        background: mine ? "rgba(4,228,0,0.1)" : "transparent",
+        borderRadius: 16,
+      }}
     >
-      <MaskUp p={comenta}>
-        <div style={{ ...display, fontSize: 64 }}>Comenta</div>
-      </MaskUp>
-      {/* caja de comentario donde se teclea PLAN */}
-      <div
-        style={{
-          marginTop: 22,
-          width: 760,
-          height: 130,
-          border: `3px solid ${typed > 0 ? GREEN : "rgba(255,255,255,0.3)"}`,
-          borderRadius: 65,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 22px 0 46px",
-          opacity: box,
-          transform: `scaleX(${0.9 + 0.1 * box})`,
-          filter: typed > 0 ? GLOW_SOFT : undefined,
-          background: "rgba(255,255,255,0.03)",
-        }}
-      >
+      <Avatar name={name} color={color} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: FONT,
+            fontWeight: 700,
+            fontSize: 22,
+            color: "rgba(255,255,255,0.55)",
+          }}
+        >
+          {name}
+        </div>
         <div
           style={{
             ...display,
-            fontSize: 88,
-            flex: 1,
-            color: typed > 0 ? GREEN : "rgba(255,255,255,0.3)",
-            textShadow: typed > 0 ? GREEN_TEXT_GLOW : "none",
+            fontSize: 34,
+            letterSpacing: 0,
+            color: mine ? GREEN : PAPER,
+            textShadow: mine ? GREEN_TEXT_GLOW : "none",
           }}
         >
-          {typed > 0
-            ? "PLAN".slice(0, typed)
-            : "Añade un comentario…".slice(0, 0)}
-          <span
-            style={{
-              opacity: caret && sent < 0.5 ? 1 : 0,
-              color: PAPER,
-              fontStyle: "normal",
-            }}
-          >
-            |
-          </span>
-        </div>
-        <div
-          style={{
-            width: 88,
-            height: 88,
-            borderRadius: 44,
-            background: GREEN,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transform: `scale(${0.6 + 0.4 * sent})`,
-            opacity: Math.min(1, sent * 2),
-            filter: GLOW,
-          }}
-        >
-          <svg width={40} height={40}>
-            <path
-              d="M 20 32 V 8 M 9 18 L 20 7 L 31 18"
-              stroke={INK}
-              strokeWidth={5}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          Plan
         </div>
       </div>
-      {/* te escribo por privado */}
-      <div
+      <svg
+        width={34}
+        height={30}
+        viewBox="0 0 34 30"
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 20,
-          marginTop: 40,
-          opacity: dm,
-          transform: `translateY(${(1 - dm) * 20}px)`,
+          transform: `scale(${heart})`,
+          filter: heart > 0.5 ? GLOW : undefined,
         }}
       >
-        <svg
-          width={56}
-          height={56}
-          style={{
-            overflow: "visible",
-            filter: GLOW,
-            transform: `translate(${plane * 6}px, ${-plane * 6}px)`,
-          }}
-        >
+        <path
+          d="M 17 28 C 6 20, 1 14, 1 8.5 C 1 4, 4.5 1, 8.5 1 C 12 1, 15 3, 17 6 C 19 3, 22 1, 25.5 1 C 29.5 1, 33 4, 33 8.5 C 33 14, 28 20, 17 28 Z"
+          fill={GREEN}
+        />
+      </svg>
+    </div>
+  );
+};
+
+const CtaScene: React.FC = () => {
+  const t = useT();
+  const { fps } = useVideoConfig();
+  const panel = useSpringAt(0, 14);
+  const typeAt = rel("cta", 62.12);
+  const typed = Math.max(0, Math.min(4, Math.floor((t - typeAt) / 0.07) + 1));
+  const sendAt = typeAt + 0.4;
+  const sent = t >= sendAt;
+  const caret = Math.floor((t * fps) / 8) % 2 === 0;
+  // cascada de comentarios tras el envío
+  const cascade = COMMENTERS.map((c, i) => ({
+    name: c[0],
+    color: c[1],
+    at: sendAt + 0.25 + i * 0.2,
+  }));
+  const visible = [
+    { name: "tú", color: GREEN as string, at: sendAt, mine: true },
+    ...cascade,
+  ].filter((c) => t >= c.at);
+  const ROW = 74;
+  const maxRows = 6;
+  const scroll = Math.max(0, visible.length - maxRows) * ROW;
+  const count = Math.round(
+    interpolate(t, [sendAt, sendAt + 2.6], [0, 248], {
+      ...clamp,
+      easing: Easing.out(Easing.cubic),
+    }),
+  );
+  const dm = useSpringAt(rel("cta", 62.64), 12);
+  const title = useSpringAt(rel("cta", 61.68) - rel("cta", 61.6) + 0.02, 11);
+  return (
+    <div
+      style={{
+        position: "relative",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      {/* aviso de mensaje privado */}
+      <div
+        style={{
+          position: "absolute",
+          top: -150,
+          left: 60,
+          right: 60,
+          display: "flex",
+          alignItems: "center",
+          gap: 18,
+          padding: "16px 22px",
+          borderRadius: 22,
+          background: "rgba(20,20,20,0.92)",
+          border: `2px solid ${GREEN}`,
+          transform: `translateY(${(1 - dm) * -40}px)`,
+          opacity: Math.min(1, dm * 2),
+          filter: GLOW_SOFT,
+        }}
+      >
+        <svg width={44} height={44} viewBox="0 0 56 56">
           <path
             d="M 4 26 L 52 6 L 38 50 L 28 32 Z"
             fill="none"
@@ -1755,17 +1817,171 @@ const CtaScene: React.FC = () => {
           />
           <path d="M 28 32 L 52 6" stroke={GREEN} strokeWidth={4} />
         </svg>
+        <div>
+          <div
+            style={{
+              fontFamily: FONT,
+              fontWeight: 700,
+              fontSize: 20,
+              color: "rgba(255,255,255,0.55)",
+            }}
+          >
+            Mensaje nuevo
+          </div>
+          <div
+            style={{
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 32,
+              color: PAPER,
+            }}
+          >
+            Te escribo por privado
+          </div>
+        </div>
+      </div>
+      {/* panel de comentarios */}
+      <div
+        style={{
+          width: 880,
+          height: 700,
+          borderRadius: 34,
+          background: "rgba(16,16,16,0.94)",
+          border: "1.5px solid rgba(255,255,255,0.1)",
+          transform: `translateY(${(1 - panel) * 700}px)`,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <div
           style={{
-            fontFamily: FONT,
-            fontWeight: 700,
-            fontSize: 42,
-            color: PAPER,
-            textShadow: TEXT_GLOW,
-            whiteSpace: "nowrap",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "22px 30px 14px",
           }}
         >
-          Te escribo por privado
+          <div
+            style={{
+              transform: `scale(${0.7 + 0.3 * title})`,
+              transformOrigin: "left center",
+              ...display,
+              fontSize: 40,
+              letterSpacing: 0,
+            }}
+          >
+            Comenta{" "}
+            <span style={{ color: GREEN, textShadow: GREEN_TEXT_GLOW }}>
+              «Plan»
+            </span>
+          </div>
+          <div
+            style={{
+              fontFamily: FONT,
+              fontWeight: 800,
+              fontSize: 26,
+              color: GREEN,
+              opacity: sent ? 1 : 0,
+            }}
+          >
+            {count} comentarios
+          </div>
+        </div>
+        <div style={{ height: 1.5, background: "rgba(255,255,255,0.08)" }} />
+        {/* lista */}
+        <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+          <div
+            style={{ transform: `translateY(${-scroll}px)`, paddingTop: 10 }}
+          >
+            {visible.map((c, i) => (
+              <CommentRow
+                key={i}
+                name={c.name}
+                color={c.color}
+                at={c.at}
+                mine={"mine" in c}
+              />
+            ))}
+          </div>
+        </div>
+        {/* caja para escribir */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            padding: "14px 22px 22px",
+          }}
+        >
+          <Avatar name="tú" color={GREEN} size={56} />
+          <div
+            style={{
+              flex: 1,
+              height: 70,
+              borderRadius: 35,
+              border: `2.5px solid ${typed > 0 && !sent ? GREEN : "rgba(255,255,255,0.18)"}`,
+              display: "flex",
+              alignItems: "center",
+              padding: "0 26px",
+              ...display,
+              fontSize: 34,
+              letterSpacing: 0,
+              color: GREEN,
+              textShadow: "none",
+            }}
+          >
+            {!sent && typed > 0 ? "PLAN".slice(0, typed) : ""}
+            {!sent ? (
+              <span
+                style={{
+                  opacity: caret ? 1 : 0,
+                  color: PAPER,
+                  fontStyle: "normal",
+                }}
+              >
+                |
+              </span>
+            ) : null}
+            {!sent && typed === 0 ? (
+              <span
+                style={{
+                  fontFamily: FONT,
+                  fontWeight: 600,
+                  fontStyle: "normal",
+                  fontSize: 26,
+                  color: "rgba(255,255,255,0.35)",
+                  textTransform: "none",
+                }}
+              >
+                Añade un comentario…
+              </span>
+            ) : null}
+          </div>
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              background: GREEN,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: `scale(${t >= sendAt - 0.05 && t < sendAt + 0.15 ? 0.85 : 1})`,
+              filter: GLOW,
+            }}
+          >
+            <svg width={30} height={30}>
+              <path
+                d="M 15 25 V 6 M 6 14 L 15 5 L 24 14"
+                stroke={INK}
+                strokeWidth={4.5}
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
