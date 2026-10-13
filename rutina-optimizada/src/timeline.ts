@@ -365,7 +365,13 @@ export const captionPages: Word[][] = [];
   if (page.length) captionPages.push(page);
 }
 
-export const visiblePages = captionPages.filter((p) => !sceneAt(p[0].start));
+// --- Hook rotoscopiado ----------------------------------------------------------
+// Hasta el primer corte (3,7 s) las palabras de la pregunta aparecen detrás de la
+// persona recortada, así que no hay subtítulos.
+export const HOOK_END = 3.7;
+export const ROTO_FRAMES = 64; // public/roto/p_000.png … desde TRIM
+
+export const visiblePages = captionPages.filter((p) => !sceneAt(p[0].start) && p[0].start >= HOOK_END);
 
 // TIC en cada palabra que aparece en pantalla (subtítulos y hook).
 const tics: Sfx[] = words

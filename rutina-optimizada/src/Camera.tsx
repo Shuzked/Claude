@@ -9,6 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { HookCutout, HookFront, HookWords } from "./Hook";
 import { impacts, punches, shots, TRIM, whips } from "./timeline";
 
 // Cámara virtual: el vídeo nunca está quieto.
@@ -48,7 +49,11 @@ const useCamera = () => {
   for (const p of punches) {
     const local = (t - p.at) * fps;
     if (local < -1 || t > p.at + p.hold + 0.6) continue;
-    const inS = spring({ frame: local, fps, config: { damping: 15, stiffness: 160, mass: 0.7 } });
+    const inS = spring({
+      frame: local,
+      fps,
+      config: { damping: 15, stiffness: 160, mass: 0.7 },
+    });
     const outS = interpolate(t, [p.at + p.hold, p.at + p.hold + 0.6], [0, 1], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
@@ -96,7 +101,8 @@ const useCamera = () => {
   }
 
   return {
-    scale: BASE + tight + drift + cutKick + punch + ctaRelax + slam + impactZoom,
+    scale:
+      BASE + tight + drift + cutKick + punch + ctaRelax + slam + impactZoom,
     x: x + shakeX,
     y: y + shakeY + whipY,
     rot,
@@ -126,6 +132,16 @@ export const Camera: React.FC = () => {
             filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
           }}
         />
+        {/* hook: palabras detrás de la persona recortada */}
+        <HookWords />
+        <AbsoluteFill
+          style={{
+            filter: `contrast(1.06) saturate(1.04)${blur > 0.3 ? ` blur(${blur}px)` : ""}`,
+          }}
+        >
+          <HookCutout />
+        </AbsoluteFill>
+        <HookFront />
       </AbsoluteFill>
     </AbsoluteFill>
   );

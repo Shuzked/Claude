@@ -12,3 +12,6 @@ public/*.mov
 
 # Efectos con licencia de terceros (Epidemic Sound, blogovs): no se suben al repo
 public/audio/fx/
+
+# Recorte (rotoscopia) del hook: se genera desde el metraje, no se sube
+public/roto/
