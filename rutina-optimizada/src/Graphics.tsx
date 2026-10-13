@@ -1644,170 +1644,99 @@ const OptionsScene: React.FC = () => (
 // ---------------------------------------------------------------------------
 // 08 · E08 CTA: «Comenta PLAN» + «Te escribo por privado»
 
-// Panel de comentarios genérico: se teclea PLAN, se envía y llega una cascada de
-// usuarios comentando PLAN; al decir «te escribo por privado» entra un aviso de mensaje.
-const COMMENTERS = [
-  ["dani.entrena", "#4F7CFF"],
-  ["laura_fit", "#FF6B8B"],
-  ["marcos.gym", "#FFB547"],
-  ["sara.lifts", "#9B6BFF"],
-  ["javi_pr", "#2EC4B6"],
-  ["noe.runs", "#FF7A45"],
-  ["alex.press", "#5BC0EB"],
-  ["irene.sq", "#E05FD8"],
-  ["pablo_rm", "#7BD389"],
-  ["clara.fit", "#F2C14E"],
-] as const;
-
-const Avatar: React.FC<{ name: string; color: string; size?: number }> = ({
-  name,
-  color,
-  size = 52,
-}) => (
-  <div
-    style={{
-      width: size,
-      height: size,
-      borderRadius: size / 2,
-      background: color,
-      flexShrink: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: FONT,
-      fontWeight: 800,
-      fontSize: size * 0.42,
-      color: INK,
-    }}
-  >
-    {name[0].toUpperCase()}
-  </div>
-);
-
-const CommentRow: React.FC<{
-  name: string;
-  color: string;
-  at: number;
-  mine?: boolean;
-}> = ({ name, color, at, mine }) => {
-  const p = useSpringAt(at, 12);
-  const heart = useSpringAt(at + 0.25, 8);
+// CTA minimalista: «Comenta» + bocadillo verde con PLAN + «Te escribo por privado».
+const CtaScene: React.FC = () => {
+  const t = useT();
+  const comenta = useSpringAt(rel("cta", 61.68), 11);
+  const plan = useSpringAt(rel("cta", 62.12), 9);
+  const sub = useSpringAt(rel("cta", 62.64), 12);
+  const plane = interpolate(t, [rel("cta", 62.64), rel("cta", 63.4)], [0, 1], {
+    ...clamp,
+    easing: easeInOut,
+  });
+  // el bocadillo respira y hace un pequeño «guiño» cada poco
+  const breathe = 1 + Math.sin(t * 5.5) * 0.015 * plan;
+  const wiggle =
+    Math.sin(t * 9) *
+    2 *
+    Math.max(0, 1 - Math.abs((((t - rel("cta", 63.6)) * 2) % 2) - 1)) *
+    plan;
   return (
     <div
       style={{
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        gap: 18,
-        height: 74,
-        padding: "0 22px",
-        transform: `translateX(${(1 - p) * -60}px) scale(${0.9 + 0.1 * p})`,
-        opacity: Math.min(1, p * 2),
-        background: mine ? "rgba(4,228,0,0.1)" : "transparent",
-        borderRadius: 16,
+        paddingTop: 40,
       }}
     >
-      <Avatar name={name} color={color} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontFamily: FONT,
-            fontWeight: 700,
-            fontSize: 22,
-            color: "rgba(255,255,255,0.55)",
-          }}
+      <div
+        style={{
+          ...display,
+          fontSize: 84,
+          transform: `translateY(${(1 - comenta) * 40}px) scale(${0.4 + 0.6 * comenta}) rotate(${(1 - comenta) * -8}deg)`,
+          opacity: Math.min(1, comenta * 2.5),
+        }}
+      >
+        Comenta
+      </div>
+      <div
+        style={{
+          position: "relative",
+          marginTop: 14,
+          width: 400,
+          height: 190,
+          transform: `scale(${(0.3 + 0.7 * plan) * breathe}) rotate(${-4 + 2 * plan + wiggle}deg)`,
+          opacity: Math.min(1, plan * 2.5),
+          filter: GLOW_SOFT,
+        }}
+      >
+        <svg
+          width={400}
+          height={190}
+          style={{ position: "absolute", inset: 0 }}
         >
-          {name}
-        </div>
+          <path
+            d="M 10 10 L 392 4 L 384 140 L 132 148 L 74 186 L 82 148 L 16 150 Z"
+            fill={GREEN}
+          />
+        </svg>
         <div
           style={{
             ...display,
-            fontSize: 34,
-            letterSpacing: 0,
-            color: mine ? GREEN : PAPER,
-            textShadow: mine ? GREEN_TEXT_GLOW : "none",
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 14,
+            textAlign: "center",
+            fontSize: 128,
+            color: INK,
+            textShadow: "none",
           }}
         >
           Plan
         </div>
       </div>
-      <svg
-        width={34}
-        height={30}
-        viewBox="0 0 34 30"
-        style={{
-          transform: `scale(${heart})`,
-          filter: heart > 0.5 ? GLOW : undefined,
-        }}
-      >
-        <path
-          d="M 17 28 C 6 20, 1 14, 1 8.5 C 1 4, 4.5 1, 8.5 1 C 12 1, 15 3, 17 6 C 19 3, 22 1, 25.5 1 C 29.5 1, 33 4, 33 8.5 C 33 14, 28 20, 17 28 Z"
-          fill={GREEN}
-        />
-      </svg>
-    </div>
-  );
-};
-
-const CtaScene: React.FC = () => {
-  const t = useT();
-  const { fps } = useVideoConfig();
-  const panel = useSpringAt(0, 14);
-  const typeAt = rel("cta", 62.12);
-  const typed = Math.max(0, Math.min(4, Math.floor((t - typeAt) / 0.07) + 1));
-  const sendAt = typeAt + 0.4;
-  const sent = t >= sendAt;
-  const caret = Math.floor((t * fps) / 8) % 2 === 0;
-  // cascada de comentarios tras el envío
-  const cascade = COMMENTERS.map((c, i) => ({
-    name: c[0],
-    color: c[1],
-    at: sendAt + 0.25 + i * 0.2,
-  }));
-  const visible = [
-    { name: "tú", color: GREEN as string, at: sendAt, mine: true },
-    ...cascade,
-  ].filter((c) => t >= c.at);
-  const ROW = 74;
-  const maxRows = 6;
-  const scroll = Math.max(0, visible.length - maxRows) * ROW;
-  const count = Math.round(
-    interpolate(t, [sendAt, sendAt + 2.6], [0, 248], {
-      ...clamp,
-      easing: Easing.out(Easing.cubic),
-    }),
-  );
-  const dm = useSpringAt(rel("cta", 62.64), 12);
-  const title = useSpringAt(rel("cta", 61.68) - rel("cta", 61.6) + 0.02, 11);
-  return (
-    <div
-      style={{
-        position: "relative",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
-      {/* aviso de mensaje privado */}
       <div
         style={{
-          position: "absolute",
-          top: -150,
-          left: 60,
-          right: 60,
           display: "flex",
           alignItems: "center",
           gap: 18,
-          padding: "16px 22px",
-          borderRadius: 22,
-          background: "rgba(20,20,20,0.92)",
-          border: `2px solid ${GREEN}`,
-          transform: `translateY(${(1 - dm) * -40}px)`,
-          opacity: Math.min(1, dm * 2),
-          filter: GLOW_SOFT,
+          marginTop: 46,
+          transform: `translateY(${(1 - sub) * 24}px)`,
+          opacity: Math.min(1, sub * 2),
         }}
       >
-        <svg width={44} height={44} viewBox="0 0 56 56">
+        <svg
+          width={50}
+          height={50}
+          viewBox="0 0 56 56"
+          style={{
+            overflow: "visible",
+            filter: GLOW,
+            transform: `translate(${plane * 8}px, ${-plane * 8}px)`,
+          }}
+        >
           <path
             d="M 4 26 L 52 6 L 38 50 L 28 32 Z"
             fill="none"
@@ -1817,171 +1746,17 @@ const CtaScene: React.FC = () => {
           />
           <path d="M 28 32 L 52 6" stroke={GREEN} strokeWidth={4} />
         </svg>
-        <div>
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 700,
-              fontSize: 20,
-              color: "rgba(255,255,255,0.55)",
-            }}
-          >
-            Mensaje nuevo
-          </div>
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 800,
-              fontSize: 32,
-              color: PAPER,
-            }}
-          >
-            Te escribo por privado
-          </div>
-        </div>
-      </div>
-      {/* panel de comentarios */}
-      <div
-        style={{
-          width: 880,
-          height: 700,
-          borderRadius: 34,
-          background: "rgba(16,16,16,0.94)",
-          border: "1.5px solid rgba(255,255,255,0.1)",
-          transform: `translateY(${(1 - panel) * 700}px)`,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "22px 30px 14px",
+            fontFamily: FONT,
+            fontWeight: 700,
+            fontSize: 44,
+            color: PAPER,
+            textShadow: TEXT_GLOW,
+            whiteSpace: "nowrap",
           }}
         >
-          <div
-            style={{
-              transform: `scale(${0.7 + 0.3 * title})`,
-              transformOrigin: "left center",
-              ...display,
-              fontSize: 40,
-              letterSpacing: 0,
-            }}
-          >
-            Comenta{" "}
-            <span style={{ color: GREEN, textShadow: GREEN_TEXT_GLOW }}>
-              «Plan»
-            </span>
-          </div>
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 800,
-              fontSize: 26,
-              color: GREEN,
-              opacity: sent ? 1 : 0,
-            }}
-          >
-            {count} comentarios
-          </div>
-        </div>
-        <div style={{ height: 1.5, background: "rgba(255,255,255,0.08)" }} />
-        {/* lista */}
-        <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-          <div
-            style={{ transform: `translateY(${-scroll}px)`, paddingTop: 10 }}
-          >
-            {visible.map((c, i) => (
-              <CommentRow
-                key={i}
-                name={c.name}
-                color={c.color}
-                at={c.at}
-                mine={"mine" in c}
-              />
-            ))}
-          </div>
-        </div>
-        {/* caja para escribir */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            padding: "14px 22px 22px",
-          }}
-        >
-          <Avatar name="tú" color={GREEN} size={56} />
-          <div
-            style={{
-              flex: 1,
-              height: 70,
-              borderRadius: 35,
-              border: `2.5px solid ${typed > 0 && !sent ? GREEN : "rgba(255,255,255,0.18)"}`,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 26px",
-              ...display,
-              fontSize: 34,
-              letterSpacing: 0,
-              color: GREEN,
-              textShadow: "none",
-            }}
-          >
-            {!sent && typed > 0 ? "PLAN".slice(0, typed) : ""}
-            {!sent ? (
-              <span
-                style={{
-                  opacity: caret ? 1 : 0,
-                  color: PAPER,
-                  fontStyle: "normal",
-                }}
-              >
-                |
-              </span>
-            ) : null}
-            {!sent && typed === 0 ? (
-              <span
-                style={{
-                  fontFamily: FONT,
-                  fontWeight: 600,
-                  fontStyle: "normal",
-                  fontSize: 26,
-                  color: "rgba(255,255,255,0.35)",
-                  textTransform: "none",
-                }}
-              >
-                Añade un comentario…
-              </span>
-            ) : null}
-          </div>
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 32,
-              background: GREEN,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transform: `scale(${t >= sendAt - 0.05 && t < sendAt + 0.15 ? 0.85 : 1})`,
-              filter: GLOW,
-            }}
-          >
-            <svg width={30} height={30}>
-              <path
-                d="M 15 25 V 6 M 6 14 L 15 5 L 24 14"
-                stroke={INK}
-                strokeWidth={4.5}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
+          Te escribo por privado
         </div>
       </div>
     </div>

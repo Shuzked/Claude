@@ -408,12 +408,10 @@ const graphicsSfx: Sfx[] = [
   ...pop(52.92, 53.04, 53.16),
   ...pop(54.0, 54.72, 55.8),
   ...marker(54.12, 54.84, 55.92),
-  // 08 · CTA: panel de comentarios, tecleo de PLAN, envío, cascada y aviso de DM
-  ...pop(61.62),
-  ...[0, 1, 2, 3].map((i) => ({ at: 62.12 + i * 0.07, src: "tic" as const, volume: 0.18 })),
-  { at: 62.52, src: "snap", volume: 0.22 },
+  // 08 · CTA minimalista: «Comenta», bocadillo PLAN, «te escribo por privado»
+  ...headline(61.68),
+  ...pop(62.12),
   { at: 62.64, src: "ding", volume: 0.2 },
-  ...Array.from({ length: 10 }).map((_, i) => ({ at: 62.77 + i * 0.2, src: "pop" as const, volume: 0.14 })),
 ];
 
 export const sfx: Sfx[] = [...designed, ...whooshes, ...graphicsSfx];
