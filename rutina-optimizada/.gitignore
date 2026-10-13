@@ -1,0 +1,11 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Metraje: no se sube a Git (pon tu vídeo en public/video.mp4)
+public/*.mp4
+public/*.mov
