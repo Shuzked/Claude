@@ -837,7 +837,9 @@ const Card: React.FC<{
   width?: number;
   // pinta el título con subrayador (destacados del guion)
   marker?: boolean;
-}> = ({ at, index, title, children, width = 290, marker }) => {
+  // título centrado en la caja
+  center?: boolean;
+}> = ({ at, index, title, children, width = 290, marker, center }) => {
   const p = useSpringAt(at, 15);
   const line = useReveal(at + 0.1, 0.4);
   const m = useReveal(at + 0.12, 0.35);
@@ -886,7 +888,13 @@ const Card: React.FC<{
       >
         {children}
       </div>
-      <div style={{ ...display, fontSize: 30 }}>
+      <div
+        style={{
+          ...display,
+          fontSize: 30,
+          textAlign: center ? "center" : "left",
+        }}
+      >
         {marker ? (
           <Marker p={m}>
             <div style={{ padding: "2px 6px" }}>{title}</div>
@@ -1575,20 +1583,22 @@ const ArrowIcon: React.FC<{ dir: "up" | "down" | "pause"; p: number }> = ({
 const OptionCard: React.FC<{
   at: number;
   dir: "up" | "down" | "pause";
-  lines: string[];
+  text: string;
   index: number;
-}> = ({ at, dir, lines, index }) => {
+}> = ({ at, dir, text, index }) => {
   const p = useReveal(at, 0.45);
   return (
     <Card
       at={at}
       index={index}
+      width={304}
       marker
+      center
       title={
-        <span style={{ fontSize: 32, lineHeight: 1.05 }}>
-          {lines.map((l, i) => (
-            <div key={i}>{l}</div>
-          ))}
+        <span
+          style={{ fontSize: 24, letterSpacing: -0.5, whiteSpace: "nowrap" }}
+        >
+          {text}
         </span>
       }
     >
@@ -1606,23 +1616,23 @@ const OptionsScene: React.FC = () => (
       ]}
     />
     <Visual>
-      <div style={{ display: "flex", gap: 45 }}>
+      <div style={{ display: "flex", gap: 24 }}>
         <OptionCard
           at={rel("options", 54.0)}
           dir="up"
-          lines={["Hacer", "más"]}
+          text="Hacer más"
           index={1}
         />
         <OptionCard
           at={rel("options", 54.72)}
           dir="down"
-          lines={["Hacer", "menos"]}
+          text="Hacer menos"
           index={2}
         />
         <OptionCard
           at={rel("options", 55.8)}
           dir="pause"
-          lines={["Dejar de", "cambiar"]}
+          text="Dejar de cambiar"
           index={3}
         />
       </div>
