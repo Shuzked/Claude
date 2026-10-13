@@ -25,13 +25,18 @@ y la transcripción por palabra de la toma.
 
 ## Renderizar
 
-El metraje no se sube a Git. Pon la toma limpia en `public/video.mp4` a 1080×1920
-(si es 4K, reescálala antes: el navegador decodifica el 4K muy despacio).
+El metraje no se sube a Git. El original (`yago 8.mov`, 4K a 50 Mbps) está como release
+`video-yago8` del repo. Para renderizar, recodifícalo con keyframes frecuentes y ponlo en
+`public/video.mp4`:
+
+```bash
+ffmpeg -i "yago 8.mov" -c:v libx264 -preset fast -crf 12 -g 10 -pix_fmt yuv420p -c:a aac -b:a 256k public/video.mp4
+```
 
 ```bash
 npm i
 npx remotion studio                                   # previsualizar
-npx remotion render RutinaOptimizada out/final.mp4    # exportar
+npx remotion render RutinaOptimizada out/final.mp4 --scale=2   # exportar a 4K (2160×3840)
 ```
 
 Efectos de sonido: van en `public/audio/fx/` (`tic`, `whoosh-a`, `whoosh-b`, `hit`, `snap`, `riser`,
