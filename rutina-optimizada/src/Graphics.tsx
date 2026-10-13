@@ -528,32 +528,74 @@ const RollingNumber: React.FC<{
 };
 
 /** Sello que cae de golpe sobre un elemento. */
+const RED = "#FF2E3A";
+
+/** Sello rojo que cae de golpe en el centro de la pantalla. */
 const Stamp: React.FC<{ at: number; text: string }> = ({ at, text }) => {
-  const t = useT();
-  const p = interpolate(t, [at, at + 0.12], [0, 1], {
-    ...clamp,
-    easing: Easing.in(Easing.quad),
-  });
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
   if (t < at) return null;
+  const slam = spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping: 11, stiffness: 320, mass: 0.6 },
+  });
+  const k = (t - at) * fps;
+  const shake = k < 10 ? Math.sin(k * 2.7) * 10 * Math.exp(-k / 3) : 0;
   return (
     <div
       style={{
         position: "absolute",
-        right: -10,
-        top: 40,
-        transform: `rotate(-12deg) scale(${2.2 - 1.2 * p})`,
-        opacity: Math.min(1, p * 1.5),
-        border: `6px solid ${GREEN}`,
-        borderRadius: 10,
-        padding: "6px 18px",
-        ...display,
-        fontSize: 44,
-        color: GREEN,
-        textShadow: "0 0 18px rgba(4,228,0,0.55)",
-        filter: GLOW,
+        top: 800,
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        transform: `translate(${shake}px, ${-shake * 0.6}px)`,
       }}
     >
-      {text}
+      <div
+        style={{
+          transform: `rotate(-9deg) scale(${2.6 - 1.6 * slam})`,
+          opacity: Math.min(1, slam * 2),
+          border: `10px solid ${RED}`,
+          borderRadius: 18,
+          padding: "14px 40px 8px",
+          ...display,
+          fontSize: 120,
+          color: RED,
+          textShadow: "0 0 24px rgba(255,46,58,0.55)",
+          filter: "drop-shadow(0 0 16px rgba(255,46,58,0.5))",
+          background: "rgba(255,46,58,0.06)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
+/** Todo lo que no es el sello cae por gravedad, con un poco de giro. */
+const Fall: React.FC<{
+  at: number;
+  delay?: number;
+  rot?: number;
+  fill?: boolean;
+  children: React.ReactNode;
+}> = ({ at, delay = 0, rot = 0, fill = false, children }) => {
+  const t = useT();
+  const dt = Math.max(0, t - at - delay);
+  const y = 0.5 * 5200 * dt * dt;
+  return (
+    <div
+      style={{
+        ...(fill ? { position: "absolute", inset: 0 } : {}),
+        transform: `translateY(${y}px) rotate(${rot * dt}deg)`,
+        opacity: 1 - Math.min(1, Math.max(0, dt - 0.35) / 0.3),
+      }}
+    >
+      {children}
     </div>
   );
 };
@@ -1023,10 +1065,7 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
   );
 };
 
-const FlatChart: React.FC<{ at: number; stampAt: number }> = ({
-  at,
-  stampAt,
-}) => {
+const FlatChart: React.FC<{ at: number }> = ({ at }) => {
   const t = useT();
   const axes = useReveal(at, 0.35);
   const line = useReveal(at + 0.2, 0.6, Easing.linear);
@@ -1034,17 +1073,8 @@ const FlatChart: React.FC<{ at: number; stampAt: number }> = ({
   const H = 190;
   const y = H * 0.55;
   const dot = 0.6 + 0.4 * Math.sin(t * 10);
-  const hit = (t - stampAt) * 25;
-  const shake =
-    hit > 0 && hit < 10 ? Math.sin(hit * 2.6) * 8 * Math.exp(-hit / 3) : 0;
   return (
-    <div
-      style={{
-        position: "relative",
-        transform: `translate(${shake}px, ${-shake * 0.5}px)`,
-      }}
-    >
-      <Stamp at={stampAt} text="Sin cambios" />
+    <div style={{ position: "relative" }}>
       <div style={label}>Pecho · progreso</div>
       <svg
         width={W}
@@ -1126,6 +1156,7 @@ const FlatChart: React.FC<{ at: number; stampAt: number }> = ({
 
 const ExcelScene: React.FC = () => {
   const swapAt = rel("excel", 8.06);
+  const stampLocal = rel("excel", 8.72) - rel("excel", 8.06);
   const swap = useReveal(swapAt, 0.4, easeInOut);
   const { fps } = useVideoConfig();
   return (
@@ -1159,10 +1190,12 @@ const ExcelScene: React.FC = () => {
         }}
       >
         <Sequence from={Math.round(swapAt * fps)} layout="none">
-          <Headline
-            lines={headlines.excelB}
-            origin={sceneFrom("excel") + swapAt}
-          />
+          <Fall at={stampLocal} delay={0.06} rot={-12} fill>
+            <Headline
+              lines={headlines.excelB}
+              origin={sceneFrom("excel") + swapAt}
+            />
+          </Fall>
           <Visual>
             {/* pecho arriba y gráfica debajo, centrados y con aire */}
             <div
@@ -1173,14 +1206,20 @@ const ExcelScene: React.FC = () => {
                 gap: 56,
               }}
             >
-              <Torso
-                at={0.02}
-                glowAt={rel("excel", 8.2) - swapAt}
-                zoomAt={rel("excel", 8.48) - swapAt}
-              />
-              <FlatChart at={0.15} stampAt={rel("excel", 8.72) - swapAt} />
+              <Fall at={stampLocal} rot={14}>
+                <Torso
+                  at={0.02}
+                  glowAt={rel("excel", 8.2) - swapAt}
+                  zoomAt={rel("excel", 8.48) - swapAt}
+                />
+              </Fall>
+              <Fall at={stampLocal} delay={0.1} rot={-18}>
+                <FlatChart at={0.15} />
+              </Fall>
             </div>
           </Visual>
+          {/* «sin cambios»: sello rojo en el centro mientras todo cae */}
+          <Stamp at={stampLocal} text="Sin cambios" />
         </Sequence>
       </div>
     </div>

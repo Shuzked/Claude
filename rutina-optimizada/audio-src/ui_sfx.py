@@ -53,4 +53,12 @@ t = np.arange(n) / SR
 tone = np.sin(2 * np.pi * 1568 * t) + 0.4 * np.sin(2 * np.pi * 3136 * t) + 0.15 * np.sin(2 * np.pi * 4704 * t)
 save("ding.wav", tone * np.exp(-t * 7) * np.minimum(1, t / 0.003), 0.5)
 
+# Sello: golpe seco y grave con chasquido de papel
+n = int(0.45 * SR)
+t = np.arange(n) / SR
+f = 70 + 110 * np.exp(-t * 40)
+thud = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 14)
+slap = bp(rng.standard_normal(n), 1200, 6000) * np.exp(-t * 60) * 0.6
+save("stamp.wav", np.tanh((thud + slap) * 2), 0.8)
+
 print("ok", sorted(os.listdir(OUT)))

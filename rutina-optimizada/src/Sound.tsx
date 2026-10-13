@@ -41,6 +41,7 @@ const SFX_GAIN: Record<FxName, number> = {
   pop: 1,
   paper: 1,
   ding: 1,
+  stamp: 1,
 };
 
 export const Sound: React.FC = () => (
