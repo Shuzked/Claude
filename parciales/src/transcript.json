@@ -1,0 +1,2110 @@
+{
+  "language": "es-es",
+  "segments": [
+    {
+      "duration": 17.76,
+      "language": "es-es",
+      "speaker": "637604f9-a6f9-4b23-9316-e07859f137ec",
+      "start": 0.04,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 0.04,
+          "tags": [],
+          "text": "¿Estas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 0.36,
+          "tags": [],
+          "text": "repeticiones",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 0.92,
+          "tags": [],
+          "text": "parecen",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 1.32,
+          "tags": [],
+          "text": "trampa,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 1.76,
+          "tags": [],
+          "text": "pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 2.04,
+          "tags": [],
+          "text": "cómo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 2.28,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 2.4,
+          "tags": [],
+          "text": "quedas",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9399999976158142,
+          "duration": 0.12,
+          "eos": false,
+          "start": 2.68,
+          "tags": [],
+          "text": "si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 2.8,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 2.88,
+          "tags": [],
+          "text": "digo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 3.08,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 3.2,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 3.32,
+          "tags": [],
+          "text": "pueden",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 3.6,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 3.84,
+          "tags": [],
+          "text": "ganar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 4.16,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 4.4,
+          "tags": [],
+          "text": "detalle",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 4.76,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 4.84,
+          "tags": [],
+          "text": "tus",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": true,
+          "start": 5.04,
+          "tags": [],
+          "text": "piernas?",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 5.6,
+          "tags": [],
+          "text": "Esto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 5.96,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 6.08,
+          "tags": [],
+          "text": "gracias",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 6.52,
+          "tags": [],
+          "text": "al",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 6.68,
+          "tags": [],
+          "text": "mayor",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 6.92,
+          "tags": [],
+          "text": "desarrollo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 7.44,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 7.6,
+          "tags": [],
+          "text": "tu",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 7.8,
+          "tags": [],
+          "text": "recto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 8.16,
+          "tags": [],
+          "text": "femoral,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 8.72,
+          "tags": [],
+          "text": "uno",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 9.04,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 9.12,
+          "tags": [],
+          "text": "tus",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 9.28,
+          "tags": [],
+          "text": "músculos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 9.72,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 9.8,
+          "tags": [],
+          "text": "tienes",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 10.12,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 10.24,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 10.32,
+          "tags": [],
+          "text": "parte",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 10.6,
+          "tags": [],
+          "text": "anterior",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 11.04,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 11.2,
+          "tags": [],
+          "text": "tus",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": true,
+          "start": 11.44,
+          "tags": [],
+          "text": "muslos.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 11.92,
+          "tags": [],
+          "text": "Este",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 12.2,
+          "tags": [],
+          "text": "estudio",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 12.52,
+          "tags": [],
+          "text": "comparó",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 12.92,
+          "tags": [],
+          "text": "diferentes",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 13.52,
+          "tags": [],
+          "text": "formas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 13.84,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 13.92,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 14.2,
+          "tags": [],
+          "text": "extensión",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 14.68,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 14.76,
+          "tags": [],
+          "text": "rodilla",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 15.16,
+          "tags": [],
+          "text": "desde",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 15.44,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 15.56,
+          "tags": [],
+          "text": "inicio",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 15.84,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.15999999999606324,
+          "eos": false,
+          "start": 15.92,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.3600000000039368,
+          "eos": true,
+          "start": 16.079999999996062,
+          "tags": [],
+          "text": "serie.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 16.48,
+          "tags": [],
+          "text": "Ejecución",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": true,
+          "start": 17.04,
+          "tags": [],
+          "text": "normal.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 22.2,
+      "language": "es-es",
+      "speaker": "637604f9-a6f9-4b23-9316-e07859f137ec",
+      "start": 17.96,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 17.96,
+          "tags": [],
+          "text": "Rango",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 18.32,
+          "tags": [],
+          "text": "parcial",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 18.76,
+          "tags": [],
+          "text": "al",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.84,
+          "eos": false,
+          "start": 19.04,
+          "tags": [],
+          "text": "comienzo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 19.96,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 20.12,
+          "tags": [],
+          "text": "rango",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 20.44,
+          "tags": [],
+          "text": "parcial",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 20.84,
+          "tags": [],
+          "text": "al",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 21.16,
+          "tags": [],
+          "text": "final",
+          "type": "word"
+        },
+        {
+          "confidence": 0.8999999761581421,
+          "duration": 0.19,
+          "eos": false,
+          "start": 21.68,
+          "tags": [],
+          "text": "por",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 21.88,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": true,
+          "start": 22.04,
+          "tags": [],
+          "text": "parciales.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 22.48,
+          "tags": [],
+          "text": "Al",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 22.6,
+          "tags": [],
+          "text": "comienzo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 22.96,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 23.08,
+          "tags": [],
+          "text": "recorrido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 23.52,
+          "tags": [],
+          "text": "consiguieron",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 24.12,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 24.28,
+          "tags": [],
+          "text": "desarrollo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 24.76,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 24.96,
+          "tags": [],
+          "text": "recto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 25.28,
+          "tags": [],
+          "text": "femoral",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 25.72,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 25.96,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 26.12,
+          "tags": [],
+          "text": "repeticiones",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.84,
+          "eos": false,
+          "start": 26.8,
+          "tags": [],
+          "text": "completas,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 27.68,
+          "tags": [],
+          "text": "pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 28.24,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 28.68,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 28.84,
+          "tags": [],
+          "text": "vasto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 29.28,
+          "tags": [],
+          "text": "lateral",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 29.84,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 30.32,
+          "tags": [],
+          "text": "se",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 30.6,
+          "tags": [],
+          "text": "pudo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 30.84,
+          "tags": [],
+          "text": "detectar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 31.28,
+          "tags": [],
+          "text": "esa",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 31.48,
+          "tags": [],
+          "text": "misma",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 31.76,
+          "tags": [],
+          "text": "ventaja.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.20000000000393675,
+          "eos": false,
+          "start": 32.43999999999606,
+          "tags": [],
+          "text": "Y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 32.64,
+          "tags": [],
+          "text": "aquí",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 32.92,
+          "tags": [],
+          "text": "está",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 33.24,
+          "tags": [],
+          "text": "lo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.3999999999960632,
+          "eos": false,
+          "start": 33.36,
+          "tags": [],
+          "text": "realmente",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.5600000000039368,
+          "eos": false,
+          "start": 33.75999999999606,
+          "tags": [],
+          "text": "interesante,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.11999999999606324,
+          "eos": false,
+          "start": 34.32,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12000000000393676,
+          "eos": false,
+          "start": 34.43999999999606,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 34.56,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 34.68,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 34.88,
+          "tags": [],
+          "text": "parciales",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 35.4,
+          "tags": [],
+          "text": "al",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 35.64,
+          "tags": [],
+          "text": "final",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 35.92,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 36.08,
+          "tags": [],
+          "text": "recorrido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": false,
+          "start": 36.6,
+          "tags": [],
+          "text": "tampoco",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 37.36,
+          "tags": [],
+          "text": "dieron",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 37.76,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 37.92,
+          "tags": [],
+          "text": "mismo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 38.24,
+          "tags": [],
+          "text": "resultado",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 38.76,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 39.04,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 39.28,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": true,
+          "start": 39.44,
+          "tags": [],
+          "text": "comienzo.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 22.24,
+      "language": "es-es",
+      "speaker": "637604f9-a6f9-4b23-9316-e07859f137ec",
+      "start": 40.28,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 40.28,
+          "tags": [],
+          "text": "Así",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 40.84,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 41.12,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.82,
+          "eos": false,
+          "start": 41.28,
+          "tags": [],
+          "text": "conclusión",
+          "type": "word"
+        },
+        {
+          "confidence": 0.5299999713897705,
+          "duration": 0.13,
+          "eos": false,
+          "start": 42.1,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 42.32,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 42.56,
+          "tags": [],
+          "text": "menos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 42.84,
+          "tags": [],
+          "text": "recorrido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 43.28,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": true,
+          "start": 43.44,
+          "tags": [],
+          "text": "mejor.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 43.8,
+          "tags": [],
+          "text": "Lo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 43.96,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 44.04,
+          "tags": [],
+          "text": "importa",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 44.72,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 45.04,
+          "tags": [],
+          "text": "qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 45.24,
+          "tags": [],
+          "text": "parte",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 45.52,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 45.68,
+          "tags": [],
+          "text": "recorrido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 46.2,
+          "tags": [],
+          "text": "haces",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 46.68,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 47,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.92,
+          "eos": false,
+          "start": 47.28,
+          "tags": [],
+          "text": "musculatura",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 48.2,
+          "tags": [],
+          "text": "estás",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 48.48,
+          "tags": [],
+          "text": "intentando",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.53,
+          "eos": true,
+          "start": 49.08,
+          "tags": [],
+          "text": "priorizar.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 49.64,
+          "tags": [],
+          "text": "Ahora",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 49.92,
+          "tags": [],
+          "text": "ya",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 50.12,
+          "tags": [],
+          "text": "sabes",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 50.44,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 50.68,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 50.92,
+          "tags": [],
+          "text": "repetición",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 51.52,
+          "tags": [],
+          "text": "incompleta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 52.2,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 52.4,
+          "tags": [],
+          "text": "tiene",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 52.64,
+          "tags": [],
+          "text": "por",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 52.84,
+          "tags": [],
+          "text": "qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 52.96,
+          "tags": [],
+          "text": "ser",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 53.2,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 53.36,
+          "tags": [],
+          "text": "repetición",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 53.88,
+          "tags": [],
+          "text": "mal",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.27,
+          "eos": false,
+          "start": 54.12,
+          "tags": [],
+          "text": "hecha,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 54.4,
+          "tags": [],
+          "text": "pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 54.96,
+          "tags": [],
+          "text": "ahora",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 55.24,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 55.4,
+          "tags": [],
+          "text": "falta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 55.76,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": false,
+          "start": 56,
+          "tags": [],
+          "text": "decisión",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 56.76,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 57.08,
+          "tags": [],
+          "text": "importante",
+          "type": "word"
+        },
+        {
+          "confidence": 0.6600000262260437,
+          "duration": 0.4,
+          "eos": false,
+          "start": 57.8,
+          "tags": [],
+          "text": "cuando",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": true,
+          "start": 58.2,
+          "tags": [],
+          "text": "utilizarla.",
+          "type": "word"
+        },
+        {
+          "confidence": 0.8100000023841858,
+          "duration": 0.12,
+          "eos": false,
+          "start": 59,
+          "tags": [],
+          "text": "Si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 59.12,
+          "tags": [],
+          "text": "sustituye",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 59.8,
+          "tags": [],
+          "text": "parte",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 60.04,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 60.2,
+          "tags": [],
+          "text": "trabajo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 60.48,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 60.6,
+          "tags": [],
+          "text": "ya",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 60.76,
+          "tags": [],
+          "text": "haces",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 61.08,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 61.2,
+          "tags": [],
+          "text": "si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 61.32,
+          "tags": [],
+          "text": "tiene",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 61.56,
+          "tags": [],
+          "text": "sentido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": true,
+          "start": 61.92,
+          "tags": [],
+          "text": "añadirla.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 11.96,
+      "language": "es-es",
+      "speaker": "637604f9-a6f9-4b23-9316-e07859f137ec",
+      "start": 62.56,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 62.56,
+          "tags": [],
+          "text": "Y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 62.72,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 63,
+          "tags": [],
+          "text": "todo,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 63.32,
+          "tags": [],
+          "text": "cómo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 63.68,
+          "tags": [],
+          "text": "encajar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.19999999999606324,
+          "eos": false,
+          "start": 64.04,
+          "tags": [],
+          "text": "todo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.20000000000393675,
+          "eos": false,
+          "start": 64.23999999999606,
+          "tags": [],
+          "text": "esto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.07999999999606323,
+          "eos": false,
+          "start": 64.44,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16000000000393677,
+          "eos": false,
+          "start": 64.51999999999606,
+          "tags": [],
+          "text": "tu",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": true,
+          "start": 64.68,
+          "tags": [],
+          "text": "rutina.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 65.16,
+          "tags": [],
+          "text": "Pues",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 65.44,
+          "tags": [],
+          "text": "justo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 65.8,
+          "tags": [],
+          "text": "esto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 66.2,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.11999999999606324,
+          "eos": false,
+          "start": 66.4,
+          "tags": [],
+          "text": "lo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12000000000393676,
+          "eos": false,
+          "start": 66.51999999999606,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 66.64,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.11999999999606324,
+          "eos": false,
+          "start": 66.76,
+          "tags": [],
+          "text": "voy",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 66.87999999999606,
+          "tags": [],
+          "text": "a",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.40000000000393676,
+          "eos": false,
+          "start": 66.95999999999606,
+          "tags": [],
+          "text": "enseñar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 67.36,
+          "tags": [],
+          "text": "a",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.47999999999606324,
+          "eos": false,
+          "start": 67.48,
+          "tags": [],
+          "text": "decidir",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12000000000393676,
+          "eos": false,
+          "start": 67.95999999999606,
+          "tags": [],
+          "text": "En",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 68.08,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 68.2,
+          "tags": [],
+          "text": "masterclass",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 68.8,
+          "tags": [],
+          "text": "gratuita",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 69.32,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 69.4,
+          "tags": [],
+          "text": "acabo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 69.68,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 69.8,
+          "tags": [],
+          "text": "crear",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 70.12,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 70.48,
+          "tags": [],
+          "text": "técnicas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 71,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": true,
+          "start": 71.08,
+          "tags": [],
+          "text": "intensidad.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 71.76,
+          "tags": [],
+          "text": "Comenta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 72.4,
+          "tags": [],
+          "text": "técnicas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 72.92,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": false,
+          "start": 73.04,
+          "tags": [],
+          "text": "intensidad",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 73.8,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 73.92,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 74.04,
+          "tags": [],
+          "text": "lo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": true,
+          "start": 74.12,
+          "tags": [],
+          "text": "envío.",
+          "type": "word"
+        }
+      ]
+    }
+  ],
+  "speakers": [
+    { "id": "637604f9-a6f9-4b23-9316-e07859f137ec", "name": "Desconocido" }
+  ]
+}
