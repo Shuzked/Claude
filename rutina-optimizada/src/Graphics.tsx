@@ -408,7 +408,14 @@ const HeadlineRow: React.FC<{
     0.35,
   );
   const row = (
-    <div style={{ display: "flex", gap: size * 0.22, padding: "0 10px" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        gap: size * 0.22,
+        padding: "0 10px",
+      }}
+    >
       {line.text.split(" ").map((w, i) => (
         <HeadlineWord
           key={i}
@@ -420,7 +427,7 @@ const HeadlineRow: React.FC<{
     </div>
   );
   return (
-    <div style={{ marginBottom: 4 }}>
+    <div style={{ marginBottom: 4, display: "flex", justifyContent: "center" }}>
       {line.marker !== undefined ? <Marker p={m}>{row}</Marker> : row}
     </div>
   );
@@ -615,66 +622,58 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
   );
 };
 
-// Torso estilo Lottie: formas planas redondeadas que entran con rebote; al decir
-// «pecho» los pectorales se rellenan de verde, laten y emiten ondas.
+// Pecho minimalista estilo Lottie: solo los pectorales. Entran con rebote; al
+// decir «pecho» se rellenan de verde de abajo arriba, laten y emiten ondas.
 const SKIN = "#2c2c2c";
-const SKIN_LIGHT = "#363636";
-const EDGE = "rgba(255,255,255,0.28)";
-
-const usePop = (at: number) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  return spring({
-    frame: frame - at * fps,
-    fps,
-    config: { damping: 9, stiffness: 180, mass: 0.6 },
-  });
-};
-
-const Part: React.FC<{
-  at: number;
-  ox: number;
-  oy: number;
-  children: React.ReactNode;
-}> = ({ at, ox, oy, children }) => {
-  const p = usePop(at);
-  return (
-    <g
-      style={{
-        transformOrigin: `${ox}px ${oy}px`,
-        transform: `scale(${p})`,
-        opacity: Math.min(1, p * 3),
-      }}
-    >
-      {children}
-    </g>
-  );
-};
+const SKIN_LIGHT = "#383838";
+const EDGE = "rgba(255,255,255,0.3)";
 
 const PEC_L =
-  "M 163 106 C 143 96, 106 98, 95 116 C 90 140, 108 162, 138 162 C 154 162, 163 152, 163 140 Z";
+  "M 146 30 C 118 14, 58 14, 34 42 C 20 74, 40 112, 86 116 C 120 119, 146 104, 146 82 Z";
 const PEC_R =
-  "M 167 106 C 187 96, 224 98, 235 116 C 240 140, 222 162, 192 162 C 176 162, 167 152, 167 140 Z";
+  "M 154 30 C 182 14, 242 14, 266 42 C 280 74, 260 112, 214 116 C 180 119, 154 104, 154 82 Z";
 
 const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
-  const t = useT();
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+  const popL = spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping: 9, stiffness: 190, mass: 0.6 },
+  });
+  const popR = spring({
+    frame: frame - (at + 0.08) * fps,
+    fps,
+    config: { damping: 9, stiffness: 190, mass: 0.6 },
+  });
   const fill = interpolate(t, [glowAt, glowAt + 0.45], [0, 1], {
     ...clamp,
     easing: easeOut,
   });
   const lit = t >= glowAt;
   const pulse = lit ? 0.5 + 0.5 * Math.sin((t - glowAt) * 8) : 0;
-  const breathe = 1 + Math.sin(t * 3) * 0.008;
-  // ondas que salen del pecho
+  const breathe = 1 + Math.sin(t * 3) * 0.012;
   const rings = [0, 0.45, 0.9].map((o) => {
     const k = ((t - glowAt - o) % 1.35) / 1.35;
     return lit && t - glowAt - o > 0 ? k : -1;
   });
+  const pec = (d: string, p: number, ox: number) => (
+    <g
+      style={{
+        transformOrigin: `${ox}px 70px`,
+        transform: `scale(${p})`,
+        opacity: Math.min(1, p * 3),
+      }}
+    >
+      <path d={d} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={3} />
+    </g>
+  );
   return (
     <svg
-      width={330}
-      height={330}
-      viewBox="0 0 330 330"
+      width={300}
+      height={140}
+      viewBox="0 0 300 140"
       style={{ overflow: "visible" }}
     >
       <defs>
@@ -686,164 +685,95 @@ const Torso: React.FC<{ at: number; glowAt: number }> = ({ at, glowAt }) => {
           </feMerge>
         </filter>
         <clipPath id="pec-fill">
-          <rect x={80} y={170 - 80 * fill} width={170} height={80 * fill + 2} />
+          <rect
+            x={0}
+            y={124 - 112 * fill}
+            width={300}
+            height={112 * fill + 2}
+          />
         </clipPath>
-        <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={SKIN_LIGHT} />
-          <stop offset="1" stopColor={SKIN} />
-        </linearGradient>
       </defs>
+      {/* ondas */}
+      {rings.map((k, i) =>
+        k >= 0 ? (
+          <ellipse
+            key={i}
+            cx={150}
+            cy={68}
+            rx={120 + 90 * k}
+            ry={60 + 50 * k}
+            fill="none"
+            stroke={GREEN}
+            strokeWidth={3 * (1 - k) + 0.5}
+            opacity={(1 - k) * 0.6}
+          />
+        ) : null,
+      )}
       <g
         style={{
-          transformOrigin: "165px 180px",
+          transformOrigin: "150px 70px",
           transform: `scale(${breathe})`,
         }}
       >
-        {/* brazos */}
-        <Part at={at + 0.12} ox={62} oy={118}>
-          <rect
-            x={40}
-            y={112}
-            width={42}
-            height={160}
-            rx={21}
-            fill={SKIN}
-            stroke={EDGE}
-            strokeWidth={2.5}
-            transform="rotate(9 61 118)"
-          />
-        </Part>
-        <Part at={at + 0.12} ox={268} oy={118}>
-          <rect
-            x={248}
-            y={112}
-            width={42}
-            height={160}
-            rx={21}
-            fill={SKIN}
-            stroke={EDGE}
-            strokeWidth={2.5}
-            transform="rotate(-9 269 118)"
-          />
-        </Part>
-        {/* cuello */}
-        <Part at={at + 0.05} ox={165} oy={70}>
-          <rect
-            x={145}
-            y={34}
-            width={40}
-            height={46}
-            rx={16}
-            fill={SKIN}
-            stroke={EDGE}
-            strokeWidth={2.5}
-          />
-          <circle
-            cx={165}
-            cy={22}
-            r={26}
-            fill={SKIN_LIGHT}
-            stroke={EDGE}
-            strokeWidth={2.5}
-          />
-        </Part>
-        {/* tronco en V */}
-        <Part at={at} ox={165} oy={190}>
+        {pec(PEC_L, popL, 90)}
+        {pec(PEC_R, popR, 210)}
+        <g
+          clipPath="url(#pec-fill)"
+          filter="url(#pec-glow)"
+          opacity={0.85 + 0.15 * pulse}
+        >
           <path
-            d="M 72 96 C 74 80, 118 70, 165 70 C 212 70, 256 80, 258 96 L 248 188 C 243 248, 212 300, 165 306 C 118 300, 87 248, 82 188 Z"
-            fill="url(#skin)"
-            stroke={EDGE}
-            strokeWidth={3}
-          />
-        </Part>
-        {/* hombros */}
-        <Part at={at + 0.08} ox={78} oy={108}>
-          <circle
-            cx={78}
-            cy={108}
-            r={30}
-            fill={SKIN_LIGHT}
-            stroke={EDGE}
-            strokeWidth={2.5}
-          />
-        </Part>
-        <Part at={at + 0.08} ox={252} oy={108}>
-          <circle
-            cx={252}
-            cy={108}
-            r={30}
-            fill={SKIN_LIGHT}
-            stroke={EDGE}
-            strokeWidth={2.5}
-          />
-        </Part>
-        {/* abdominales */}
-        {[0, 1, 2].map((r) =>
-          [0, 1].map((c) => (
-            <Part
-              key={`${r}${c}`}
-              at={at + 0.22 + r * 0.05}
-              ox={c ? 186 : 144}
-              oy={190 + r * 34}
-            >
-              <rect
-                x={c ? 170 : 128}
-                y={178 + r * 34}
-                width={32}
-                height={26}
-                rx={11}
-                fill={SKIN_LIGHT}
-              />
-            </Part>
-          )),
-        )}
-        {/* pectorales: base y relleno verde que sube */}
-        <Part at={at + 0.16} ox={165} oy={130}>
-          <path d={PEC_L} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
-          <path d={PEC_R} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
-          <g
-            clipPath="url(#pec-fill)"
-            filter="url(#pec-glow)"
-            opacity={0.85 + 0.15 * pulse}
-          >
-            <path d={PEC_L} fill={GREEN} />
-            <path d={PEC_R} fill={GREEN} />
-          </g>
-          {/* brillo */}
-          <path
-            d="M 108 116 C 118 108, 134 106, 146 109"
-            fill="none"
-            stroke="rgba(255,255,255,0.55)"
-            strokeWidth={4}
-            strokeLinecap="round"
-            opacity={fill}
+            d={PEC_L}
+            fill={GREEN}
+            style={{
+              transformOrigin: "90px 70px",
+              transform: `scale(${popL})`,
+            }}
           />
           <path
-            d="M 184 109 C 196 106, 212 108, 222 116"
-            fill="none"
-            stroke="rgba(255,255,255,0.55)"
-            strokeWidth={4}
-            strokeLinecap="round"
-            opacity={fill}
+            d={PEC_R}
+            fill={GREEN}
+            style={{
+              transformOrigin: "210px 70px",
+              transform: `scale(${popR})`,
+            }}
           />
-        </Part>
-        {/* ondas */}
-        {rings.map((k, i) =>
-          k >= 0 ? (
-            <ellipse
-              key={i}
-              cx={165}
-              cy={132}
-              rx={40 + 120 * k}
-              ry={26 + 80 * k}
-              fill="none"
-              stroke={GREEN}
-              strokeWidth={3 * (1 - k) + 0.5}
-              opacity={(1 - k) * 0.7}
-            />
-          ) : null,
-        )}
+        </g>
+        {/* brillo */}
+        {/* clavículas y esternón: dan lectura de pecho sin añadir más cuerpo */}
+        <path
+          d="M 40 6 C 80 0, 120 4, 146 14 M 154 14 C 180 4, 220 0, 260 6"
+          fill="none"
+          stroke={EDGE}
+          strokeWidth={3}
+          strokeLinecap="round"
+          opacity={Math.min(popL, popR)}
+        />
+        <path
+          d="M 150 20 V 120"
+          stroke={EDGE}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          opacity={Math.min(popL, popR)}
+        />
+        <path
+          d="M 52 44 C 70 30, 100 26, 126 30"
+          fill="none"
+          stroke="rgba(255,255,255,0.6)"
+          strokeWidth={5}
+          strokeLinecap="round"
+          opacity={fill}
+        />
+        <path
+          d="M 174 30 C 200 26, 230 30, 248 44"
+          fill="none"
+          stroke="rgba(255,255,255,0.6)"
+          strokeWidth={5}
+          strokeLinecap="round"
+          opacity={fill}
+        />
       </g>
+      <line x1={0} y1={0} x2={0} y2={0} stroke={SKIN} />
     </svg>
   );
 };
@@ -977,15 +907,27 @@ const ExcelScene: React.FC = () => {
             origin={sceneFrom("excel") + swapAt}
           />
           <Visual>
-            <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+            {/* pecho arriba y gráfica debajo, centrados y con aire */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 56,
+              }}
+            >
               <div
                 style={{
-                  transform: "scale(1.15)",
-                  transformOrigin: "left center",
-                  width: 380,
+                  width: 480,
+                  height: 224,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Torso at={0.05} glowAt={rel("excel", 8.2) - swapAt} />
+                <div style={{ transform: "scale(1.6)" }}>
+                  <Torso at={0.05} glowAt={rel("excel", 8.2) - swapAt} />
+                </div>
               </div>
               <FlatChart at={0.15} />
             </div>
@@ -1007,9 +949,7 @@ const Card: React.FC<{
   width?: number;
   // pinta el título con subrayador (destacados del guion)
   marker?: boolean;
-  // título centrado en la caja
-  center?: boolean;
-}> = ({ at, index, title, children, width = 290, marker, center }) => {
+}> = ({ at, index, title, children, width = 290, marker }) => {
   const p = useSpringAt(at, 15);
   const line = useReveal(at + 0.1, 0.4);
   const m = useReveal(at + 0.12, 0.35);
@@ -1018,22 +958,28 @@ const Card: React.FC<{
       style={{
         position: "relative",
         width,
-        height: 330,
+        height: 380,
         background: "rgba(255,255,255,0.035)",
         border: "1.5px solid rgba(255,255,255,0.1)",
         transform: `translateY(${(1 - p) * 60}px)`,
         opacity: Math.min(1, p * 2),
-        padding: "20px 22px",
+        padding: "20px 18px 34px",
         overflow: "hidden",
+        // todo el contenido centrado en la tarjeta
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
       }}
     >
       <div
         style={{
           position: "absolute",
           top: 0,
-          left: 0,
+          left: "50%",
           height: 4,
           width: `${line * 100}%`,
+          transform: "translateX(-50%)",
           background: GREEN,
           filter: GLOW,
         }}
@@ -1044,13 +990,16 @@ const Card: React.FC<{
           fontSize: 20,
           color: "rgba(255,255,255,0.45)",
           textShadow: "none",
+          letterSpacing: 4,
+          paddingLeft: 4,
         }}
       >
         {String(index).padStart(2, "0")}
       </div>
       <div
         style={{
-          height: 170,
+          flex: 1,
+          width: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1062,7 +1011,10 @@ const Card: React.FC<{
         style={{
           ...display,
           fontSize: 30,
-          textAlign: center ? "center" : "left",
+          display: "flex",
+          justifyContent: "center",
+          width: "100%",
+          marginTop: 24,
         }}
       >
         {marker ? (
@@ -1081,7 +1033,7 @@ const ToolsScene: React.FC = () => (
   <>
     <Headline lines={headlines.tools} origin={sceneFrom("tools")} />
     <Visual>
-      <div style={{ display: "flex", gap: 45 }}>
+      <div style={{ display: "flex", gap: 45, justifyContent: "center" }}>
         <Card at={rel("tools", 11.62)} index={1} title="Volumen" marker>
           <VolumeIcon at={rel("tools", 11.7)} />
         </Card>
@@ -1153,7 +1105,7 @@ const PrioScene: React.FC = () => {
     <>
       <Headline lines={headlines.prio} origin={sceneFrom("prio")} />
       <Visual>
-        <div style={{ display: "flex", gap: 40 }}>
+        <div style={{ display: "flex", gap: 40, justifyContent: "center" }}>
           <Card
             at={rel("prio", 33.7)}
             index={1}
@@ -1188,7 +1140,7 @@ const FaltaScene: React.FC = () => {
         size={70}
         absolute={false}
       />
-      <div style={{ display: "inline-block", marginTop: 8 }}>
+      <div style={{ marginTop: 8 }}>
         <Headline
           lines={[second]}
           origin={sceneFrom("falta")}
@@ -1196,7 +1148,14 @@ const FaltaScene: React.FC = () => {
           absolute={false}
         />
       </div>
-      <div style={{ display: "flex", gap: 14, marginTop: 34 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 14,
+          marginTop: 34,
+          justifyContent: "center",
+        }}
+      >
         {Array.from({ length: blocks }).map((_, i) => {
           const p = interpolate(
             t,
@@ -1244,8 +1203,8 @@ const CheckRow: React.FC<{
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 26,
-        height: 96,
+        gap: 40,
+        height: 104,
         borderBottom: "1.5px solid rgba(255,255,255,0.08)",
         opacity: row,
         transform: `translateX(${(1 - row) * -30}px)`,
@@ -1300,21 +1259,23 @@ const CheckScene: React.FC = () => {
     <>
       <Headline lines={headlines.check} origin={sceneFrom("check")} />
       <Visual>
-        <CheckRow
-          at={rel("check", 47.32)}
-          text="Registros"
-          icon={<LogIcon at={rel("check", 47.32) - 0.25} />}
-        />
-        <CheckRow
-          at={rel("check", 48.16)}
-          text="Ejecución"
-          icon={<MoveIcon at={rel("check", 48.16) - 0.25} />}
-        />
-        <CheckRow
-          at={rel("check", 49.24)}
-          text="Recuperación"
-          icon={<BatteryIcon at={rel("check", 49.24) - 0.25} p={battery} />}
-        />
+        <div style={{ width: 680, margin: "0 auto" }}>
+          <CheckRow
+            at={rel("check", 47.32)}
+            text="Registros"
+            icon={<LogIcon at={rel("check", 47.32) - 0.25} />}
+          />
+          <CheckRow
+            at={rel("check", 48.16)}
+            text="Ejecución"
+            icon={<MoveIcon at={rel("check", 48.16) - 0.25} />}
+          />
+          <CheckRow
+            at={rel("check", 49.24)}
+            text="Recuperación"
+            icon={<BatteryIcon at={rel("check", 49.24) - 0.25} p={battery} />}
+          />
+        </div>
       </Visual>
     </>
   );
@@ -1335,7 +1296,6 @@ const OptionCard: React.FC<{
       index={index}
       width={304}
       marker
-      center
       title={
         <span
           style={{ fontSize: 24, letterSpacing: -0.5, whiteSpace: "nowrap" }}
@@ -1353,7 +1313,7 @@ const OptionsScene: React.FC = () => (
   <>
     <Headline lines={headlines.options} origin={sceneFrom("options")} />
     <Visual>
-      <div style={{ display: "flex", gap: 24 }}>
+      <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>
         <OptionCard
           at={rel("options", 54.0)}
           dir="up"
