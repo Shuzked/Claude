@@ -1713,7 +1713,8 @@ const CtaScene: React.FC = () => {
             alignItems: "center",
             justifyContent: "center",
             fontSize: 104,
-            paddingRight: 8,
+            // la cursiva desplaza ópticamente el texto a la derecha: se compensa
+            transform: "translateX(-20px)",
             color: INK,
             textShadow: "none",
           }}
