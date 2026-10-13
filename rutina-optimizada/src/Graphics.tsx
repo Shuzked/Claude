@@ -653,22 +653,98 @@ const Spreadsheet: React.FC<{ at: number }> = ({ at }) => {
   );
 };
 
-// Cuerpo entero estilo Lottie: partes planas redondeadas que entran con rebote.
-// Al decir «pecho» la cámara hace zoom al pecho y lo centra, el resto del cuerpo
-// pierde opacidad y los pectorales se rellenan de verde, laten y emiten ondas.
-const SKIN = "#2c2c2c";
-const SKIN_LIGHT = "#383838";
-const EDGE = "rgba(255,255,255,0.3)";
+// Maniquí masculino minimalista: una sola silueta continua (simétrica, suavizada
+// con splines). Entra dibujando el contorno y rellenándose; al decir «pecho» se
+// iluminan los pectorales y luego la cámara hace zoom al pecho con un foco: la
+// zona del pecho y su alrededor se mantienen y el resto del cuerpo se apaga.
+const MANNEQUIN_FILL = "#303030";
+const MANNEQUIN_EDGE = "rgba(255,255,255,0.32)";
+const CX = 165; // eje de simetría (lienzo 330×640)
+const CHEST = { x: CX, y: 184 };
 
-// Coordenadas del cuerpo en un lienzo de 330×640; el pecho está en (165, 182).
-const CHEST = { x: 165, y: 182 };
+// Medio contorno derecho: [desplazamiento desde el eje, y], de la coronilla a la entrepierna.
+const HALF: [number, number][] = [
+  [0, 10],
+  [20, 13],
+  [32, 28],
+  [35, 50],
+  [31, 72],
+  [22, 90],
+  [13, 100],
+  [14, 112],
+  [18, 124],
+  [42, 132],
+  [68, 140],
+  [86, 152],
+  [95, 172],
+  [98, 200],
+  [100, 236],
+  [99, 264],
+  [101, 300],
+  [98, 336],
+  [99, 356],
+  [92, 372],
+  [80, 372],
+  [76, 352],
+  [77, 334],
+  [74, 298],
+  [70, 262],
+  [67, 232],
+  [64, 210],
+  [61, 236],
+  [55, 278],
+  [53, 302],
+  [58, 330],
+  [63, 356],
+  [63, 392],
+  [60, 436],
+  [53, 482],
+  [55, 522],
+  [49, 568],
+  [41, 604],
+  [47, 620],
+  [42, 630],
+  [20, 630],
+  [18, 612],
+  [20, 570],
+  [16, 522],
+  [14, 482],
+  [11, 432],
+  [5, 376],
+  [0, 368],
+];
+
+/** Spline Catmull-Rom cerrada → path SVG con curvas Bézier cúbicas. */
+const smoothPath = (pts: [number, number][]) => {
+  const n = pts.length;
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const p3 = pts[(i + 2) % n];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += ` C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${p2[0]} ${p2[1]}`;
+  }
+  return d + " Z";
+};
+
+const SILHOUETTE = smoothPath([
+  ...HALF.map(([dx, y]) => [CX + dx, y] as [number, number]),
+  ...HALF.slice(1, -1)
+    .reverse()
+    .map(([dx, y]) => [CX - dx, y] as [number, number]),
+]);
+
 const PEC_L =
-  "M 163 156 C 143 146, 106 148, 95 166 C 90 190, 108 212, 138 212 C 154 212, 163 202, 163 190 Z";
+  "M 163 160 C 150 151, 124 151, 110 161 C 103 180, 111 205, 135 209 C 151 211, 163 203, 163 190 Z";
 const PEC_R =
-  "M 167 156 C 187 146, 224 148, 235 166 C 240 190, 222 212, 192 212 C 176 212, 167 202, 167 190 Z";
+  "M 167 160 C 180 151, 206 151, 220 161 C 227 180, 219 205, 195 209 C 179 211, 167 203, 167 190 Z";
+
 const BODY_W = 420; // recuadro donde se ve el cuerpo
 const BODY_H = 560;
-const FIT = BODY_H / 640; // escala para que quepa entero
+const FIT = BODY_H / 640;
 
 const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
   at,
@@ -678,40 +754,38 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const cfg = { damping: 9, stiffness: 190, mass: 0.6 };
-  const pop = (d: number) =>
-    spring({ frame: frame - (at + d) * fps, fps, config: cfg });
-  const focus = interpolate(t, [zoomAt, zoomAt + 0.5], [0, 1], {
+  // entrada: contorno que se dibuja + relleno + rebote
+  const draw = interpolate(t, [at, at + 0.35], [0, 1], {
     ...clamp,
     easing: easeInOut,
   });
-  const body = 1 - 0.78 * focus; // opacidad del resto del cuerpo
-  const zoom = 1 + 0.9 * focus;
-  // desplaza el pecho al centro del recuadro mientras hace zoom
-  const centerY = 640 / 2;
-  const shiftY = (centerY - CHEST.y) * focus;
-  const fill = interpolate(t, [glowAt, glowAt + 0.45], [0, 1], {
+  const fillIn = interpolate(t, [at + 0.15, at + 0.4], [0, 1], clamp);
+  const bounce = spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping: 10, stiffness: 170, mass: 0.6 },
+  });
+  // pecho
+  const fill = interpolate(t, [glowAt, glowAt + 0.4], [0, 1], {
     ...clamp,
     easing: easeOut,
   });
   const lit = t >= glowAt;
   const pulse = lit ? 0.5 + 0.5 * Math.sin((t - glowAt) * 8) : 0;
-  const breathe = 1 + Math.sin(t * 3) * 0.008;
+  // zoom con foco
+  const focus = interpolate(t, [zoomAt, zoomAt + 0.5], [0, 1], {
+    ...clamp,
+    easing: easeInOut,
+  });
+  const zoom = 1 + 1.0 * focus;
+  const shiftY = (320 - CHEST.y) * focus;
+  const dim = 1 - 0.72 * focus;
+  const breathe = 1 + Math.sin(t * 3) * 0.006;
   const rings = [0, 0.45, 0.9].map((o) => {
     const k = ((t - glowAt - o) % 1.35) / 1.35;
     return lit && t - glowAt - o > 0 ? k : -1;
   });
-  const part = (
-    p: number,
-    ox: number,
-    oy: number,
-    op = 1,
-  ): React.CSSProperties => ({
-    transformOrigin: `${ox}px ${oy}px`,
-    transform: `scale(${p})`,
-    opacity: Math.min(1, p * 3) * op,
-  });
-  const limb = { fill: SKIN, stroke: EDGE, strokeWidth: 2.5 };
+  const LEN = 2600;
   return (
     <div
       style={{
@@ -736,7 +810,7 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
       >
         <defs>
           <filter id="pec-glow" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation={8 + 8 * pulse} result="b" />
+            <feGaussianBlur stdDeviation={7 + 7 * pulse} result="b" />
             <feMerge>
               <feMergeNode in="b" />
               <feMergeNode in="SourceGraphic" />
@@ -744,136 +818,82 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
           </filter>
           <clipPath id="pec-fill">
             <rect
-              x={80}
-              y={220 - 80 * fill}
-              width={170}
-              height={80 * fill + 2}
+              x={90}
+              y={215 - 66 * fill}
+              width={150}
+              height={66 * fill + 2}
             />
           </clipPath>
+          {/* foco: elipse alrededor del pecho con borde difuminado */}
+          <radialGradient
+            id="spot"
+            cx={CHEST.x}
+            cy={CHEST.y}
+            r={120}
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0.55" stopColor="#fff" stopOpacity={1} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0} />
+          </radialGradient>
+          <mask id="spot-mask">
+            <rect x={-200} y={-200} width={800} height={1100} fill="#000" />
+            <ellipse
+              cx={CHEST.x}
+              cy={CHEST.y}
+              rx={150}
+              ry={120}
+              fill="url(#spot)"
+            />
+          </mask>
         </defs>
         <g
           style={{
             transformOrigin: `${CHEST.x}px ${CHEST.y}px`,
-            transform: `translate(0px, ${shiftY}px) scale(${zoom * breathe})`,
+            transform: `translate(0px, ${shiftY}px) scale(${zoom * breathe * (0.92 + 0.08 * bounce)})`,
           }}
         >
-          {/* piernas */}
-          <g style={part(pop(0.18), 140, 360, body)}>
-            <rect x={114} y={352} width={50} height={268} rx={25} {...limb} />
-          </g>
-          <g style={part(pop(0.18), 190, 360, body)}>
-            <rect x={166} y={352} width={50} height={268} rx={25} {...limb} />
-          </g>
-          {/* cadera */}
-          <g style={part(pop(0.14), 165, 350, body)}>
-            <rect
-              x={98}
-              y={322}
-              width={134}
-              height={56}
-              rx={24}
-              fill={SKIN_LIGHT}
-              stroke={EDGE}
-              strokeWidth={2.5}
-            />
-          </g>
-          {/* brazos */}
-          <g style={part(pop(0.12), 62, 168, body)}>
-            <rect
-              x={40}
-              y={162}
-              width={40}
-              height={230}
-              rx={20}
-              {...limb}
-              transform="rotate(8 60 168)"
-            />
-          </g>
-          <g style={part(pop(0.12), 268, 168, body)}>
-            <rect
-              x={250}
-              y={162}
-              width={40}
-              height={230}
-              rx={20}
-              {...limb}
-              transform="rotate(-8 270 168)"
-            />
-          </g>
-          {/* cuello y cabeza */}
-          <g style={part(pop(0.05), 165, 110, body)}>
-            <rect
-              x={145}
-              y={86}
-              width={40}
-              height={44}
-              rx={16}
-              fill={SKIN}
-              stroke={EDGE}
-              strokeWidth={2.5}
-            />
-            <circle
-              cx={165}
-              cy={56}
-              r={40}
-              fill={SKIN_LIGHT}
-              stroke={EDGE}
-              strokeWidth={2.5}
-            />
-          </g>
-          {/* tronco en V */}
-          <g style={part(pop(0), 165, 240, body)}>
+          {/* cuerpo completo (se apaga con el foco) */}
+          <g opacity={dim}>
+            <path d={SILHOUETTE} fill={MANNEQUIN_FILL} opacity={fillIn} />
             <path
-              d="M 72 146 C 74 130, 118 120, 165 120 C 212 120, 256 130, 258 146 L 248 238 C 243 290, 212 330, 165 336 C 118 330, 87 290, 82 238 Z"
-              fill={SKIN}
-              stroke={EDGE}
-              strokeWidth={3}
+              d={SILHOUETTE}
+              fill="none"
+              stroke={MANNEQUIN_EDGE}
+              strokeWidth={2.5}
+              strokeDasharray={LEN}
+              strokeDashoffset={LEN * (1 - draw)}
             />
           </g>
-          {/* hombros */}
-          <g style={part(pop(0.08), 78, 158, body)}>
-            <circle
-              cx={78}
-              cy={158}
-              r={30}
-              fill={SKIN_LIGHT}
-              stroke={EDGE}
+          {/* zona del pecho y alrededor, siempre visible */}
+          <g mask="url(#spot-mask)" opacity={focus}>
+            <path d={SILHOUETTE} fill={MANNEQUIN_FILL} />
+            <path
+              d={SILHOUETTE}
+              fill="none"
+              stroke={MANNEQUIN_EDGE}
               strokeWidth={2.5}
             />
           </g>
-          <g style={part(pop(0.08), 252, 158, body)}>
-            <circle
-              cx={252}
-              cy={158}
-              r={30}
-              fill={SKIN_LIGHT}
-              stroke={EDGE}
-              strokeWidth={2.5}
+          {/* detalle mínimo del maniquí: línea del esternón y borde de pectorales */}
+          <g opacity={fillIn * 0.8}>
+            <path
+              d="M 165 150 V 300"
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={2}
+            />
+            <path
+              d={PEC_L}
+              fill="none"
+              stroke="rgba(255,255,255,0.14)"
+              strokeWidth={2}
+            />
+            <path
+              d={PEC_R}
+              fill="none"
+              stroke="rgba(255,255,255,0.14)"
+              strokeWidth={2}
             />
           </g>
-          {/* abdominales */}
-          {[0, 1, 2].map((r) =>
-            [0, 1].map((c) => (
-              <g
-                key={`${r}${c}`}
-                style={part(
-                  pop(0.22 + r * 0.05),
-                  c ? 186 : 144,
-                  240 + r * 30,
-                  body,
-                )}
-              >
-                <rect
-                  x={c ? 170 : 128}
-                  y={226 + r * 30}
-                  width={32}
-                  height={24}
-                  rx={10}
-                  fill={SKIN_LIGHT}
-                />
-              </g>
-            )),
-          )}
           {/* ondas */}
           {rings.map((k, i) =>
             k >= 0 ? (
@@ -881,44 +901,40 @@ const Torso: React.FC<{ at: number; glowAt: number; zoomAt: number }> = ({
                 key={i}
                 cx={CHEST.x}
                 cy={CHEST.y}
-                rx={70 + 60 * k}
+                rx={66 + 60 * k}
                 ry={34 + 34 * k}
                 fill="none"
                 stroke={GREEN}
                 strokeWidth={(2.5 * (1 - k) + 0.5) / zoom}
-                opacity={(1 - k) * 0.6}
+                opacity={(1 - k) * 0.55}
               />
             ) : null,
           )}
-          {/* pectorales: base y relleno verde que sube */}
-          <g style={part(pop(0.16), CHEST.x, CHEST.y)}>
-            <path d={PEC_L} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
-            <path d={PEC_R} fill={SKIN_LIGHT} stroke={EDGE} strokeWidth={2.5} />
-            <g
-              clipPath="url(#pec-fill)"
-              filter="url(#pec-glow)"
-              opacity={0.85 + 0.15 * pulse}
-            >
-              <path d={PEC_L} fill={GREEN} />
-              <path d={PEC_R} fill={GREEN} />
-            </g>
-            <path
-              d="M 106 166 C 116 158, 132 155, 146 158"
-              fill="none"
-              stroke="rgba(255,255,255,0.6)"
-              strokeWidth={4}
-              strokeLinecap="round"
-              opacity={fill}
-            />
-            <path
-              d="M 184 158 C 198 155, 214 158, 224 166"
-              fill="none"
-              stroke="rgba(255,255,255,0.6)"
-              strokeWidth={4}
-              strokeLinecap="round"
-              opacity={fill}
-            />
+          {/* pectorales iluminados */}
+          <g
+            clipPath="url(#pec-fill)"
+            filter="url(#pec-glow)"
+            opacity={0.85 + 0.15 * pulse}
+          >
+            <path d={PEC_L} fill={GREEN} />
+            <path d={PEC_R} fill={GREEN} />
           </g>
+          <path
+            d="M 118 166 C 128 159, 142 157, 154 160"
+            fill="none"
+            stroke="rgba(255,255,255,0.6)"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            opacity={fill}
+          />
+          <path
+            d="M 176 160 C 188 157, 202 159, 212 166"
+            fill="none"
+            stroke="rgba(255,255,255,0.6)"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            opacity={fill}
+          />
         </g>
       </svg>
     </div>
