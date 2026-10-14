@@ -171,14 +171,14 @@ export const HOOK = {
 export const NERVE = { from: 11.92, jaw: 12.1, nerve: 13.9, muscles: 15.3, to: 17.0 };
 
 // La pregunta de hipertrofia (plano negro)
-export const QUESTION = { from: 16.88, bite: 18.32, muscle: 19.8, card: 20.2, to: 22.7 };
+export const QUESTION = { from: 16.62, bite: 18.32, muscle: 19.8, card: 20.2, to: 22.7 };
 
 // «Separar dos cosas»
 export const TWO = { from: 22.9, clench: 25.2, guard: 26.8, to: 29.4 };
 
 // E05 · P2 (Miró et al., 2023), plano negro
 export const STUDY = {
-  from: 33.52,
+  from: 33.24, // la cortinilla termina justo antes del negro del original (33,52)
   athletes: 34.64,
   tests: 36.28,
   grip: 37.04,
@@ -189,7 +189,7 @@ export const STUDY = {
   c3: 41.2, // apretando con él
   figure: 42.6, // «Apretar mejoró la fuerza…»
   noExtra: 45.36, // «pero no detectaron una ventaja adicional…»
-  to: 49.48,
+  to: 49.98, // la cortinilla de salida ya descubre a Yago (el negro acaba en 49,48)
 };
 
 // «¿Cuánto músculo más ganaron?» → «eso no lo midieron»

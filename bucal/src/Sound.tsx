@@ -14,8 +14,8 @@ import {
 
 // Mezcla: la voz (ya procesada en el vídeo) manda; la música baja cuando se
 // habla y sube en las pausas; los efectos van por encima de la música.
-const MUSIC_GAP = 0.13; // nivel en pausas (cama sutil)
-const MUSIC_UNDER_VOICE = 0.09; // nivel mientras se habla: la voz manda
+const MUSIC_GAP = 0.15; // nivel en pausas (cama sutil)
+const MUSIC_UNDER_VOICE = 0.1; // nivel mientras se habla: la voz manda
 const ATTACK = 0.08; // s que tarda en bajar
 const RELEASE = 0.35; // s que tarda en recuperarse
 
