@@ -311,13 +311,13 @@ const Question: React.FC = () => {
         <div style={{ transform: `scale(${g}) rotate(${(1 - g) * -20}deg)`, filter: GLOW }}>
           <Guard size={220} color={GREEN} fill="rgba(4,228,0,0.15)" />
         </div>
-        <div style={{ ...display, fontSize: 104, marginTop: 50, opacity: Math.min(1, a * 2), transform: `translateY(${(1 - a) * 40}px)` }}>
+        <div style={{ ...display, fontSize: 86, marginTop: 50, opacity: Math.min(1, a * 2), transform: `translateY(${(1 - a) * 40}px)` }}>
           ¿Morder un bucal
         </div>
         <div
           style={{
             ...display,
-            fontSize: 132,
+            fontSize: 104,
             color: GREEN,
             filter: GLOW,
             marginTop: 18,
@@ -337,7 +337,7 @@ const Question: React.FC = () => {
           <div
             style={{
               ...display,
-              fontSize: 44,
+              fontSize: 36,
               color: INK,
               background: PAPER,
               padding: "14px 26px 10px",
@@ -619,7 +619,7 @@ const Measure: React.FC = () => {
         <div>
           <div style={{ ...label, fontSize: 22, color: "rgba(255,255,255,0.6)" }}>Crecimiento muscular</div>
           <div style={{ ...display, fontSize: 64, marginTop: 6, transform: `scale(${q})`, transformOrigin: "left" }}>
-            {t >= MEASURE.no ? "—" : "¿ + ? kg"}
+            <span style={{ textDecoration: t >= MEASURE.no ? "line-through" : "none", textDecorationColor: GREEN, textDecorationThickness: 6, opacity: t >= MEASURE.no ? 0.5 : 1 }}>+ ¿? kg</span>
           </div>
         </div>
         <div

@@ -9,7 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT, GREEN } from "./theme";
-import { f, MUTE, pageStart, visiblePages, type Word } from "./timeline";
+import { f, HOOK, MUTE, pageStart, visiblePages, type Word } from "./timeline";
 
 // Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
 const MARKER_PATH =
@@ -100,7 +100,8 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
   return (
     <AbsoluteFill
       style={{
-        top: cta ? 1400 : 1360,
+        // en el hook (pantalla dividida) van justo bajo la línea, sobre la cabeza de Yago
+        top: page[0].start < HOOK.end ? 1010 : cta ? 1400 : 1360,
         height: "auto",
         alignItems: "center",
       }}
