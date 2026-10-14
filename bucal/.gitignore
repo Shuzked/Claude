@@ -1,0 +1,21 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Metraje: no se sube a Git (pon tu vídeo en public/video.mp4)
+public/*.mp4
+public/*.mov
+
+# Efectos con licencia de terceros (Epidemic Sound, blogovs): no se suben al repo
+public/audio/fx/
+
+# Recorte (rotoscopia) del hook: se genera desde el metraje, no se sube
+public/roto/
+public/glow/
+public/thigh/
+public/legmask/
+public/bgblur/
