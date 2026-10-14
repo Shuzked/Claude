@@ -1,0 +1,2746 @@
+{
+  "language": "es-es",
+  "segments": [
+    {
+      "duration": 22.840000001791225,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 0.04,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 0.04,
+          "tags": [],
+          "text": "Sabes",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9800000190734863,
+          "duration": 0.2,
+          "eos": false,
+          "start": 0.4,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 0.6,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.8,
+          "eos": false,
+          "start": 0.8,
+          "tags": [],
+          "text": "entrenamiento",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 1.6,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 1.8,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": true,
+          "start": 1.92,
+          "tags": [],
+          "text": "biomecánica.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 2.64,
+          "tags": [],
+          "text": "Vamos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 2.96,
+          "tags": [],
+          "text": "a",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 3.04,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 3.32,
+          "tags": [],
+          "text": "tres",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 3.64,
+          "tags": [],
+          "text": "niveles",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 4,
+          "tags": [],
+          "text": "por",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 4.24,
+          "tags": [],
+          "text": "tema",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 4.6,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 4.72,
+          "tags": [],
+          "text": "quiero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 4.92,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 5.04,
+          "tags": [],
+          "text": "vayas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 5.36,
+          "tags": [],
+          "text": "contando",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 5.76,
+          "tags": [],
+          "text": "tus",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 5.96,
+          "tags": [],
+          "text": "aciertos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 6.4,
+          "tags": [],
+          "text": "por",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 6.6,
+          "tags": [],
+          "text": "separado,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 7.04,
+          "tags": [],
+          "text": "pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 7.24,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 7.36,
+          "tags": [],
+          "text": "vale",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 7.56,
+          "tags": [],
+          "text": "cambiar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 7.84,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.45,
+          "eos": true,
+          "start": 7.96,
+          "tags": [],
+          "text": "respuesta.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.40000000000393676,
+          "eos": false,
+          "start": 8.439999999996063,
+          "tags": [],
+          "text": "Empiezo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 8.84,
+          "tags": [],
+          "text": "con",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 8.96,
+          "tags": [],
+          "text": "entrenamiento",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 9.56,
+          "tags": [],
+          "text": "nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": true,
+          "start": 9.96,
+          "tags": [],
+          "text": "uno.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 10.48,
+          "tags": [],
+          "text": "¿Qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 10.68,
+          "tags": [],
+          "text": "mecanismo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 11.32,
+          "tags": [],
+          "text": "tiene",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 11.68,
+          "tags": [],
+          "text": "un",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 11.96,
+          "tags": [],
+          "text": "papel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 12.44,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": false,
+          "start": 12.72,
+          "tags": [],
+          "text": "establecido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 13.44,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 13.68,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": false,
+          "start": 13.84,
+          "tags": [],
+          "text": "hipertrofia,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 14.64,
+          "tags": [],
+          "text": "tensión",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 15.08,
+          "tags": [],
+          "text": "mecánica,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.3999999999960632,
+          "eos": false,
+          "start": 15.68,
+          "tags": [],
+          "text": "estrés",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.7200000000039367,
+          "eos": false,
+          "start": 16.079999999996062,
+          "tags": [],
+          "text": "metabólico",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 16.8,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 17,
+          "tags": [],
+          "text": "daño",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": true,
+          "start": 17.28,
+          "tags": [],
+          "text": "muscular?",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 16.160000001791225,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 22.96,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 22.96,
+          "tags": [],
+          "text": "La",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 23.36,
+          "tags": [],
+          "text": "tensión",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": true,
+          "start": 23.72,
+          "tags": [],
+          "text": "mecánica.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 24.2,
+          "tags": [],
+          "text": "Pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 24.48,
+          "tags": [],
+          "text": "ojo,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 24.72,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 24.88,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 25.12,
+          "tags": [],
+          "text": "confundas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 25.68,
+          "tags": [],
+          "text": "con",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 25.92,
+          "tags": [],
+          "text": "los",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 26.16,
+          "tags": [],
+          "text": "kilos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 26.56,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 26.72,
+          "tags": [],
+          "text": "metes",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 27,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 27.08,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": true,
+          "start": 27.2,
+          "tags": [],
+          "text": "barra.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 27.68,
+          "tags": [],
+          "text": "Nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 28.24,
+          "tags": [],
+          "text": "dos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 28.8,
+          "tags": [],
+          "text": "Qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 29,
+          "tags": [],
+          "text": "excéntrica",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 29.56,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 29.68,
+          "tags": [],
+          "text": "superior",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 30.12,
+          "tags": [],
+          "text": "para",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 30.32,
+          "tags": [],
+          "text": "hipertrofia",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 31.04,
+          "tags": [],
+          "text": "rápida,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 31.64,
+          "tags": [],
+          "text": "lenta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 32.28,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 32.68,
+          "tags": [],
+          "text": "ninguna",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.11999999999606324,
+          "eos": false,
+          "start": 33.04,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24000000000393676,
+          "eos": false,
+          "start": 33.15999999999606,
+          "tags": [],
+          "text": "forma",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 33.4,
+          "tags": [],
+          "text": "general.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 21.400000001791227,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 39.2,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 39.2,
+          "tags": [],
+          "text": "Ninguna",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 39.84,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": true,
+          "start": 39.92,
+          "tags": [],
+          "text": "general.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 40.28,
+          "tags": [],
+          "text": "Bajar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 40.64,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 40.88,
+          "tags": [],
+          "text": "lento",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 41.2,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 0.75,
+          "duration": 0.52,
+          "eos": false,
+          "start": 41.56,
+          "tags": [],
+          "text": "garantiza",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.22,
+          "eos": false,
+          "start": 42.1,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": true,
+          "start": 42.32,
+          "tags": [],
+          "text": "hipertrofia.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 43.04,
+          "tags": [],
+          "text": "Nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 43.68,
+          "tags": [],
+          "text": "tres",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 44.32,
+          "tags": [],
+          "text": "Si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 44.6,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 44.68,
+          "tags": [],
+          "text": "un",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.8,
+          "eos": false,
+          "start": 44.88,
+          "tags": [],
+          "text": "experimento",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9300000071525574,
+          "duration": 0.84,
+          "eos": false,
+          "start": 45.68,
+          "tags": [],
+          "text": "igualaran",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 46.52,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 46.96,
+          "tags": [],
+          "text": "volumen",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 47.56,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 47.68,
+          "tags": [],
+          "text": "carga",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 48.2,
+          "tags": [],
+          "text": "con",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 48.68,
+          "tags": [],
+          "text": "uno",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 49.2,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 49.44,
+          "tags": [],
+          "text": "tres",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 49.64,
+          "tags": [],
+          "text": "minutos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 50.04,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.84,
+          "eos": false,
+          "start": 50.16,
+          "tags": [],
+          "text": "descanso",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 51.04,
+          "tags": [],
+          "text": "crecerían",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 51.72,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 51.96,
+          "tags": [],
+          "text": "descansando",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 52.56,
+          "tags": [],
+          "text": "tres",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 52.84,
+          "tags": [],
+          "text": "minutos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 53.32,
+          "tags": [],
+          "text": "uno",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 53.76,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 53.96,
+          "tags": [],
+          "text": "crecerían",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 54.44,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 54.56,
+          "tags": [],
+          "text": "forma",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 54.84,
+          "tags": [],
+          "text": "similar.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 21.200000001791224,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 60.68,
+      "words": [
+        {
+          "confidence": 0.9800000190734863,
+          "duration": 0.76,
+          "eos": false,
+          "start": 60.68,
+          "tags": [],
+          "text": "Parecido",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 61.44,
+          "tags": [],
+          "text": "pero",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 62,
+          "tags": [],
+          "text": "con",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 62.24,
+          "tags": [],
+          "text": "un",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 62.36,
+          "tags": [],
+          "text": "minuto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 62.8,
+          "tags": [],
+          "text": "tuvieron",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 63.36,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 63.44,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 63.76,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 63.96,
+          "tags": [],
+          "text": "series",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 64.28,
+          "tags": [],
+          "text": "para",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 64.48,
+          "tags": [],
+          "text": "igualar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.11999999999606324,
+          "eos": false,
+          "start": 64.84,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32000000000393675,
+          "eos": false,
+          "start": 64.95999999999606,
+          "tags": [],
+          "text": "volumen",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 65.28,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.55,
+          "eos": false,
+          "start": 65.4,
+          "tags": [],
+          "text": "trabajo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16000000000393677,
+          "eos": false,
+          "start": 65.95999999999606,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 66.12,
+          "tags": [],
+          "text": "ahora",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": true,
+          "start": 66.4,
+          "tags": [],
+          "text": "biomecánica.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 67.12,
+          "tags": [],
+          "text": "A",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 67.28,
+          "tags": [],
+          "text": "ver",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 67.44,
+          "tags": [],
+          "text": "si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.5999999999960632,
+          "eos": true,
+          "start": 67.64,
+          "tags": [],
+          "text": "remontas.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 68.28,
+          "tags": [],
+          "text": "Nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 68.76,
+          "tags": [],
+          "text": "uno",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 69.16,
+          "tags": [],
+          "text": "Bajando",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 69.56,
+          "tags": [],
+          "text": "los",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 69.84,
+          "tags": [],
+          "text": "pies",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 70.28,
+          "tags": [],
+          "text": "a",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 70.4,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 70.52,
+          "tags": [],
+          "text": "hora",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 70.68,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 70.76,
+          "tags": [],
+          "text": "hacer",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 71,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 71.28,
+          "tags": [],
+          "text": "prensa",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 71.68,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 72.12,
+          "tags": [],
+          "text": "qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 72.32,
+          "tags": [],
+          "text": "músculo",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9599999785423279,
+          "duration": 0.4,
+          "eos": false,
+          "start": 72.84,
+          "tags": [],
+          "text": "aumento",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 73.24,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": true,
+          "start": 73.44,
+          "tags": [],
+          "text": "demanda.",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9900000095367432,
+          "duration": 0.8,
+          "eos": false,
+          "start": 74.04,
+          "tags": [],
+          "text": "¿Glúteos,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": false,
+          "start": 74.88,
+          "tags": [],
+          "text": "isquios",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 75.6,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9700000286102295,
+          "duration": 0.72,
+          "eos": true,
+          "start": 75.8,
+          "tags": [],
+          "text": "cuádriceps?",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 21.880000001791228,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 81.96,
+      "words": [
+        {
+          "confidence": 0.9599999785423279,
+          "duration": 0.76,
+          "eos": true,
+          "start": 81.96,
+          "tags": [],
+          "text": "Cuádriceps.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 82.72,
+          "tags": [],
+          "text": "La",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 82.92,
+          "tags": [],
+          "text": "clave",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 83.28,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 83.56,
+          "tags": [],
+          "text": "cómo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 83.92,
+          "tags": [],
+          "text": "cambia",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 84.24,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": true,
+          "start": 84.36,
+          "tags": [],
+          "text": "demanda.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 84.76,
+          "tags": [],
+          "text": "No",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 85,
+          "tags": [],
+          "text": "bajar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 85.28,
+          "tags": [],
+          "text": "los",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 85.44,
+          "tags": [],
+          "text": "pies",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 85.68,
+          "tags": [],
+          "text": "porque",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9599999785423279,
+          "duration": 0.48,
+          "eos": true,
+          "start": 86,
+          "tags": [],
+          "text": "sí.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 86.52,
+          "tags": [],
+          "text": "Nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 87.08,
+          "tags": [],
+          "text": "dos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 87.52,
+          "tags": [],
+          "text": "Si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.76,
+          "eos": false,
+          "start": 87.72,
+          "tags": [],
+          "text": "comparásemos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 88.48,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 88.8,
+          "tags": [],
+          "text": "media",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 89.08,
+          "tags": [],
+          "text": "sentadilla",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 89.64,
+          "tags": [],
+          "text": "con",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 89.8,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 90,
+          "tags": [],
+          "text": "sentadilla",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 90.52,
+          "tags": [],
+          "text": "profunda",
+          "type": "word"
+        },
+        {
+          "confidence": 0.7099999785423279,
+          "duration": 0.56,
+          "eos": false,
+          "start": 91.2,
+          "tags": [],
+          "text": "donde",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.72,
+          "eos": false,
+          "start": 91.76,
+          "tags": [],
+          "text": "observaríamos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 92.48,
+          "tags": [],
+          "text": "probablemente",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 93.16,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 93.4,
+          "tags": [],
+          "text": "mayor",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 93.72,
+          "tags": [],
+          "text": "ventaja",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 94.4,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.84,
+          "eos": false,
+          "start": 94.6,
+          "tags": [],
+          "text": "hipertrofia,",
+          "type": "word"
+        },
+        {
+          "confidence": 0.9700000286102295,
+          "duration": 0.8,
+          "eos": false,
+          "start": 95.48,
+          "tags": [],
+          "text": "cuádriceps,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 96.36,
+          "tags": [],
+          "text": "glúteos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 96.84,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.68,
+          "eos": false,
+          "start": 96.92,
+          "tags": [],
+          "text": "aductores",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 97.6,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 97.84,
+          "tags": [],
+          "text": "isquios.",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 21.440000001791226,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 103.92,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 103.92,
+          "tags": [],
+          "text": "Glúteos",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 104.44,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": true,
+          "start": 104.52,
+          "tags": [],
+          "text": "actores.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 105.08,
+          "tags": [],
+          "text": "De",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 105.28,
+          "tags": [],
+          "text": "hecho,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 105.56,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 105.72,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 105.84,
+          "tags": [],
+          "text": "ensayo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 106.2,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 106.32,
+          "tags": [],
+          "text": "hay",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 106.48,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 106.76,
+          "tags": [],
+          "text": "esto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 107,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 107.2,
+          "tags": [],
+          "text": "apareció",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 107.64,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 107.76,
+          "tags": [],
+          "text": "misma",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 108,
+          "tags": [],
+          "text": "ventaja",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 108.36,
+          "tags": [],
+          "text": "sobre",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 108.6,
+          "tags": [],
+          "text": "los",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 108.76,
+          "tags": [],
+          "text": "cuádriceps",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 109.52,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 109.64,
+          "tags": [],
+          "text": "nivel",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": true,
+          "start": 110.08,
+          "tags": [],
+          "text": "tres.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 110.68,
+          "tags": [],
+          "text": "¿Qué",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": false,
+          "start": 111,
+          "tags": [],
+          "text": "región",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 111.6,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 111.92,
+          "tags": [],
+          "text": "glúteo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 112.4,
+          "tags": [],
+          "text": "mayor",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 113.04,
+          "tags": [],
+          "text": "tiene",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.28,
+          "eos": false,
+          "start": 113.36,
+          "tags": [],
+          "text": "una",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": false,
+          "start": 113.64,
+          "tags": [],
+          "text": "arquitectura",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 114.28,
+          "tags": [],
+          "text": "más",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 114.52,
+          "tags": [],
+          "text": "favorable",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 115.04,
+          "tags": [],
+          "text": "para",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 115.24,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 115.36,
+          "tags": [],
+          "text": "gesto",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 115.72,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 1.04,
+          "eos": true,
+          "start": 115.96,
+          "tags": [],
+          "text": "abducción?",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 117.04,
+          "tags": [],
+          "text": "¿La",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 117.28,
+          "tags": [],
+          "text": "región",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 117.64,
+          "tags": [],
+          "text": "superior,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 118.24,
+          "tags": [],
+          "text": "media",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 118.8,
+          "tags": [],
+          "text": "o",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.8,
+          "eos": true,
+          "start": 119.04,
+          "tags": [],
+          "text": "inferior?",
+          "type": "word"
+        }
+      ]
+    },
+    {
+      "duration": 17.08,
+      "language": "es-es",
+      "speaker": "13e47b09-d22f-4842-a960-de55eb579085",
+      "start": 125.44,
+      "words": [
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 125.44,
+          "tags": [],
+          "text": "Región",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 125.92,
+          "tags": [],
+          "text": "superior.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 126.56,
+          "tags": [],
+          "text": "Y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 126.76,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 127,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 127.2,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 127.44,
+          "tags": [],
+          "text": "acción",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 127.8,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 127.96,
+          "tags": [],
+          "text": "separar",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 128.36,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 128.56,
+          "tags": [],
+          "text": "piernas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 129,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 129.32,
+          "tags": [],
+          "text": "es",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6799999999960632,
+          "eos": false,
+          "start": 129.52,
+          "tags": [],
+          "text": "exclusiva",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.20000000000393675,
+          "eos": false,
+          "start": 130.19999999999607,
+          "tags": [],
+          "text": "del",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 130.4,
+          "tags": [],
+          "text": "glúteo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6,
+          "eos": true,
+          "start": 130.8,
+          "tags": [],
+          "text": "medio.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.31999999999606327,
+          "eos": false,
+          "start": 131.44,
+          "tags": [],
+          "text": "Si",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.20000000000393675,
+          "eos": false,
+          "start": 131.75999999999607,
+          "tags": [],
+          "text": "has",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 131.96,
+          "tags": [],
+          "text": "acertado",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 132.44,
+          "tags": [],
+          "text": "las",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.35999999999606325,
+          "eos": false,
+          "start": 132.68,
+          "tags": [],
+          "text": "seis,",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.40000000000393676,
+          "eos": false,
+          "start": 133.03999999999607,
+          "tags": [],
+          "text": "estás",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.4,
+          "eos": false,
+          "start": 133.44,
+          "tags": [],
+          "text": "fuerte",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.44,
+          "eos": false,
+          "start": 133.84,
+          "tags": [],
+          "text": "hasta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.12,
+          "eos": false,
+          "start": 134.28,
+          "tags": [],
+          "text": "en",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 134.4,
+          "tags": [],
+          "text": "la",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.64,
+          "eos": true,
+          "start": 134.6,
+          "tags": [],
+          "text": "teoría.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.52,
+          "eos": false,
+          "start": 135.28,
+          "tags": [],
+          "text": "Comenta",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 135.8,
+          "tags": [],
+          "text": "el",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": false,
+          "start": 135.96,
+          "tags": [],
+          "text": "marcador",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 136.52,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 136.72,
+          "tags": [],
+          "text": "lo",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 136.88,
+          "tags": [],
+          "text": "que",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 136.96,
+          "tags": [],
+          "text": "hayas",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.47999999999606324,
+          "eos": true,
+          "start": 137.16,
+          "tags": [],
+          "text": "conseguido.",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.6800000000039368,
+          "eos": false,
+          "start": 137.63999999999606,
+          "tags": [],
+          "text": "Entrenamiento",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 138.32,
+          "tags": [],
+          "text": "versus",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.96,
+          "eos": false,
+          "start": 138.68,
+          "tags": [],
+          "text": "biomecánica",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.2,
+          "eos": false,
+          "start": 139.68,
+          "tags": [],
+          "text": "y",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.16,
+          "eos": false,
+          "start": 139.88,
+          "tags": [],
+          "text": "no",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 140.04,
+          "tags": [],
+          "text": "te",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.32,
+          "eos": false,
+          "start": 140.12,
+          "tags": [],
+          "text": "olvides",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.24,
+          "eos": false,
+          "start": 140.44,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.48,
+          "eos": false,
+          "start": 140.68,
+          "tags": [],
+          "text": "seguirme",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 141.16,
+          "tags": [],
+          "text": "para",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.36,
+          "eos": false,
+          "start": 141.52,
+          "tags": [],
+          "text": "subir",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.08,
+          "eos": false,
+          "start": 141.88,
+          "tags": [],
+          "text": "de",
+          "type": "word"
+        },
+        {
+          "confidence": 1,
+          "duration": 0.56,
+          "eos": true,
+          "start": 141.96,
+          "tags": [],
+          "text": "nivel.",
+          "type": "word"
+        }
+      ]
+    }
+  ],
+  "speakers": [
+    { "id": "13e47b09-d22f-4842-a960-de55eb579085", "name": "Desconocido" }
+  ]
+}
