@@ -314,8 +314,6 @@ export const allSfx: Sfx[] = [
   { at: MEASURE.no, src: "stamp", volume: 0.35 },
   // síntesis, dentista y CTA
   { at: SYNTH.from, src: "whoosh-b", volume: 0.22 },
-  { at: DENTIST.label, src: "paper", volume: 0.3 },
-  { at: DENTIST.stamp, src: "stamp", volume: 0.4 },
   { at: FOLLOW.at, src: "whoosh-a", volume: 0.25 },
   { at: FOLLOW.at + 0.6, src: "shine", volume: 0.25 },
   // barridos en los cortes (los de dentro de los planos negros no se oyen)

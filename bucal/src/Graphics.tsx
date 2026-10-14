@@ -11,7 +11,6 @@ import {
 } from "remotion";
 import { FONT, GREEN, PAPER } from "./theme";
 import {
-  DENTIST,
   f,
   FOLLOW,
   MEASURE,
@@ -740,82 +739,6 @@ const Synth: React.FC = () => {
   );
 };
 
-/** Plano del banco: «Otra cosa es que te lo haya indicado tu dentista». Una hoja de
- *  indicación entra girando y en «dentista» cae el sello «Otra cuestión». */
-const Dentist: React.FC = () => {
-  const { t, pop, ramp } = useClock();
-  if (t < DENTIST.label - 0.1 || t > DENTIST.to + 0.05) return null;
-  const p = pop(DENTIST.label, 12, 170);
-  const lines = ramp(DENTIST.label + 0.15, DENTIST.label + 0.7);
-  const st = pop(DENTIST.stamp, 9, 260);
-  const out = ramp(DENTIST.to - 0.25, DENTIST.to, easeInOut);
-  return (
-    <AbsoluteFill style={{ opacity: 1 - out }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 150,
-          left: 230,
-          width: 620,
-          transform: `translateY(${(1 - p) * -420}px) rotate(${-4 + (1 - p) * 18}deg)`,
-          transformOrigin: "50% 0%",
-        }}
-      >
-        <div
-          style={{
-            background: "#F4F2EC",
-            borderRadius: 10,
-            padding: "26px 32px 30px",
-            boxShadow: "0 30px 60px rgba(0,0,0,0.55)",
-            position: "relative",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 16, borderBottom: "3px solid #1a1a1a", paddingBottom: 14 }}>
-            <Tooth size={56} color={INK} />
-            <div style={{ ...display, fontSize: 40, color: INK }}>Indicación dental</div>
-          </div>
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                height: 4,
-                width: `${[86, 70, 52][i] * Math.min(1, Math.max(0, lines * 3 - i))}%`,
-                background: "rgba(10,10,10,0.25)",
-                borderRadius: 2,
-                marginTop: 26,
-              }}
-            />
-          ))}
-          {/* sello */}
-          <div
-            style={{
-              position: "absolute",
-              right: 26,
-              bottom: 22,
-              transform: `scale(${2.2 - 1.2 * st}) rotate(-12deg)`,
-              opacity: Math.min(1, st * 3),
-            }}
-          >
-            <div
-              style={{
-                ...display,
-                fontSize: 46,
-                color: "#02a800",
-                border: "6px solid #02a800",
-                borderRadius: 12,
-                padding: "10px 18px 6px",
-                mixBlendMode: "multiply",
-              }}
-            >
-              Otra cuestión
-            </div>
-          </div>
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 // ---------------------------------------------------------------------------
 // E08 · «Sígueme · Entrena con criterio» (mismo concepto minimalista del quiz)
 
@@ -877,7 +800,6 @@ export const Graphics: React.FC = () => (
     <Study />
     <Measure />
     <Synth />
-    <Dentist />
     <Follow />
   </AbsoluteFill>
 );
