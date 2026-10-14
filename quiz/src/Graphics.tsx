@@ -17,6 +17,7 @@ import {
   RES,
   THINK,
   toSrc,
+  levelOut,
   type Question,
 } from "./timeline";
 
@@ -90,27 +91,6 @@ const Glass: React.FC<{
   >
     {children}
   </div>
-);
-
-/** Subrayador verde detrás de un texto (funciona en varias líneas). */
-const Marker: React.FC<{ p: number; children: React.ReactNode }> = ({
-  p,
-  children,
-}) => (
-  <span
-    style={{
-      backgroundImage: `linear-gradient(${GREEN}, ${GREEN})`,
-      backgroundRepeat: "no-repeat",
-      backgroundSize: `${p * 100}% 100%`,
-      boxDecorationBreak: "clone",
-      WebkitBoxDecorationBreak: "clone",
-      padding: "0 6px",
-      borderRadius: 4,
-      color: p > 0.5 ? INK : PAPER,
-    }}
-  >
-    {children}
-  </span>
 );
 
 const Cite: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -207,7 +187,7 @@ const ScoreBox: React.FC<{
   score?: string;
   on?: boolean;
   style?: React.CSSProperties;
-}> = ({ title, score = "__", on, style }) => (
+}> = ({ title, score = "?", on, style }) => (
   <Glass
     style={{
       width: 430,
@@ -318,16 +298,41 @@ const Boards: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------------
-// Identificación del bloque y del nivel (arriba)
+// Cabecera: una sola pastilla blanca de principio a fin del juego. Al pasar a
+// biomecánica la palabra gira (sale «Entrenamiento», entra «Biomecánica»).
+
+const HEADER_FROM = BLOCKS[0].from;
+const HEADER_TO = BLOCKS[1].to;
+const SWITCH = 66.4; // «…y ahora biomecánica»
 
 const BlockHeader: React.FC = () => {
   const { t, pop, ramp } = useClock();
-  const b = BLOCKS.find((x) => t >= x.from && t < x.to);
-  if (!b) return null;
-  const p = pop(b.from, 12);
-  const out = ramp(b.to - 0.3, b.to, easeInOut);
+  if (t < HEADER_FROM - 0.05 || t > HEADER_TO + 0.05) return null;
+  const p = pop(HEADER_FROM, 12);
+  const out = ramp(HEADER_TO - 0.3, HEADER_TO, easeInOut);
+  const k = ramp(SWITCH - 0.3, SWITCH + 0.25, Easing.bezier(0.7, 0, 0.2, 1));
+  const bump = Math.sin(k * Math.PI);
+  const b = k < 0.5 ? BLOCKS[0] : BLOCKS[1];
   const qs = QUESTIONS.filter((q) => q.block === b.block);
   const level = qs.filter((q) => t >= q.nivelAt - 0.05).length;
+  const word = (text: string, y: number, o: number) => (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        ...display,
+        fontSize: 40,
+        transform: `translateY(${y}px) rotateX(${-y * 1.2}deg)`,
+        opacity: o,
+        filter: `blur(${Math.abs(y) / 9}px)`,
+      }}
+    >
+      {text}
+    </div>
+  );
   return (
     <AbsoluteFill style={{ opacity: Math.min(1, p * 2) * (1 - out) }}>
       <div
@@ -338,7 +343,7 @@ const BlockHeader: React.FC = () => {
           right: 0,
           display: "flex",
           justifyContent: "center",
-          transform: `translateY(${(1 - p) * -60}px)`,
+          transform: `translateY(${(1 - p) * -60}px) scale(${1 + 0.07 * bump})`,
         }}
       >
         <div
@@ -348,18 +353,21 @@ const BlockHeader: React.FC = () => {
             gap: 22,
             padding: "16px 30px 14px",
             background: "rgba(10,10,10,0.78)",
-            border: "2px solid rgba(255,255,255,0.14)",
+            border: `2px solid ${bump > 0.05 ? `rgba(4,228,0,${0.3 + 0.7 * bump})` : "rgba(255,255,255,0.14)"}`,
+            boxShadow: `0 0 ${40 * bump}px rgba(4,228,0,${0.6 * bump})`,
             borderRadius: 999,
           }}
         >
           <div
             style={{
-              ...display,
-              fontSize: 40,
-              color: b.block === "T" ? PAPER : GREEN,
+              position: "relative",
+              width: interpolate(k, [0, 1], [372, 312]),
+              height: 46,
+              perspective: 400,
             }}
           >
-            {b.title}
+            {k < 1 ? word("Entrenamiento", -k * 56, 1 - k) : null}
+            {k > 0 ? word("Biomecánica", (1 - k) * 56, k) : null}
           </div>
           <div
             style={{
@@ -374,20 +382,24 @@ const BlockHeader: React.FC = () => {
             Nivel {Math.max(1, level)}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: 999,
-                  background: n <= level ? GREEN : "rgba(255,255,255,0.18)",
-                  boxShadow:
-                    n === level ? "0 0 12px rgba(4,228,0,0.8)" : undefined,
-                  transform: `scale(${n === level ? 1.2 : 1})`,
-                }}
-              />
-            ))}
+            {[1, 2, 3].map((n) => {
+              const on = qs[n - 1] ? pop(qs[n - 1].numAt, 8) : 0;
+              const lit = n <= level ? Math.min(1, on * 1.2) : 0;
+              return (
+                <div
+                  key={n}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 999,
+                    background: lit > 0.5 ? GREEN : "rgba(255,255,255,0.18)",
+                    boxShadow:
+                      n === level ? "0 0 12px rgba(4,228,0,0.8)" : undefined,
+                    transform: `scale(${n === level ? 0.6 + 0.6 * on : 1})`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
@@ -395,185 +407,258 @@ const BlockHeader: React.FC = () => {
   );
 };
 
-/** Cambio de bloque: el título grande barre la pantalla al decir «ahora biomecánica». */
-const BlockSwitch: React.FC = () => {
-  const { t, ramp } = useClock();
-  const at = BLOCKS[1].from;
-  if (t < at - 0.05 || t > at + 1.2) return null;
-  const k = ramp(at, at + 1.15, Easing.bezier(0.45, 0, 0.2, 1));
-  const x = interpolate(k, [0, 0.35, 0.65, 1], [1200, 0, 0, -1200]);
-  return (
-    <AbsoluteFill style={{ pointerEvents: "none" }}>
-      <div
-        style={{
-          position: "absolute",
-          top: 820,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          transform: `translateX(${x}px) skewX(-8deg)`,
-        }}
-      >
-        <div
-          style={{
-            ...display,
-            fontSize: 130,
-            color: INK,
-            background: GREEN,
-            padding: "18px 40px 8px",
-            filter: GLOW,
-          }}
-        >
-          Biomecánica
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 // ---------------------------------------------------------------------------
-// Pregunta: opciones A/B/C, reloj de 2 s y revelación
+// Pregunta: enunciado, opciones A/B/C, cuenta atrás de 5 s y revelación.
+// La respuesta correcta se queda (sube y acompaña a la explicación).
 
 const LETTERS = ["A", "B", "C"];
+const STATEMENT_TOP = 850;
+const OPTIONS_TOP = 1112;
+const OPTION_H = 104;
+const OPTION_GAP = 18;
+const CHIP_TOP = 862;
+const PANEL_TOP = 990;
+/** El enunciado entra cuando se retira el «NIVEL n» de detrás. */
+const qShow = (q: Question) => Math.max(q.qFrom - 0.15, levelOut(q) - 0.3);
+/** La explicación entra cuando la respuesta ya se ha visto un rato. */
+const resStart = (q: Question, at: number) => Math.max(at, q.answerAt + 1.3);
 
-const Timer: React.FC<{ q: Question }> = ({ q }) => {
-  const { t, pop, ramp } = useClock();
-  // el reloj corre en el montaje: de qEnd hasta el corte (2 s exactos)
-  const run =
-    t >= q.answerAt ? 1 : Math.min(1, Math.max(0, (t - q.qEnd) / THINK));
-  const p = pop(q.qEnd - 0.1, 12);
-  const out = ramp(q.answerAt + 0.15, q.answerAt + 0.45, easeInOut);
-  if (t < q.qEnd - 0.15) return null;
-  const R = 54;
-  const C = 2 * Math.PI * R;
-  const secs = Math.max(0, Math.ceil(THINK - run * THINK - 1e-6));
+const Scrim: React.FC<{ q: Question }> = ({ q }) => {
+  const { ramp } = useClock();
+  const o = ramp(qShow(q) - 0.1, qShow(q) + 0.4) * (1 - ramp(q.resEnd - 0.35, q.resEnd, easeInOut));
   return (
     <div
       style={{
         position: "absolute",
-        top: 905,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "center",
+        inset: 0,
+        opacity: o,
+        background:
+          "linear-gradient(180deg, transparent 34%, rgba(0,0,0,0.62) 48%, rgba(0,0,0,0.86) 100%)",
+      }}
+    />
+  );
+};
+
+const Statement: React.FC<{ q: Question }> = ({ q }) => {
+  const { t, pop, ramp } = useClock();
+  if (t < qShow(q) - 0.05) return null;
+  const p = pop(qShow(q), 13, 190);
+  const out = ramp(q.answerAt + 0.55, q.answerAt + 0.9, easeInOut);
+  const ws = q.statement.split(" ");
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: STATEMENT_TOP,
+        left: 60,
+        right: 60,
         opacity: Math.min(1, p * 2) * (1 - out),
-        transform: `scale(${0.6 + 0.4 * p})`,
+        transform: `translateY(${(1 - p) * 40 - out * 24}px)`,
       }}
     >
-      <div style={{ position: "relative", width: 140, height: 140 }}>
-        <svg
-          width={140}
-          height={140}
-          viewBox="0 0 140 140"
-          style={{ position: "absolute", inset: 0 }}
-        >
-          <circle cx={70} cy={70} r={62} fill="rgba(10,10,10,0.85)" />
-          <circle
-            cx={70}
-            cy={70}
-            r={R}
-            fill="none"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth={10}
-          />
-          <circle
-            cx={70}
-            cy={70}
-            r={R}
-            fill="none"
-            stroke={NEON}
-            strokeWidth={10}
-            strokeLinecap="round"
-            strokeDasharray={C}
-            strokeDashoffset={C * run}
-            transform="rotate(-90 70 70)"
-            style={{ filter: GLOW }}
-          />
-        </svg>
+      <Glass style={{ padding: "22px 34px 26px" }}>
+        <div style={{ ...label, fontSize: 20, letterSpacing: 5 }}>
+          Pregunta {q.level}
+        </div>
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            ...display,
-            fontSize: 62,
-            fontStyle: "normal",
+            fontFamily: FONT,
+            fontWeight: 800,
+            fontSize: 40,
+            lineHeight: 1.18,
+            color: PAPER,
+            marginTop: 10,
+            paddingRight: 70,
           }}
         >
-          {t >= q.answerAt ? "✓" : secs}
+          {ws.map((w, i) => {
+            // se ilumina palabra a palabra mientras lo pregunta
+            const at = q.qFrom + ((q.qTo - q.qFrom) * i) / ws.length;
+            const a = ramp(at - 0.05, at + 0.2);
+            return (
+              <span key={i} style={{ opacity: 0.22 + 0.78 * a }}>
+                {w}{" "}
+              </span>
+            );
+          })}
         </div>
+      </Glass>
+    </div>
+  );
+};
+
+const Timer: React.FC<{ q: Question }> = ({ q }) => {
+  const { t, pop, ramp } = useClock();
+  const from = q.answerAt - THINK;
+  if (t < from - 0.15) return null;
+  const run = Math.min(1, Math.max(0, (t - from) / THINK));
+  const p = pop(from - 0.1, 11);
+  const out = ramp(q.answerAt - 0.05, q.answerAt + 0.25, easeInOut);
+  const R = 46;
+  const C = 2 * Math.PI * R;
+  const secs = Math.max(1, Math.ceil(THINK - run * THINK - 1e-6));
+  // último segundo: el aro se pone tenso (late)
+  const beat = run > 0.8 ? 1 + 0.06 * Math.abs(Math.sin((t - from) * Math.PI * 2)) : 1;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: STATEMENT_TOP - 52,
+        right: 44,
+        width: 120,
+        height: 120,
+        opacity: Math.min(1, p * 2) * (1 - out),
+        transform: `scale(${(0.5 + 0.5 * p) * beat * (1 + out * 0.3)})`,
+      }}
+    >
+      <svg width={120} height={120} viewBox="0 0 120 120" style={{ position: "absolute", inset: 0 }}>
+        <circle cx={60} cy={60} r={56} fill="rgba(10,10,10,0.92)" />
+        <circle cx={60} cy={60} r={R} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={9} />
+        <circle
+          cx={60}
+          cy={60}
+          r={R}
+          fill="none"
+          stroke={NEON}
+          strokeWidth={9}
+          strokeLinecap="round"
+          strokeDasharray={C}
+          strokeDashoffset={C * run}
+          transform="rotate(-90 60 60)"
+          style={{ filter: GLOW }}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          ...display,
+          fontSize: 54,
+          fontStyle: "normal",
+        }}
+      >
+        {secs}
       </div>
     </div>
+  );
+};
+
+/** Check de acierto: el círculo se rellena de verde (líquido) y se traza el ✓. */
+const CheckFill: React.FC<{ at: number; size?: number }> = ({ at, size = 66 }) => {
+  const { t, ramp } = useClock();
+  const fill = ramp(at, at + 0.5, Easing.bezier(0.3, 0, 0.2, 1));
+  const tick = ramp(at + 0.3, at + 0.6);
+  const ring = ramp(at, at + 0.15);
+  const level = 60 - 64 * fill; // nivel del líquido (de abajo arriba)
+  const wave = (k: number) =>
+    `M -10 ${level} ` +
+    Array.from({ length: 9 })
+      .map((_, i) => {
+        const x = i * 10;
+        const y = level + Math.sin(i * 1.3 + t * 14 + k) * 3.2 * (1 - fill * 0.85);
+        return `L ${x} ${y}`;
+      })
+      .join(" ") +
+    " L 80 70 L -10 70 Z";
+  const id = `cf${Math.round(at * 100)}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 60" style={{ flexShrink: 0, overflow: "visible", filter: GLOW }}>
+      <defs>
+        <clipPath id={id}>
+          <circle cx={30} cy={30} r={27} />
+        </clipPath>
+      </defs>
+      <circle cx={30} cy={30} r={27} fill="rgba(10,10,10,0.9)" stroke={GREEN} strokeWidth={3 * ring} />
+      <g clipPath={`url(#${id})`}>
+        <path d={wave(2)} fill={NEON} opacity={0.5} />
+        <path d={wave(0)} fill={GREEN} />
+      </g>
+      <path
+        d="M 17 31 L 26 40 L 44 21"
+        fill="none"
+        stroke={INK}
+        strokeWidth={6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={42}
+        strokeDashoffset={42 * (1 - tick)}
+      />
+    </svg>
   );
 };
 
 const Options: React.FC<{ q: Question }> = ({ q }) => {
   const { t, pop, ramp } = useClock();
   const revealed = t >= q.answerAt;
-  const rev = ramp(q.answerAt, q.answerAt + 0.25);
-  // las opciones se retiran para dejar sitio al recurso (salvo E05, sobre la pierna)
-  const out = ramp(q.answerAt + 0.7, q.answerAt + 1.0, easeInOut);
+  const rev = ramp(q.answerAt, q.answerAt + 0.3);
+  const wrongOut = ramp(q.answerAt + 0.8, q.answerAt + 1.1, easeInOut);
+  const lift = ramp(q.answerAt + 1.0, q.answerAt + 1.5, easeInOut);
+  const end = ramp(q.resEnd - 0.35, q.resEnd, easeInOut);
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 1085,
-        left: 90,
-        right: 90,
-        opacity: 1 - out,
-        transform: `translateY(${out * 60}px)`,
-      }}
-    >
+    <>
       {q.options.map((o, i) => {
         if (t < o.at - 0.05) return null;
         const p = pop(o.at - 0.05, 12);
         const right = i === q.answer;
         const onRight = revealed && right;
+        const slot = OPTIONS_TOP + i * (OPTION_H + OPTION_GAP);
+        const top = right ? slot + (CHIP_TOP - slot) * lift : slot;
+        const opacity = right
+          ? 1 - end
+          : revealed
+            ? (0.4 - 0.4 * wrongOut) * Math.min(1, p * 2)
+            : Math.min(1, p * 2);
+        if (opacity <= 0.001 && revealed) return null;
         return (
           <div
             key={o.text}
             style={{
+              position: "absolute",
+              top,
+              left: 90,
+              right: 90,
+              height: OPTION_H,
               display: "flex",
               alignItems: "center",
               gap: 22,
-              height: 118,
-              marginBottom: 20,
-              padding: "0 26px",
+              padding: "0 24px",
               borderRadius: 22,
-              background: onRight ? GREEN : "rgba(12,12,12,0.86)",
+              background: onRight ? `rgba(4,228,0,${0.12 + 0.1 * rev})` : "rgba(12,12,12,0.88)",
               border: `2.5px solid ${onRight ? GREEN : "rgba(255,255,255,0.18)"}`,
               boxShadow: onRight
-                ? `0 0 ${30 * rev}px rgba(4,228,0,0.6)`
+                ? `0 0 ${36 * rev}px rgba(4,228,0,0.55), inset 0 0 ${24 * rev}px rgba(4,228,0,0.25)`
                 : "0 14px 40px rgba(0,0,0,0.45)",
-              transform: `translateX(${(1 - p) * (i % 2 ? 120 : -120)}px) scale(${onRight ? 1 + 0.05 * Math.sin(rev * Math.PI) : 1})`,
-              opacity: Math.min(1, p * 2) * (revealed && !right ? 0.42 : 1),
+              transform: `translateX(${(1 - p) * (i % 2 ? 120 : -120) + (revealed && !right ? wrongOut * (i % 2 ? 80 : -80) : 0)}px) scale(${onRight ? (1 + 0.06 * Math.sin(rev * Math.PI)) * (1 - 0.12 * lift) : 1})`,
+              opacity,
             }}
           >
+            {onRight ? (
+              <CheckFill at={q.answerAt} />
+            ) : (
+              <div
+                style={{
+                  width: 66,
+                  height: 66,
+                  borderRadius: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255,255,255,0.08)",
+                  ...display,
+                  fontSize: 40,
+                  flexShrink: 0,
+                }}
+              >
+                {LETTERS[i]}
+              </div>
+            )}
             <div
               style={{
-                width: 70,
-                height: 70,
-                borderRadius: 16,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: onRight ? INK : "rgba(255,255,255,0.08)",
                 ...display,
-                fontSize: 42,
-                color: onRight ? GREEN : PAPER,
-                flexShrink: 0,
-              }}
-            >
-              {onRight ? "✓" : LETTERS[i]}
-            </div>
-            <div
-              style={{
-                ...display,
-                fontSize: o.text.length > 20 ? 44 : 52,
-                color: onRight ? INK : PAPER,
+                fontSize: o.text.length > 20 ? 42 : 50,
                 whiteSpace: "normal",
                 lineHeight: 1,
               }}
@@ -583,712 +668,451 @@ const Options: React.FC<{ q: Question }> = ({ q }) => {
           </div>
         );
       })}
-    </div>
+    </>
   );
 };
 
 const QuestionLayer: React.FC = () => {
   const { t } = useClock();
-  const q = QUESTIONS.find(
-    (x) => t >= x.options[0].at - 0.1 && t < x.answerAt + 1.1,
-  );
+  const q = QUESTIONS.find((x) => t >= qShow(x) - 0.15 && t < x.resEnd + 0.05);
   if (!q) return null;
   return (
     <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, transparent 38%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.8) 100%)",
-        }}
-      />
-      <Timer q={q} />
+      <Scrim q={q} />
+      <Statement q={q} />
       <Options q={q} />
+      <Timer q={q} />
     </AbsoluteFill>
   );
 };
 
 // ---------------------------------------------------------------------------
-// Recursos de las respuestas (E02–E07)
+// Explicaciones (E02–E07): solo lo destacable, debajo de la respuesta correcta.
 
 const Resource: React.FC<{
-  from: number;
-  to: number;
+  q: Question;
+  at: number;
   children: React.ReactNode;
-  top?: number;
-}> = ({ from, to, children, top = 1010 }) => {
+}> = ({ q, at, children }) => {
   const { t } = useClock();
-  const st = useEnter(from, to);
-  if (t < from - 0.05 || t > to + 0.05) return null;
+  const from = resStart(q, at);
+  const st = useEnter(from, q.resEnd);
+  if (t < from - 0.05 || t > q.resEnd + 0.05) return null;
   return (
     <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.6) 52%, rgba(0,0,0,0.85) 100%)",
-          opacity: st.opacity,
-        }}
-      />
-      <div style={{ position: "absolute", top, left: 60, right: 60, ...st }}>
+      <div style={{ position: "absolute", top: PANEL_TOP, left: 60, right: 60, ...st }}>
         {children}
       </div>
     </AbsoluteFill>
   );
 };
 
-// E02 · tensión mecánica (Wackerhage et al., 2019)
-const E02: React.FC = () => {
-  const { t, ramp, pop } = useClock();
-  const q = QUESTIONS[0];
-  const m = ramp(RES.e02.quote + 0.4, RES.e02.quote + 1.0);
-  const swap = ramp(RES.e02.notKilos - 0.1, RES.e02.notKilos + 0.25, easeInOut);
-  const k = pop(RES.e02.notKilos, 10);
-  return (
-    <Resource from={RES.e02.quote} to={q.resEnd}>
-      <div style={{ position: "relative", height: 640 }}>
-        <Glass
-          style={{
-            position: "absolute",
-            inset: 0,
-            padding: "34px 40px",
-            opacity: 1 - swap,
-            transform: `translateX(${-swap * 80}px)`,
-          }}
-        >
-          <Cite>Wackerhage et al. · 2019 · J Appl Physiol</Cite>
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 600,
-              fontSize: 24,
-              color: "rgba(255,255,255,0.5)",
-              marginTop: 12,
-              lineHeight: 1.3,
-            }}
-          >
-            Stimuli and sensors that initiate skeletal muscle hypertrophy
-            following resistance exercise
-          </div>
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 800,
-              fontSize: 50,
-              color: PAPER,
-              marginTop: 34,
-              lineHeight: 1.22,
-            }}
-          >
-            «
-            <Marker p={m}>
-              Mechanical signals are the prime hypertrophy stimuli candidates
-            </Marker>
-            »
-          </div>
-          <div
-            style={{
-              ...label,
-              fontSize: 26,
-              letterSpacing: 2,
-              marginTop: 34,
-              textTransform: "none",
-            }}
-          >
-            Señales mecánicas: candidatos principales
-          </div>
-        </Glass>
-        {t >= RES.e02.notKilos - 0.1 ? (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              opacity: swap,
-              transform: `scale(${0.8 + 0.2 * k})`,
-            }}
-          >
-            <Glass
-              style={{
-                padding: "50px 46px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 22,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-                <div style={{ ...display, fontSize: 66 }}>Carga externa</div>
-              </div>
-              <div
-                style={{
-                  ...display,
-                  fontSize: 110,
-                  color: GREEN,
-                  filter: GLOW,
-                  lineHeight: 0.9,
-                }}
-              >
-                ≠
-              </div>
-              <div style={{ ...display, fontSize: 66 }}>Tensión muscular</div>
-            </Glass>
-          </div>
-        ) : null}
-      </div>
-    </Resource>
-  );
-};
+const Title: React.FC<{ children: React.ReactNode; style?: React.CSSProperties }> = ({
+  children,
+  style,
+}) => (
+  <div
+    style={{
+      fontFamily: FONT,
+      fontWeight: 800,
+      fontSize: 38,
+      color: PAPER,
+      lineHeight: 1.15,
+      ...style,
+    }}
+  >
+    {children}
+  </div>
+);
 
-// E03 · duración excéntrica (Amdi y King, 2025): fila «RE Model for All Studies»
-const E03: React.FC = () => {
-  const { ramp } = useClock();
-  const q = QUESTIONS[1];
-  const draw = ramp(RES.e03.plot + 0.3, RES.e03.plot + 1.1);
-  const lab = ramp(RES.e03.plot + 1.0, RES.e03.plot + 1.4);
-  const W = 820;
-  const X = (v: number) => ((v + 0.6) / 1.2) * W;
+const Pill: React.FC<{ p: number; children: React.ReactNode; size?: number }> = ({
+  p,
+  children,
+  size = 40,
+}) => (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      transform: `scale(${0.6 + 0.4 * p})`,
+      opacity: Math.min(1, p * 2),
+    }}
+  >
+    <div
+      style={{
+        ...display,
+        fontSize: size,
+        color: INK,
+        background: GREEN,
+        padding: "12px 26px 8px",
+        borderRadius: 12,
+        filter: GLOW,
+      }}
+    >
+      {children}
+    </div>
+  </div>
+);
+
+// E02 · «no la confundas con los kilos» (Wackerhage et al., 2019)
+const E02: React.FC = () => {
+  const { t, pop, ramp } = useClock();
+  const q = QUESTIONS[0];
+  const from = resStart(q, RES.e02.notKilos - 0.2);
+  const a = pop(from + 0.1, 12);
+  const neq = pop(from + 0.45, 9);
+  const b = pop(from + 0.75, 12);
+  const pull = 1 + 0.12 * Math.sin(Math.max(0, t - from - 0.75) * 7) * ramp(from + 0.75, from + 1.0);
   return (
-    <Resource from={RES.e03.plot} to={q.resEnd}>
-      <Glass style={{ padding: "34px 40px 38px" }}>
-        <Cite>Amdi y King · 2025 · J Sports Sci · hipertrofia</Cite>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginTop: 26,
-            fontFamily: FONT,
-            fontWeight: 700,
-            fontSize: 24,
-            color: "rgba(255,255,255,0.65)",
-          }}
-        >
-          <span>RE Model for All Studies</span>
-          <span>Estimate [90% CI]</span>
+    <Resource q={q} at={RES.e02.notKilos - 0.2}>
+      <Glass style={{ padding: "34px 40px 30px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 26, opacity: Math.min(1, a * 2), transform: `translateY(${(1 - a) * 30}px)` }}>
+          {/* barra con discos */}
+          <svg width={120} height={70} viewBox="0 0 120 70">
+            <rect x={4} y={31} width={112} height={8} rx={4} fill="rgba(255,255,255,0.75)" />
+            {[14, 28, 92, 106].map((x, i) => (
+              <rect key={x} x={x - 6} y={i % 3 === 0 ? 6 : 14} width={12} height={i % 3 === 0 ? 58 : 42} rx={3} fill="rgba(255,255,255,0.75)" />
+            ))}
+          </svg>
+          <div style={{ ...display, fontSize: 56, color: "rgba(255,255,255,0.8)" }}>Kilos en la barra</div>
         </div>
-        <svg
-          width={W}
-          height={170}
-          viewBox={`0 0 ${W} 170`}
-          style={{ marginTop: 18, overflow: "visible" }}
-        >
-          <line
-            x1={0}
-            y1={130}
-            x2={W}
-            y2={130}
-            stroke="rgba(255,255,255,0.4)"
-            strokeWidth={2}
-          />
-          {[-0.6, -0.3, 0, 0.3, 0.6].map((v) => (
-            <g key={v}>
-              <line
-                x1={X(v)}
-                y1={130}
-                x2={X(v)}
-                y2={140}
-                stroke="rgba(255,255,255,0.4)"
-                strokeWidth={2}
-              />
-              <text
-                x={X(v)}
-                y={166}
-                textAnchor="middle"
-                fontFamily={FONT}
-                fontWeight={700}
-                fontSize={22}
-                fill="rgba(255,255,255,0.55)"
-              >
-                {v.toFixed(1).replace(".", ",").replace("-", "−")}
-              </text>
-            </g>
-          ))}
-          <line
-            x1={X(0)}
-            y1={0}
-            x2={X(0)}
-            y2={130}
-            stroke="rgba(255,255,255,0.55)"
-            strokeWidth={2}
-            strokeDasharray="6 6"
-          />
-          {/* intervalo de confianza del 90 % y estimación */}
-          <line
-            x1={X(0.05)}
-            y1={60}
-            x2={X(0.05) + (X(0.33) - X(0.05)) * draw}
-            y2={60}
-            stroke={NEON}
-            strokeWidth={6}
-          />
-          <line
-            x1={X(0.05)}
-            y1={60}
-            x2={X(0.05) + (X(-0.22) - X(0.05)) * draw}
-            y2={60}
-            stroke={NEON}
-            strokeWidth={6}
-          />
-          <polygon
-            points={`${X(0.05) - 22},60 ${X(0.05)},40 ${X(0.05) + 22},60 ${X(0.05)},80`}
-            fill={NEON}
-            style={{ filter: GLOW }}
-            opacity={Math.min(1, draw * 2)}
-          />
-        </svg>
         <div
           style={{
             ...display,
-            fontSize: 44,
-            fontStyle: "normal",
-            marginTop: 6,
-            textAlign: "center",
-            opacity: draw,
+            fontSize: 120,
+            color: GREEN,
+            filter: GLOW,
+            lineHeight: 0.85,
+            margin: "18px 0 10px",
+            transform: `scale(${neq}) rotate(${(1 - neq) * -40}deg)`,
           }}
         >
-          0,05 <span style={{ color: GREEN }}>[−0,22, 0,33]</span>
+          ≠
         </div>
-        <div
-          style={{
-            marginTop: 26,
-            display: "flex",
-            justifyContent: "center",
-            opacity: lab,
-          }}
-        >
-          <div
-            style={{
-              ...display,
-              fontSize: 40,
-              color: INK,
-              background: GREEN,
-              padding: "12px 24px 8px",
-              filter: GLOW,
-            }}
-          >
-            Sin superioridad general demostrada
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 26, opacity: Math.min(1, b * 2), transform: `translateY(${(1 - b) * 30}px)` }}>
+          {/* fibra muscular estirada */}
+          <svg width={120} height={70} viewBox="0 0 120 70" style={{ overflow: "visible" }}>
+            <g transform={`translate(60 35) scale(${pull} 1) translate(-60 -35)`}>
+              <path d="M 20 35 C 40 12, 80 12, 100 35 C 80 58, 40 58, 20 35 Z" fill={GREEN} style={{ filter: GLOW }} />
+              <path d="M 30 35 L 90 35 M 36 27 L 84 27 M 36 43 L 84 43" stroke={INK} strokeWidth={2.5} opacity={0.5} />
+            </g>
+            <path d={`M ${16 - 12 * (pull - 1) * 4} 35 L -6 35 M 2 27 L -8 35 L 2 43`} stroke={PAPER} strokeWidth={4} fill="none" strokeLinecap="round" />
+            <path d={`M ${104 + 12 * (pull - 1) * 4} 35 L 126 35 M 118 27 L 128 35 L 118 43`} stroke={PAPER} strokeWidth={4} fill="none" strokeLinecap="round" />
+          </svg>
+          <div style={{ ...display, fontSize: 56, color: GREEN }}>Tensión muscular</div>
+        </div>
+        <div style={{ marginTop: 26 }}>
+          <Cite>Wackerhage et al. · 2019</Cite>
         </div>
       </Glass>
     </Resource>
   );
 };
 
-// E04 · descansos (Longo et al., 2022): resultado y coste en series
-const E04: React.FC = () => {
-  const { t, ramp } = useClock();
-  const q = QUESTIONS[2];
-  const g = ramp(RES.e04.bars + 0.25, RES.e04.bars + 1.0);
-  const swap = ramp(RES.e04.sets - 0.1, RES.e04.sets + 0.3, easeInOut);
-  const sets = ramp(RES.e04.sets + 0.2, RES.e04.sets + 1.2);
-  const bar = (v: number, name: string, sub: string) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        width: 260,
-      }}
-    >
-      <div style={{ ...display, fontSize: 46, fontStyle: "normal" }}>
-        {(v * g).toFixed(1).replace(".", ",")}
-      </div>
-      <div
-        style={{
-          height: 300,
-          display: "flex",
-          alignItems: "flex-end",
-          marginTop: 10,
-        }}
-      >
-        <div
-          style={{
-            width: 120,
-            height: (v / 11) * 300 * g,
-            background: `linear-gradient(180deg, ${NEON}, ${GREEN})`,
-            borderRadius: "10px 10px 0 0",
-            filter: GLOW,
-          }}
-        />
-      </div>
-      <div style={{ ...display, fontSize: 34, marginTop: 14 }}>{name}</div>
-      <div
-        style={{
-          ...label,
-          fontSize: 18,
-          letterSpacing: 2,
-          color: "rgba(255,255,255,0.6)",
-          marginTop: 6,
-        }}
-      >
-        {sub}
-      </div>
-    </div>
-  );
-  const row = (name: string, n: number) => (
-    <div
-      style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 26 }}
-    >
-      <div style={{ ...display, fontSize: 40, width: 150 }}>{name}</div>
-      <div style={{ display: "flex", gap: 10 }}>
-        {Array.from({ length: 5 }).map((_, i) => {
-          const fill = Math.max(0, Math.min(1, n * sets - i));
-          return (
-            <div
-              key={i}
-              style={{
-                width: 70,
-                height: 70,
-                borderRadius: 12,
-                border: "2px solid rgba(255,255,255,0.18)",
-                overflow: "hidden",
-                opacity: i < Math.ceil(n) ? 1 : 0.25,
-              }}
-            >
-              <div
-                style={{
-                  width: `${fill * 100}%`,
-                  height: "100%",
-                  background: GREEN,
-                  filter: GLOW,
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div
-        style={{ ...display, fontSize: 40, fontStyle: "normal", color: GREEN }}
-      >
-        {n.toString().replace(".", ",")}
-      </div>
-    </div>
-  );
+// E03 · duración excéntrica (Amdi y King, 2025): el intervalo cruza el cero
+const E03: React.FC = () => {
+  const { ramp, pop } = useClock();
+  const q = QUESTIONS[1];
+  const from = resStart(q, RES.e03.plot);
+  const axis = ramp(from + 0.1, from + 0.5);
+  const draw = ramp(from + 0.4, from + 1.1);
+  const zero = pop(from + 1.0, 10);
+  const pill = pop(41.2, 11); // «no garantiza más hipertrofia»
+  const W = 860;
+  const X = (v: number) => W / 2 + (v / 0.6) * (W / 2 - 30);
   return (
-    <Resource from={RES.e04.bars} to={q.resEnd}>
-      <div style={{ position: "relative", height: 660 }}>
-        <Glass
-          style={{
-            position: "absolute",
-            inset: 0,
-            padding: "30px 40px",
-            opacity: 1 - swap,
-          }}
-        >
-          <Cite>Longo et al. · 2022 · 10 semanas · prensa unilateral</Cite>
-          <div
-            style={{
-              ...label,
-              fontSize: 20,
-              letterSpacing: 2,
-              color: "rgba(255,255,255,0.75)",
-              marginTop: 10,
-              textTransform: "none",
-            }}
-          >
-            Cambio absoluto del área del cuádriceps (cm²)
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 70,
-              marginTop: 30,
-            }}
-          >
-            {bar(9.8, "3 min", "LI")}
-            {bar(9.5, "1 min", "VLI-SI · volumen igualado")}
-          </div>
-        </Glass>
-        {t >= RES.e04.sets - 0.1 ? (
-          <Glass
-            style={{
-              position: "absolute",
-              inset: 0,
-              padding: "40px 46px",
-              opacity: swap,
-            }}
-          >
-            <Cite>Longo et al. · 2022 · series de media</Cite>
-            <div
-              style={{
-                ...display,
-                fontSize: 52,
-                marginTop: 26,
-                whiteSpace: "normal",
-              }}
-            >
-              Para igualar el trabajo
-            </div>
-            {row("3 min", 3)}
-            {row("1 min", 4.5)}
-            <div
-              style={{
-                ...label,
-                fontSize: 24,
-                letterSpacing: 2,
-                marginTop: 40,
-                textTransform: "none",
-              }}
-            >
-              3 min: 3 series / 1 min: 4,5 series de media
-            </div>
-          </Glass>
-        ) : null}
-      </div>
+    <Resource q={q} at={RES.e03.plot}>
+      <Glass style={{ padding: "30px 30px 34px" }}>
+        <Title style={{ textAlign: "center" }}>Excéntrica lenta vs. rápida</Title>
+        <svg width={W} height={230} viewBox={`0 0 ${W} 230`} style={{ marginTop: 18, overflow: "visible" }}>
+          {/* zona de «sin diferencia» */}
+          <line x1={30} y1={120} x2={30 + (W - 60) * axis} y2={120} stroke="rgba(255,255,255,0.3)" strokeWidth={3} />
+          <line x1={X(0)} y1={40} x2={X(0)} y2={200} stroke="rgba(255,255,255,0.7)" strokeWidth={3} strokeDasharray="8 8" opacity={axis} />
+          <text x={X(-0.32)} y={196} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={26} fill="rgba(255,255,255,0.6)" opacity={axis}>
+            ← Mejor rápida
+          </text>
+          <text x={X(0.32)} y={196} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={26} fill="rgba(255,255,255,0.6)" opacity={axis}>
+            Mejor lenta →
+          </text>
+          {/* intervalo del efecto: cruza el cero */}
+          <line x1={X(0.05)} y1={120} x2={X(0.05) + (X(0.33) - X(0.05)) * draw} y2={120} stroke={NEON} strokeWidth={14} strokeLinecap="round" style={{ filter: GLOW }} />
+          <line x1={X(0.05)} y1={120} x2={X(0.05) + (X(-0.22) - X(0.05)) * draw} y2={120} stroke={NEON} strokeWidth={14} strokeLinecap="round" style={{ filter: GLOW }} />
+          <polygon
+            points={`${X(0.05) - 26},120 ${X(0.05)},94 ${X(0.05) + 26},120 ${X(0.05)},146`}
+            fill={PAPER}
+            stroke={INK}
+            strokeWidth={4}
+            opacity={Math.min(1, draw * 3)}
+          />
+          <g transform={`translate(${X(0)} 40) scale(${zero})`}>
+            <rect x={-118} y={-38} width={236} height={46} rx={23} fill="rgba(10,10,10,0.95)" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
+            <text y={-6} textAnchor="middle" fontFamily={FONT} fontWeight={800} fontSize={24} fill={PAPER}>
+              Sin diferencia
+            </text>
+          </g>
+        </svg>
+        <div style={{ marginTop: 14 }}>
+          <Pill p={pill}>Más lento ≠ más músculo</Pill>
+        </div>
+        <div style={{ marginTop: 22, display: "flex", justifyContent: "center" }}>
+          <Cite>Amdi y King · 2025 · metaanálisis</Cite>
+        </div>
+      </Glass>
     </Resource>
   );
 };
 
-// E05 · cuádriceps (sobre su pierna en Camera.tsx): aquí solo el rótulo
-const E05: React.FC = () => {
-  const q = QUESTIONS[3];
-  return (
-    <Resource from={RES.e05.arrow + 0.3} to={q.resEnd} top={300}>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <Glass
-          style={{
-            padding: "22px 34px 18px",
-            display: "flex",
-            alignItems: "center",
-            gap: 18,
-          }}
-        >
-          <div style={{ ...display, fontSize: 42 }}>Extender la rodilla</div>
-          <div style={{ ...display, fontSize: 42, color: GREEN }}>
-            → cuádriceps
-          </div>
-        </Glass>
+// E04 · descansos (Longo et al., 2022): crecimiento parecido, más series con 1 min
+const E04: React.FC = () => {
+  const { ramp, pop } = useClock();
+  const q = QUESTIONS[2];
+  const from = resStart(q, RES.e04.bars);
+  const g = ramp(from + 0.2, from + 0.9);
+  const sets = ramp(Math.max(RES.e04.sets, from + 0.5), Math.max(RES.e04.sets, from + 0.5) + 1.3);
+  const pill = pop(63.8, 11); // «…más series»
+  const row = (name: string, n: number, v: number) => (
+    <div style={{ display: "flex", alignItems: "center", marginTop: 22 }}>
+      <div style={{ ...display, fontSize: 44, width: 150 }}>{name}</div>
+      <div style={{ display: "flex", gap: 8, width: 330 }}>
+        {Array.from({ length: 5 }).map((_, i) => {
+          const fill = Math.max(0, Math.min(1, n * sets - i));
+          if (i >= Math.ceil(n)) return <div key={i} style={{ width: 54 }} />;
+          return (
+            <div key={i} style={{ width: 54, height: 54, borderRadius: 10, border: "2px solid rgba(255,255,255,0.22)", overflow: "hidden" }}>
+              <div style={{ width: `${fill * 100}%`, height: "100%", background: GREEN, filter: GLOW }} />
+            </div>
+          );
+        })}
       </div>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ height: 30, width: (v / 10) * 210 * g, borderRadius: 8, background: "rgba(255,255,255,0.85)" }} />
+        <div style={{ ...display, fontSize: 32, fontStyle: "normal", opacity: g }}>{(v * g).toFixed(1).replace(".", ",")}</div>
+      </div>
+    </div>
+  );
+  return (
+    <Resource q={q} at={RES.e04.bars}>
+      <Glass style={{ padding: "30px 36px 32px" }}>
+        <div style={{ display: "flex", ...label, fontSize: 20, letterSpacing: 3 }}>
+          <div style={{ width: 150 }}>Descanso</div>
+          <div style={{ width: 330 }}>Series</div>
+          <div style={{ color: "rgba(255,255,255,0.75)" }}>Crecimiento (cm²)</div>
+        </div>
+        {row("3 min", 3, 9.8)}
+        {row("1 min", 4.5, 9.5)}
+        <div style={{ marginTop: 30 }}>
+          <Pill p={pill}>Mismo crecimiento, +50 % series</Pill>
+        </div>
+        <div style={{ marginTop: 22, display: "flex", justifyContent: "center" }}>
+          <Cite>Longo et al. · 2022</Cite>
+        </div>
+      </Glass>
+    </Resource>
+  );
+};
+
+// E05 · prensa con los pies más bajos: más flexión de rodilla → más cuádriceps.
+// Pierna dibujada en lateral; el pie baja por la plataforma y el cuádriceps se enciende.
+const limb = (
+  a: [number, number],
+  b: [number, number],
+  wa: number,
+  wm: number,
+  wb: number,
+  bulge = 0.4,
+) => {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const L = Math.hypot(dx, dy);
+  const u = [dx / L, dy / L];
+  const n = [-u[1], u[0]];
+  const P = (s: number, w: number) => [a[0] + dx * s + n[0] * w, a[1] + dy * s + n[1] * w];
+  const [p0, p1, p2] = [P(0, wa), P(bulge, wm), P(1, wb)];
+  const [q0, q1, q2] = [P(0, -wa), P(bulge, -wm * 0.9), P(1, -wb)];
+  const f = (p: number[]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+  return (
+    `M ${f(p0)} Q ${f(p1)} ${f(p2)} ` +
+    `A ${wb} ${wb} 0 0 0 ${f(q2)} Q ${f(q1)} ${f(q0)} A ${wa} ${wa} 0 0 0 ${f(p0)} Z`
+  );
+};
+
+const E05: React.FC = () => {
+  const { ramp, pop, t } = useClock();
+  const q = QUESTIONS[3];
+  const from = resStart(q, RES.e05.arrow);
+  const k = ramp(from + 0.4, from + 1.6, easeInOut); // pies: arriba → abajo
+  const glow = ramp(from + 1.0, from + 1.8);
+  const lab = pop(from + 1.4, 11);
+  const W = 860;
+  const H = 440;
+  // plataforma inclinada (a la derecha) y cadera fija (izquierda)
+  const A: [number, number] = [680, 40];
+  const B: [number, number] = [620, 400];
+  const s = 0.18 + 0.62 * k;
+  const ankle: [number, number] = [A[0] + (B[0] - A[0]) * s - 34, A[1] + (B[1] - A[1]) * s];
+  const hip: [number, number] = [250, 360];
+  const L1 = 250;
+  const L2 = 240;
+  const d = Math.min(L1 + L2 - 1, Math.hypot(ankle[0] - hip[0], ankle[1] - hip[1]));
+  const base = Math.atan2(ankle[1] - hip[1], ankle[0] - hip[0]);
+  const alpha = Math.acos((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d));
+  const knee: [number, number] = [hip[0] + L1 * Math.cos(base - alpha), hip[1] + L1 * Math.sin(base - alpha)];
+  const kneeAngle = Math.round(
+    (Math.acos(((hip[0] - knee[0]) * (ankle[0] - knee[0]) + (hip[1] - knee[1]) * (ankle[1] - knee[1])) / (L1 * L2)) * 180) / Math.PI,
+  );
+  // cuádriceps: cara anterior (arriba) del muslo
+  const tu = [(knee[0] - hip[0]) / L1, (knee[1] - hip[1]) / L1];
+  const tn = [tu[1], -tu[0]];
+  const QP = (s2: number, w: number) => [hip[0] + (knee[0] - hip[0]) * s2 + tn[0] * w, hip[1] + (knee[1] - hip[1]) * s2 + tn[1] * w];
+  const fq = (p: number[]) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`;
+  const quads =
+    `M ${fq(QP(0.1, 12))} Q ${fq(QP(0.42, 64))} ${fq(QP(0.86, 32))} ` +
+    `Q ${fq(QP(0.98, 14))} ${fq(QP(0.88, 0))} Q ${fq(QP(0.45, 0))} ${fq(QP(0.1, 12))} Z`;
+  const pulse = 0.75 + 0.25 * Math.sin(t * 6);
+  const arcR = 70;
+  const up = [(A[0] - B[0]) / Math.hypot(A[0] - B[0], A[1] - B[1]), (A[1] - B[1]) / Math.hypot(A[0] - B[0], A[1] - B[1])];
+  const toe: [number, number] = [ankle[0] + up[0] * 80 + 14, ankle[1] + up[1] * 80];
+  const bh = [(hip[0] - knee[0]) / L1 + (ankle[0] - knee[0]) / L2, (hip[1] - knee[1]) / L1 + (ankle[1] - knee[1]) / L2];
+  const bis = [bh[0] / Math.hypot(bh[0], bh[1]), bh[1] / Math.hypot(bh[0], bh[1])];
+  const a1 = Math.atan2(hip[1] - knee[1], hip[0] - knee[0]);
+  const a2 = Math.atan2(ankle[1] - knee[1], ankle[0] - knee[0]);
+  const arc = `M ${knee[0] + arcR * Math.cos(a1)} ${knee[1] + arcR * Math.sin(a1)} A ${arcR} ${arcR} 0 0 0 ${knee[0] + arcR * Math.cos(a2)} ${knee[1] + arcR * Math.sin(a2)}`;
+  return (
+    <Resource q={q} at={RES.e05.arrow}>
+      <Glass style={{ padding: "28px 30px 26px" }}>
+        <Title style={{ textAlign: "center" }}>
+          Pies más bajos <span style={{ color: GREEN }}>→ más flexión de rodilla</span>
+        </Title>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ marginTop: 10, overflow: "visible" }}>
+          {/* respaldo y plataforma */}
+          <path d={`M ${A[0]} ${A[1]} L ${B[0]} ${B[1]}`} stroke="rgba(255,255,255,0.5)" strokeWidth={16} strokeLinecap="round" />
+          {/* solo las piernas: contorno unido (trazos primero, rellenos encima) */}
+          {[0, 1].map((pass) => (
+            <g
+              key={pass}
+              fill={pass ? "#262626" : "none"}
+              stroke={pass ? "none" : "rgba(255,255,255,0.7)"}
+              strokeWidth={pass ? 0 : 7}
+            >
+              <path d={limb(knee, ankle, 36, 42, 21, 0.3)} />
+              <path d={limb(ankle, toe, 22, 20, 13, 0.4)} />
+              <path d={limb(hip, knee, 60, 54, 38, 0.4)} />
+            </g>
+          ))}
+          <path d={quads} fill={NEON} opacity={(0.3 + 0.7 * glow) * pulse} style={{ filter: `drop-shadow(0 0 ${8 + 16 * glow}px rgba(4,228,0,0.9))` }} />
+          {/* ángulo de rodilla */}
+          <path d={arc} fill="none" stroke={PAPER} strokeWidth={4} strokeDasharray="2 10" strokeLinecap="round" />
+          <text x={knee[0] + bis[0] * 118} y={knee[1] + bis[1] * 118 + 12} textAnchor="middle" fontFamily={FONT} fontWeight={900} fontSize={34} fill={PAPER}>
+            {kneeAngle}°
+          </text>
+          <g transform={`translate(${knee[0] - 40} ${knee[1] - 100}) scale(${lab})`} opacity={Math.min(1, lab * 2)}>
+            <text textAnchor="middle" fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={42} fill={NEON} style={{ filter: GLOW }}>
+              CUÁDRICEPS
+            </text>
+          </g>
+        </svg>
+      </Glass>
     </Resource>
   );
 };
 
 // E06 · profundidad de sentadilla (Kubo et al., 2019)
 const E06: React.FC = () => {
-  const { pop, ramp } = useClock();
+  const { pop } = useClock();
   const q = QUESTIONS[4];
+  const from = resStart(q, RES.e06.card);
   const quadsAt = 107.0; // «…no apareció la misma ventaja sobre los cuádriceps»
-  const a = pop(RES.e06.card + 0.35, 12);
-  const b = pop(RES.e06.card + 0.6, 12);
-  const c = ramp(quadsAt, quadsAt + 0.35);
-  const muscle = (name: string, pv: string, p: number) => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginTop: 18,
-        padding: "18px 24px",
-        borderRadius: 16,
-        background: "rgba(4,228,0,0.14)",
-        border: `2px solid ${GREEN}`,
-        transform: `translateX(${(1 - p) * -60}px)`,
-        opacity: Math.min(1, p * 2),
-      }}
-    >
-      <div style={{ ...display, fontSize: 44 }}>{name}</div>
+  const row = (name: string, more: boolean, at: number) => {
+    const p = pop(at, 12);
+    return (
       <div
-        style={{ ...display, fontSize: 32, fontStyle: "normal", color: GREEN }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: 16,
+          padding: "16px 24px",
+          borderRadius: 16,
+          background: more ? "rgba(4,228,0,0.14)" : "rgba(255,255,255,0.05)",
+          border: `2px solid ${more ? GREEN : "rgba(255,255,255,0.22)"}`,
+          transform: `translateX(${(1 - p) * -60}px)`,
+          opacity: Math.min(1, p * 2),
+        }}
       >
-        {pv}
-      </div>
-    </div>
-  );
-  return (
-    <Resource from={RES.e06.card} to={q.resEnd}>
-      <Glass style={{ padding: "32px 40px 36px" }}>
-        <Cite>Kubo et al. · 2019 · 17 hombres · 10 semanas</Cite>
-        <div
-          style={{
-            fontFamily: FONT,
-            fontWeight: 800,
-            fontSize: 36,
-            color: PAPER,
-            marginTop: 20,
-            lineHeight: 1.2,
-          }}
-        >
-          Mayor crecimiento con la sentadilla profunda:
+        <div style={{ ...display, fontSize: 46, color: more ? PAPER : "rgba(255,255,255,0.65)" }}>{name}</div>
+        <div style={{ ...display, fontSize: 40, fontStyle: "normal", color: more ? GREEN : "rgba(255,255,255,0.65)", filter: more ? GLOW : undefined }}>
+          {more ? "▲ Más" : "= Igual"}
         </div>
-        {muscle("Aductores", "p = 0,026", a)}
-        {muscle("Glúteo mayor", "p = 0,008", b)}
-        <div
-          style={{
-            marginTop: 24,
-            padding: "16px 24px",
-            borderRadius: 16,
-            border: "2px solid rgba(255,255,255,0.2)",
-            opacity: c,
-            transform: `translateY(${(1 - c) * 20}px)`,
-          }}
-        >
-          <div style={{ ...display, fontSize: 36, whiteSpace: "normal" }}>
-            Cuádriceps:{" "}
-            <span style={{ color: "rgba(255,255,255,0.7)" }}>
-              sin ventaja entre grupos detectada
-            </span>
-          </div>
+      </div>
+    );
+  };
+  return (
+    <Resource q={q} at={RES.e06.card}>
+      <Glass style={{ padding: "30px 36px 30px" }}>
+        <Title style={{ textAlign: "center" }}>
+          Sentadilla <span style={{ color: GREEN }}>profunda</span> vs. media
+        </Title>
+        {row("Aductores", true, from + 0.3)}
+        {row("Glúteo mayor", true, from + 0.55)}
+        {row("Cuádriceps", false, Math.max(quadsAt, from + 0.8))}
+        <div style={{ marginTop: 22, display: "flex", justifyContent: "center" }}>
+          <Cite>Kubo et al. · 2019</Cite>
         </div>
       </Glass>
     </Resource>
   );
 };
 
-// E07 · regiones del glúteo mayor (Takahashi et al., 2025): potencial mecánico
+// E07 · glúteo mayor visto por detrás: la región superior en verde, nada más.
 const E07: React.FC = () => {
-  const { ramp } = useClock();
+  const { ramp, t } = useClock();
   const q = QUESTIONS[5];
-  const lit = ramp(RES.e07.map + 0.3, RES.e07.map + 0.9);
-  const note = ramp(RES.e07.note, RES.e07.note + 0.4);
-  // abanico del glúteo mayor: del borde de la pelvis/sacro hacia el fémur, en 3 regiones
-  const region = (d: string, on: boolean) => (
-    <path
-      d={d}
-      fill={
-        on ? `rgba(59,255,46,${0.25 + 0.6 * lit})` : "rgba(255,255,255,0.08)"
-      }
-      stroke={on ? NEON : "rgba(255,255,255,0.35)"}
-      strokeWidth={3}
-      style={on ? { filter: GLOW } : undefined}
-    />
-  );
+  const from = resStart(q, RES.e07.map);
+  const draw = ramp(from + 0.05, from + 0.7);
+  const lit = ramp(from + 0.6, from + 1.2);
+  const pulse = 0.82 + 0.18 * Math.sin(t * 5);
+  const line = "rgba(255,255,255,0.6)";
+  const glute = "M 297 168 C 240 150, 150 178, 126 250 C 110 310, 132 372, 192 392 C 236 404, 280 398, 297 386 Z";
+  const gluteR = "M 303 168 C 360 150, 450 178, 474 250 C 490 310, 468 372, 408 392 C 364 404, 320 398, 303 386 Z";
+  const len = 1600;
   return (
-    <Resource from={RES.e07.map} to={q.resEnd}>
-      <Glass style={{ padding: "30px 40px 34px" }}>
-        <Cite>Takahashi et al. · 2025 · J Biomech · abducción de cadera</Cite>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 30,
-            marginTop: 18,
-          }}
-        >
-          <svg width={360} height={360} viewBox="0 0 360 360">
-            {/* pelvis y fémur de referencia */}
-            <path
-              d="M 40 70 C 120 30, 240 30, 320 70"
-              fill="none"
-              stroke="rgba(255,255,255,0.35)"
-              strokeWidth={6}
-              strokeLinecap="round"
-            />
-            <line
-              x1={270}
-              y1={250}
-              x2={300}
-              y2={350}
-              stroke="rgba(255,255,255,0.35)"
-              strokeWidth={14}
-              strokeLinecap="round"
-            />
-            {region(
-              "M 60 80 C 140 55, 230 55, 300 85 L 275 150 C 210 125, 140 125, 75 140 Z",
-              true,
-            )}
-            {region(
-              "M 75 140 C 140 125, 210 125, 275 150 L 270 205 C 210 185, 140 190, 85 205 Z",
-              false,
-            )}
-            {region(
-              "M 85 205 C 140 190, 210 185, 270 205 L 275 255 C 210 250, 150 265, 100 280 Z",
-              false,
-            )}
-            <text
-              x={330}
-              y={120}
-              fontFamily={FONT}
-              fontWeight={800}
-              fontSize={18}
-              fill={NEON}
-            >
-              proximal
-            </text>
-            <text
-              x={330}
-              y={180}
-              fontFamily={FONT}
-              fontWeight={800}
-              fontSize={18}
-              fill="rgba(255,255,255,0.5)"
-            >
-              middle
-            </text>
-            <text
-              x={330}
-              y={240}
-              fontFamily={FONT}
-              fontWeight={800}
-              fontSize={18}
-              fill="rgba(255,255,255,0.5)"
-            >
-              distal
-            </text>
-          </svg>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div
-              style={{
-                ...display,
-                fontSize: 64,
-                color: GREEN,
-                filter: GLOW,
-                opacity: lit,
-              }}
-            >
-              Superior
-            </div>
-            <div
-              style={{ ...label, fontSize: 24, letterSpacing: 3, opacity: lit }}
-            >
-              / proximal
-            </div>
-            <div
-              style={{
-                ...display,
-                fontSize: 40,
-                color: "rgba(255,255,255,0.45)",
-                marginTop: 10,
-              }}
-            >
-              Media
-            </div>
-            <div
-              style={{
-                ...display,
-                fontSize: 40,
-                color: "rgba(255,255,255,0.45)",
-              }}
-            >
-              Inferior
-            </div>
-          </div>
-        </div>
-        <div
-          style={{
-            marginTop: 22,
-            padding: "14px 22px",
-            borderRadius: 14,
-            background: "rgba(255,255,255,0.06)",
-            border: "2px solid rgba(255,255,255,0.18)",
-            opacity: note,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: FONT,
-              fontWeight: 800,
-              fontSize: 30,
-              color: PAPER,
-              textAlign: "center",
-            }}
-          >
-            Potencial mecánico estimado · no crecimiento muscular
-          </div>
+    <Resource q={q} at={RES.e07.map}>
+      <Glass style={{ padding: "26px 30px 26px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <svg width={560} height={470} viewBox="20 20 560 470">
+          <defs>
+            {/* región superior: por encima de la línea de las fibras (medial-alta → lateral-baja) */}
+            <clipPath id="gsup">
+              <polygon points="0,0 600,0 600,318 300,238 0,318" />
+            </clipPath>
+          </defs>
+          {/* silueta: cintura, caderas y muslos (vista posterior) */}
+          <g fill="none" stroke={line} strokeWidth={4} strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len * (1 - draw)}>
+            <path d="M 196 30 C 182 100, 112 158, 100 250 C 90 330, 112 420, 136 490" />
+            <path d="M 404 30 C 418 100, 488 158, 500 250 C 510 330, 488 420, 464 490" />
+            <path d="M 280 490 C 284 450, 292 420, 300 404 C 308 420, 316 450, 320 490" />
+            <path d="M 300 40 L 300 150" stroke="rgba(255,255,255,0.25)" />
+            <path d="M 176 110 C 230 86, 370 86, 424 110" stroke="rgba(255,255,255,0.3)" />
+          </g>
+          <path d={glute} fill="rgba(255,255,255,0.07)" stroke={line} strokeWidth={3} opacity={draw} />
+          <path d={gluteR} fill="rgba(255,255,255,0.07)" stroke={line} strokeWidth={3} opacity={draw} />
+          {/* zona superior encendida */}
+          <g clipPath="url(#gsup)" opacity={lit * pulse} style={{ filter: "drop-shadow(0 0 14px rgba(4,228,0,0.9))" }}>
+            <path d={glute} fill={NEON} />
+            <path d={gluteR} fill={NEON} />
+          </g>
+          {/* fibras */}
+          <g stroke="rgba(10,10,10,0.35)" strokeWidth={2} opacity={lit}>
+            {[0, 1, 2].map((i) => (
+              <path key={i} d={`M ${290 - i * 6} ${185 + i * 14} L ${150 + i * 4} ${250 + i * 20}`} />
+            ))}
+            {[0, 1, 2].map((i) => (
+              <path key={`r${i}`} d={`M ${310 + i * 6} ${185 + i * 14} L ${450 - i * 4} ${250 + i * 20}`} />
+            ))}
+          </g>
+        </svg>
+        <div style={{ ...display, fontSize: 56, color: GREEN, filter: GLOW, marginTop: 4, opacity: lit }}>Región superior</div>
+        <div style={{ marginTop: 14 }}>
+          <Cite>Takahashi et al. · 2025</Cite>
         </div>
       </Glass>
     </Resource>
@@ -1296,114 +1120,141 @@ const E07: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------------
-// Cierre: marcador y ejemplo de comentario, «sígueme para subir de nivel»
+// Cierre: «Comenta» + bocadillo con el marcador; luego solo «Sígueme», subiendo
+// de nivel letra a letra por una escalera.
 
 const CtaLayer: React.FC = () => {
-  const { t, pop } = useClock();
+  const { t, pop, ramp } = useClock();
   if (t < CTA.comment - 0.1) return null;
-  const a = pop(CTA.comment, 12);
-  const ex = pop(CTA.example, 10);
-  const fo = pop(CTA.follow, 9);
+  const a = pop(CTA.comment, 11);
+  const key = pop(CTA.comment + 0.7, 9);
+  const out = ramp(CTA.follow - 0.3, CTA.follow, easeInOut);
+  const scrim = ramp(CTA.comment - 0.1, CTA.comment + 0.3);
+  const breathe = 1 + Math.sin(t * 5.5) * 0.012 * key;
+  const letters = "SÍGUEME".split("");
   return (
     <AbsoluteFill>
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6) 58%, rgba(0,0,0,0.85) 100%)",
-          opacity: a,
+          background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.55) 56%, rgba(0,0,0,0.85) 100%)",
+          opacity: scrim,
         }}
       />
-      <div
-        style={{
-          position: "absolute",
-          top: 1010,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          gap: 40,
-          transform: `translateY(${(1 - a) * 80}px)`,
-          opacity: Math.min(1, a * 2),
-        }}
-      >
-        <ScoreBox title="Entrenamiento" />
-        <ScoreBox title="Biomecánica" />
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 1290,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          transform: `scale(${0.7 + 0.3 * ex})`,
-          opacity: Math.min(1, ex * 2),
-        }}
-      >
+      {t < CTA.follow + 0.05 ? (
         <div
           style={{
-            ...label,
-            fontSize: 22,
-            letterSpacing: 4,
-            color: "rgba(255,255,255,0.7)",
+            position: "absolute",
+            top: 1000,
+            left: 0,
+            right: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            opacity: 1 - out,
+            transform: `translateY(${out * -40}px)`,
           }}
         >
-          Ejemplo de comentario
-        </div>
-        <div style={{ position: "relative", marginTop: 14 }}>
-          <Glass
+          <div
             style={{
-              padding: "22px 34px 18px",
-              border: `2.5px solid ${GREEN}`,
+              ...display,
+              ...stroke(8),
+              fontSize: 92,
+              transform: `translateY(${(1 - a) * 40}px) scale(${0.4 + 0.6 * a}) rotate(${(1 - a) * -8}deg)`,
+              opacity: Math.min(1, a * 2.5),
             }}
           >
+            Comenta
+          </div>
+          <div
+            style={{
+              position: "relative",
+              marginTop: 18,
+              width: 700,
+              height: 300,
+              transform: `scale(${(0.3 + 0.7 * key) * breathe}) rotate(${-3 + 2 * key}deg)`,
+              opacity: Math.min(1, key * 2.5),
+              filter: "drop-shadow(0 0 18px rgba(4,228,0,0.45))",
+            }}
+          >
+            <svg width={700} height={300} style={{ position: "absolute", inset: 0 }}>
+              <path d="M 10 12 L 690 4 L 680 226 L 220 236 L 130 294 L 142 236 L 18 240 Z" fill={GREEN} />
+            </svg>
             <div
               style={{
                 ...display,
-                fontSize: 42,
-                fontStyle: "normal",
-                textTransform: "none",
-                letterSpacing: 0,
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: 8,
+                height: 226,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 64,
+                lineHeight: 1.05,
+                color: INK,
+                transform: "translateX(-10px)",
               }}
             >
-              Entrenamiento 2 — Biomecánica 3
+              <div>Entrenamiento 2</div>
+              <div>Biomecánica 3</div>
             </div>
-          </Glass>
-        </div>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 1560,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          transform: `scale(${fo})`,
-          opacity: Math.min(1, fo * 2),
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            background: GREEN,
-            padding: "16px 32px 12px",
-            borderRadius: 999,
-            filter: GLOW,
-          }}
-        >
-          <div style={{ ...display, fontSize: 46, color: INK }}>+ Sígueme</div>
-          <div style={{ ...display, fontSize: 30, color: INK, opacity: 0.8 }}>
-            para subir de nivel
           </div>
         </div>
-      </div>
+      ) : null}
+      {t >= CTA.follow - 0.05 ? (
+        <div
+          style={{
+            position: "absolute",
+            top: 1080,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-end",
+            gap: 10,
+            height: 420,
+          }}
+        >
+          {letters.map((ch, i) => {
+            const at = CTA.follow + i * 0.09;
+            const p = pop(at, 10, 220);
+            const step = pop(at - 0.06, 14, 200);
+            const h = 40 + i * 34;
+            const last = i === letters.length - 1;
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 112 }}>
+                <div
+                  style={{
+                    ...display,
+                    ...stroke(7),
+                    fontSize: 120,
+                    color: last ? GREEN : PAPER,
+                    filter: last ? GLOW : undefined,
+                    transform: `translateY(${(1 - p) * -260}px) scale(${0.7 + 0.3 * p})`,
+                    opacity: Math.min(1, p * 3),
+                  }}
+                >
+                  {ch}
+                </div>
+                <div
+                  style={{
+                    width: 104,
+                    height: h * step,
+                    marginTop: 8,
+                    borderRadius: "10px 10px 0 0",
+                    background: `linear-gradient(180deg, ${NEON}, rgba(4,228,0,${0.25 + i * 0.06}))`,
+                    boxShadow: last ? "0 0 30px rgba(4,228,0,0.7)" : undefined,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </AbsoluteFill>
   );
 };
@@ -1413,7 +1264,6 @@ export const Graphics: React.FC = () => (
     <HookTitle />
     <Boards />
     <BlockHeader />
-    <BlockSwitch />
     <QuestionLayer />
     <E02 />
     <E03 />

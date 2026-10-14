@@ -11,8 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
-import { KneeArrow } from "./KneeArrow";
-import { JUMPS, punches, segmentsOut, toSrc, WIDE } from "./timeline";
+import { JUMPS, punches, segmentsOut, toSrc } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -42,7 +41,7 @@ export const cameraAt = (frame: number, fps: number) => {
   const t = toSrc(outT);
   const index = JUMPS.filter((j) => t >= j).length;
   const segStart = index === 0 ? 0 : JUMPS[index - 1];
-  const segEnd = index < JUMPS.length ? JUMPS[index] : segStart + 20;
+  const segEnd = index < JUMPS.length ? JUMPS[index] : segStart + 12;
   const progress = Math.min(1, (t - segStart) / Math.max(1, segEnd - segStart));
 
   const base = FRAMING[index % 2];
@@ -75,26 +74,7 @@ export const cameraAt = (frame: number, fps: number) => {
   const y = Math.cos(frame / 53) * 5 + Math.sin(frame / 23) * 1.5;
   const rot = Math.sin(frame / 67) * 0.25;
 
-  // plano abierto (E05): se ve la pierna entera
-  let wide = 0;
-  for (const [a, b] of WIDE) {
-    wide = Math.max(
-      wide,
-      Math.min(
-        interpolate(t, [a - 0.01, a + 0.01], [0, 1], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-        }),
-        interpolate(t, [b - 0.4, b], [1, 0], {
-          extrapolateLeft: "clamp",
-          extrapolateRight: "clamp",
-          easing: Easing.inOut(Easing.cubic),
-        }),
-      ),
-    );
-  }
-  const scale =
-    (base + drift + punch + slam) * (1 - wide) + (1.04 + punch * 0.3) * wide;
+  const scale = base + drift + punch + slam;
   const face = faceAt(t);
   const clampAxis = (tr: number, o: number, size: number) =>
     Math.max(
@@ -142,7 +122,6 @@ export const Camera: React.FC = () => {
             />
           </Sequence>
         ))}
-        <KneeArrow />
       </AbsoluteFill>
     </AbsoluteFill>
   );

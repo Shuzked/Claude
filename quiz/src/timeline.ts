@@ -1,29 +1,20 @@
 // Línea de tiempo del quiz «Entrenamiento vs. biomecánica» (Yago, Heracles Fit).
 //
 // Los tiempos de este archivo están en segundos del vídeo ORIGINAL (una sola toma).
-// El montaje recorta las pausas de reflexión: tras leer las opciones se conservan
-// exactamente 2 s (con tic-tac) y se salta a la respuesta (E01). `f()` convierte
-// un segundo del original en un fotograma del montaje.
+// Las pausas de reflexión del original ya duran ~5 s: se conservan enteras y el
+// reloj cuenta los 5 s previos a la respuesta (E01). `f()` convierte un segundo
+// del original en un fotograma del montaje.
 
 import transcript from "./transcript.json";
 import { FPS } from "./theme";
 
 export const TRIM = 0;
 export const SOURCE_END = 142.76;
-export const THINK = 2; // segundos de reflexión que se conservan
+export const THINK = 5; // segundos de reflexión (cuenta atrás)
 
 // --- Montaje: tramos del original que se conservan -------------------------------
-// Cada pausa se corta 2 s después de la última opción y se reanuda 0,1 s antes de
-// la respuesta.
-export const SEGMENTS: [number, number][] = [
-  [0, 17.96 + THINK],
-  [22.86, 34.04 + THINK],
-  [39.1, 55.48 + THINK],
-  [60.58, 76.52 + THINK],
-  [81.86, 98.48 + THINK],
-  [103.82, 119.84 + THINK],
-  [125.34, SOURCE_END],
-];
+// Toma continua: sin cortes (las pausas de 5,0–5,6 s son el tiempo para pensar).
+export const SEGMENTS: [number, number][] = [[0, SOURCE_END]];
 
 const segOut: number[] = [];
 {
@@ -60,8 +51,6 @@ export const segmentsOut = SEGMENTS.map(([a, b], i) => ({
   dur: b - a,
 }));
 
-/** Cortes del montaje (en segundos del original, el punto donde se reanuda). */
-export const JUMPS = SEGMENTS.slice(1).map(([a]) => a);
 
 /** Segundo del original → fotograma del montaje. */
 export const f = (sourceSeconds: number) =>
@@ -135,8 +124,12 @@ export type Question = {
   block: Block;
   level: number;
   nivelAt: number; // «Nivel …»
+  numAt: number; // «… uno / dos / tres»
+  statement: string; // enunciado en pantalla
+  qFrom: number; // empieza a leer la pregunta
+  qTo: number; // termina el enunciado (antes de las opciones)
   options: { text: string; at: number }[];
-  qEnd: number; // fin de la lectura de opciones: arranca el reloj de 2 s
+  qEnd: number; // fin de la lectura de opciones
   answer: number; // índice de la correcta
   answerAt: number; // empieza la respuesta: se para el reloj y se revela
   resEnd: number; // el recurso se retira antes de la siguiente pregunta
@@ -147,6 +140,10 @@ export const QUESTIONS: Question[] = [
     block: "T",
     level: 1,
     nivelAt: 9.56,
+    numAt: 9.96,
+    statement: "¿Qué mecanismo tiene un papel más establecido sobre la hipertrofia?",
+    qFrom: 10.48,
+    qTo: 14.6,
     options: [
       { text: "Tensión mecánica", at: 14.64 },
       { text: "Estrés metabólico", at: 15.68 },
@@ -161,6 +158,10 @@ export const QUESTIONS: Question[] = [
     block: "T",
     level: 2,
     nivelAt: 27.68,
+    numAt: 28.24,
+    statement: "¿Qué excéntrica es superior para la hipertrofia?",
+    qFrom: 28.8,
+    qTo: 30.98,
     options: [
       { text: "Rápida", at: 31.04 },
       { text: "Lenta", at: 31.64 },
@@ -175,6 +176,10 @@ export const QUESTIONS: Question[] = [
     block: "T",
     level: 3,
     nivelAt: 43.04,
+    numAt: 43.68,
+    statement: "Con el mismo volumen de carga, ¿se crece más descansando 1 o 3 minutos?",
+    qFrom: 44.32,
+    qTo: 51.9,
     options: [
       { text: "Descansando 3 min", at: 51.96 },
       { text: "Descansando 1 min", at: 53.32 },
@@ -189,6 +194,10 @@ export const QUESTIONS: Question[] = [
     block: "B",
     level: 1,
     nivelAt: 68.28,
+    numAt: 68.76,
+    statement: "Bajando los pies en la prensa, ¿qué músculo aumenta su demanda?",
+    qFrom: 69.16,
+    qTo: 74.0,
     options: [
       { text: "Glúteos", at: 74.04 },
       { text: "Isquios", at: 74.88 },
@@ -203,6 +212,10 @@ export const QUESTIONS: Question[] = [
     block: "B",
     level: 2,
     nivelAt: 86.52,
+    numAt: 87.08,
+    statement: "Media sentadilla vs. sentadilla profunda: ¿dónde habría más hipertrofia?",
+    qFrom: 87.52,
+    qTo: 95.4,
     options: [
       { text: "Cuádriceps", at: 95.48 },
       { text: "Glúteos y aductores", at: 96.36 },
@@ -217,6 +230,10 @@ export const QUESTIONS: Question[] = [
     block: "B",
     level: 3,
     nivelAt: 109.64,
+    numAt: 110.08,
+    statement: "¿Qué región del glúteo mayor es más favorable para la abducción?",
+    qFrom: 110.68,
+    qTo: 117.2,
     options: [
       { text: "Superior", at: 117.28 },
       { text: "Media", at: 118.24 },
@@ -253,6 +270,9 @@ export const CTA = {
   follow: 140.12, // «no te olvides de seguirme…»
 };
 
+/** Anuncio «NIVEL» + número detrás de Yago (recorte), sin subtítulos. */
+export const levelOut = (q: Question) => q.numAt + 1.2;
+
 // --- Recursos de cada respuesta (E02–E07), en segundos del original --------------
 export const RES = {
   e02: { quote: 23.4, notKilos: 25.12 }, // «no la confundas con los kilos»
@@ -263,19 +283,23 @@ export const RES = {
   e07: { map: 125.6, note: 126.56 },
 };
 
-// Planos abiertos: en E05 la cámara abre para que se vea la pierna y la rodilla.
-export const WIDE: [number, number][] = [[81.86, 86.5]];
-
 // Mientras se leen las opciones y se resuelve, sin subtítulos (lo cuenta la gráfica).
 export const MUTE: [number, number][] = [
   [0, HOOK.end],
   [HOOK.noChange - 0.05, HOOK.rulesEnd], // lo dice el rótulo «No vale cambiar de respuesta»
-  ...QUESTIONS.map(
-    (q) => [q.options[0].at - 0.05, q.resEnd] as [number, number],
-  ),
+  // del «Nivel» a la explicación: lo cuentan el anuncio, el enunciado y las opciones
+  ...QUESTIONS.map((q) => [q.nivelAt - 0.15, q.resEnd] as [number, number]),
   [CTA.comment, SOURCE_END],
 ];
 export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
+
+// Cambios de plano de la cámara virtual (alternan medio / cerrado): en cada
+// «Nivel», en cada revelación y en el cierre.
+export const JUMPS = [
+  ...QUESTIONS.flatMap((q) => [q.nivelAt - 0.15, q.answerAt]),
+  BLOCKS[1].from,
+  CTA.six,
+].sort((a, b) => a - b);
 
 // --- Encuadre ----------------------------------------------------------------------
 // Golpes de zoom en los remates; en cada corte de pausa, el zoom cambia de golpe
@@ -285,6 +309,7 @@ export const punches: Punch[] = [
   { at: 0.04, amount: 0.06, hold: 2.4 }, // hook
   { at: 7.24, amount: 0.05, hold: 1.1 }, // «no vale cambiar de respuesta»
   ...QUESTIONS.map((q) => ({ at: q.answerAt, amount: 0.12, hold: 0.9 })),
+  ...QUESTIONS.map((q) => ({ at: q.numAt, amount: 0.05, hold: 0.7 })),
   { at: 67.12, amount: 0.06, hold: 1.0 }, // «a ver si remontas»
   { at: 133.04, amount: 0.07, hold: 1.6 }, // «estás fuerte hasta en la teoría»
 ];
@@ -305,7 +330,9 @@ export type FxName =
   | "tick"
   | "tock"
   | "correct"
-  | "shine";
+  | "shine"
+  | "impact"
+  | "impact-hi";
 
 export const FX_PEAK: Record<FxName, number> = {
   hit: 0.27,
@@ -323,6 +350,8 @@ export const FX_PEAK: Record<FxName, number> = {
   tock: 0.003,
   correct: 0.01,
   shine: 0.08,
+  impact: 0.003,
+  "impact-hi": 0.003,
 };
 
 export const FX_DIR: Record<FxName, "fx" | "ui"> = {
@@ -341,6 +370,8 @@ export const FX_DIR: Record<FxName, "fx" | "ui"> = {
   tock: "ui",
   correct: "ui",
   shine: "ui",
+  impact: "ui",
+  "impact-hi": "ui",
 };
 
 export type Sfx = { at: number; src: FxName; volume: number };
@@ -359,13 +390,17 @@ export const allSfx: Sfx[] = [
   ...BLOCKS.map((b) => ({
     at: b.from + 0.05,
     src: "whoosh-b" as const,
-    volume: 0.3,
+    volume: 0.22,
   })),
-  // preguntas: opciones, reloj y revelación
+  // preguntas: anuncio de nivel, opciones, reloj y revelación
   ...QUESTIONS.flatMap((q) => [
+    { at: q.nivelAt - 0.35, src: "riser" as const, volume: 0.22 },
+    { at: q.nivelAt, src: "impact" as const, volume: 0.55 },
+    { at: q.numAt, src: "impact-hi" as const, volume: 0.6 },
+    { at: q.qFrom - 0.1, src: "paper" as const, volume: 0.18 },
     ...q.options.map((o) => ({ at: o.at, src: "pop" as const, volume: 0.25 })),
-    ...Array.from({ length: 4 }).map((_, k) => ({
-      at: q.qEnd + k * 0.5,
+    ...Array.from({ length: THINK * 2 }).map((_, k) => ({
+      at: q.answerAt - THINK + k * 0.5,
       src: (k % 2 ? "tock" : "tick") as FxName,
       volume: 0.5,
     })),

@@ -4,6 +4,7 @@ import { Camera } from "./Camera";
 import { Captions } from "./Captions";
 import { Finish } from "./Finish";
 import { Graphics } from "./Graphics";
+import { LevelLayer } from "./Level";
 import { Sound } from "./Sound";
 import { FPS, HEIGHT, WIDTH } from "./theme";
 import { DURATION_FRAMES } from "./timeline";
@@ -11,6 +12,7 @@ import { DURATION_FRAMES } from "./timeline";
 export const Quiz: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "black" }}>
     <Camera />
+    <LevelLayer />
     <Graphics />
     <Finish />
     <Captions />

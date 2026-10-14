@@ -118,4 +118,18 @@ def bell(f0, t0):
     return on * (np.sin(2 * np.pi * f0 * tt) + 0.35 * np.sin(2 * np.pi * 2 * f0 * tt) + 0.12 * np.sin(2 * np.pi * 3 * f0 * tt)) * np.exp(-tt * 6)
 save("correct.wav", bell(1046.5, 0.0) + bell(1568.0, 0.09), 0.55)
 
+# Impacto de intensidad («NIVEL» / número): caída sub + golpe de ruido + cola grave
+def impact(dur, f_hi, f_lo, crack, seed):
+    r = np.random.default_rng(seed)
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    fr = f_lo + (f_hi - f_lo) * np.exp(-t * 9)
+    sub = np.tanh(2.2 * np.sin(2 * np.pi * np.cumsum(fr) / SR)) * np.exp(-t * 3.2)
+    burst = bp(r.standard_normal(n), 120, 2500) * np.exp(-t * 28) * crack
+    air = bp(r.standard_normal(n), 2500, 9000) * np.exp(-t * 60) * crack * 0.5
+    tail = bp(r.standard_normal(n), 40, 220) * np.exp(-t * 2.5) * 0.35
+    return (sub + burst + air + tail) * np.minimum(1, t / 0.002)
+save("impact.wav", impact(1.6, 150, 38, 0.9, 11), 0.9)
+save("impact-hi.wav", impact(1.4, 220, 45, 1.3, 12), 0.9)
+
 print("ok", sorted(os.listdir(OUT)))
