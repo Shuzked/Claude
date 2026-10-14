@@ -107,6 +107,8 @@ const useEnter = (from: number, to: number) => {
 
 
 const RED = "#FF3B30";
+// verde de marca algo más profundo para que se lea sobre el papel claro
+const NOTE_GREEN = "#02B300";
 
 /** Rótulo sobre la persona con entrada/salida estándar (por encima de los subtítulos). */
 const Tag: React.FC<{
@@ -236,7 +238,7 @@ const Notes: React.FC = () => {
     >
       <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 38, color: "#1d1d1d", width: 210 }}>Sesión {label}</div>
       <div style={{ flex: 1, borderBottom: "3px dotted rgba(0,0,0,0.25)", transform: "translateY(-10px)" }} />
-      <div style={{ fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 56, color: "#11307a", width: 110, textAlign: "right", whiteSpace: "nowrap" }}>
+      <div style={{ fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 56, color: NOTE_GREEN, width: 110, textAlign: "right", whiteSpace: "nowrap" }}>
         {v}
       </div>
     </div>
@@ -270,7 +272,7 @@ const Notes: React.FC = () => {
           {t >= NOTES.eleven - 0.05
             ? row(
                 "D",
-                <span style={{ position: "relative", display: "inline-block", color: fail > 0 ? RED : "#11307a" }}>
+                <span style={{ position: "relative", display: "inline-block", color: fail > 0 ? RED : NOTE_GREEN }}>
                   11
                   {/* tachón de rotulador por encima: el 11 se sigue leyendo */}
                   <svg width={120} height={70} viewBox="0 0 120 70" style={{ position: "absolute", left: -18, top: 4, opacity: 0.8 }}>
