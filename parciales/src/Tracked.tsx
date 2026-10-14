@@ -110,13 +110,28 @@ const LegRom: React.FC = () => {
     const sweep = (b > a ? 1 : 0) ^ (sign < 0 ? 1 : 0);
     return `M ${p.x} ${p.y} A ${r} ${r} 0 0 ${sweep} ${q.x} ${q.y}`;
   };
+  // desaparece poco a poco antes del corte de 0:40
+  const fadeOut = interpolate(
+    t,
+    [LEG_ROM.to - 0.7, LEG_ROM.to - 0.05],
+    [1, 0],
+    {
+      ...clamp,
+      easing: Easing.inOut(Easing.cubic),
+    },
+  );
   const shown = LEG_ROM.zones.filter((z) => t >= z.at);
   const current = shown.length - 1;
   return (
     <svg
       width={1080}
       height={1920}
-      style={{ position: "absolute", inset: 0, overflow: "visible" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "visible",
+        opacity: fadeOut,
+      }}
     >
       {/* recorrido completo de referencia */}
       <path
@@ -302,27 +317,6 @@ const TramoHolo: React.FC<{ t: number }> = ({ t }) => {
         strokeWidth={4}
       />
       <circle cx={100} cy={86} r={7} fill="white" />
-      {/* rejilla de base */}
-      <ellipse
-        cx={100}
-        cy={176}
-        rx={80}
-        ry={14}
-        fill="none"
-        stroke={GREEN}
-        strokeOpacity={0.6}
-        strokeWidth={2}
-      />
-      <ellipse
-        cx={100}
-        cy={176}
-        rx={50}
-        ry={8}
-        fill="none"
-        stroke={GREEN}
-        strokeOpacity={0.4}
-        strokeWidth={1.5}
-      />
     </svg>
   );
 };
@@ -417,7 +411,7 @@ const Hologram: React.FC<{
   const topY = obj.y + (SIZE / 2) * 0.84 * k;
   const beamTopW = 250 * (1 - collapse);
   const beamBotW = 34 * (1 - collapse * 0.7);
-  const flash = collapse > 0.85 ? (1 - collapse) / 0.15 : 0;
+  const beamY = base.y - 60; // empieza por encima de los dedos
   const fade = collapse >= 1 ? 0 : 1;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: fade * flick }}>
@@ -434,26 +428,15 @@ const Hologram: React.FC<{
       >
         <defs>
           <linearGradient id={`beam-${seed}`} x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stopColor="rgba(59,255,46,0.6)" />
+            <stop offset="0" stopColor="rgba(59,255,46,0)" />
+            <stop offset="0.3" stopColor="rgba(59,255,46,0.5)" />
             <stop offset="1" stopColor="rgba(4,228,0,0.03)" />
           </linearGradient>
-          <radialGradient id={`pad-${seed}`}>
-            <stop offset="0" stopColor="rgba(255,255,255,0.95)" />
-            <stop offset="0.35" stopColor="rgba(59,255,46,0.8)" />
-            <stop offset="1" stopColor="rgba(4,228,0,0)" />
-          </radialGradient>
         </defs>
         <polygon
-          points={`${base.x - beamBotW / 2},${base.y} ${base.x + beamBotW / 2},${base.y} ${obj.x + beamTopW / 2},${base.y + (topY - base.y) * grow} ${obj.x - beamTopW / 2},${base.y + (topY - base.y) * grow}`}
+          points={`${base.x - beamBotW / 2},${beamY} ${base.x + beamBotW / 2},${beamY} ${obj.x + beamTopW / 2},${beamY + (topY - beamY) * grow} ${obj.x - beamTopW / 2},${beamY + (topY - beamY) * grow}`}
           fill={`url(#beam-${seed})`}
           style={{ filter: "blur(2px)" }}
-        />
-        <ellipse
-          cx={base.x}
-          cy={base.y}
-          rx={44 * (1 - collapse * 0.5)}
-          ry={12}
-          fill={`url(#pad-${seed})`}
         />
         {Array.from({ length: 12 }).map((_, i) => {
           const life = (((t * 0.9 + noise(i + seed) * 3) % 1) + 1) % 1;
@@ -462,28 +445,17 @@ const Hologram: React.FC<{
             (noise(i * 7 + seed) - 0.5) *
               (beamBotW + (beamTopW - beamBotW) * life) *
               0.8;
-          const py = base.y + (topY - base.y) * life;
+          const py = beamY + (topY - beamY) * life;
           return (
             <circle
               key={i}
               cx={px}
               cy={py}
               r={1.6 + noise(i) * 1.6}
-              fill={`rgba(120,255,110,${0.9 * (1 - life) * (1 - collapse)})`}
+              fill={`rgba(120,255,110,${0.9 * Math.sin(Math.PI * life) * (1 - collapse)})`}
             />
           );
         })}
-        {/* destello final al recogerse */}
-        {flash > 0 ? (
-          <circle
-            cx={base.x}
-            cy={base.y}
-            r={26 * flash}
-            fill="white"
-            style={{ filter: glow(12) }}
-            opacity={flash}
-          />
-        ) : null}
       </svg>
       <div
         style={{
