@@ -1123,6 +1123,60 @@ const E07: React.FC = () => {
 // Cierre: «Comenta» + bocadillo con el marcador; luego solo «Sígueme», subiendo
 // de nivel letra a letra por una escalera.
 
+/** «Sígueme» minimalista: una línea verde se traza, la palabra sube a través de
+ *  ella (como si subiera de nivel) y una flecha fina sigue empujando hacia arriba. */
+const Follow: React.FC = () => {
+  const { t, ramp } = useClock();
+  const at = CTA.follow;
+  const line = ramp(at - 0.05, at + 0.35, easeInOut);
+  const rise = ramp(at + 0.2, at + 0.75, Easing.bezier(0.2, 1.4, 0.35, 1));
+  const arrow = ramp(at + 0.7, at + 1.05, Easing.bezier(0.2, 1.3, 0.4, 1));
+  const bob = Math.sin(Math.max(0, t - at - 1.0) * 5) * 8 * arrow;
+  const W = 560;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 1120,
+        left: 0,
+        right: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      {/* flecha fina que sube */}
+      <svg width={120} height={70} viewBox="0 0 120 70" style={{ opacity: Math.min(1, arrow * 3), transform: `translateY(${(1 - arrow) * 190 - bob}px) scaleX(${0.4 + 0.6 * arrow})`, filter: GLOW }}>
+        <path d="M 14 56 L 60 14 L 106 56" fill="none" stroke={GREEN} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {/* la palabra emerge por encima de la línea (máscara) */}
+      <div style={{ height: 140, overflow: "hidden", marginTop: 6, display: "flex", alignItems: "flex-end" }}>
+        <div
+          style={{
+            ...display,
+            fontSize: 132,
+            letterSpacing: interpolate(rise, [0, 1], [30, 2]),
+            transform: `translateY(${(1 - rise) * 150}px)`,
+            textShadow: "0 6px 30px rgba(0,0,0,0.6)",
+          }}
+        >
+          Sígueme
+        </div>
+      </div>
+      <div
+        style={{
+          width: W * line,
+          height: 5,
+          borderRadius: 3,
+          background: GREEN,
+          boxShadow: "0 0 18px rgba(4,228,0,0.8)",
+          marginTop: 6,
+        }}
+      />
+    </div>
+  );
+};
+
 const CtaLayer: React.FC = () => {
   const { t, pop, ramp } = useClock();
   if (t < CTA.comment - 0.1) return null;
@@ -1131,7 +1185,6 @@ const CtaLayer: React.FC = () => {
   const out = ramp(CTA.follow - 0.3, CTA.follow, easeInOut);
   const scrim = ramp(CTA.comment - 0.1, CTA.comment + 0.3);
   const breathe = 1 + Math.sin(t * 5.5) * 0.012 * key;
-  const letters = "SÍGUEME".split("");
   return (
     <AbsoluteFill>
       <div
@@ -1205,56 +1258,7 @@ const CtaLayer: React.FC = () => {
           </div>
         </div>
       ) : null}
-      {t >= CTA.follow - 0.05 ? (
-        <div
-          style={{
-            position: "absolute",
-            top: 1080,
-            left: 0,
-            right: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-            gap: 10,
-            height: 420,
-          }}
-        >
-          {letters.map((ch, i) => {
-            const at = CTA.follow + i * 0.09;
-            const p = pop(at, 10, 220);
-            const step = pop(at - 0.06, 14, 200);
-            const h = 40 + i * 34;
-            const last = i === letters.length - 1;
-            return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 112 }}>
-                <div
-                  style={{
-                    ...display,
-                    ...stroke(7),
-                    fontSize: 120,
-                    color: last ? GREEN : PAPER,
-                    filter: last ? GLOW : undefined,
-                    transform: `translateY(${(1 - p) * -260}px) scale(${0.7 + 0.3 * p})`,
-                    opacity: Math.min(1, p * 3),
-                  }}
-                >
-                  {ch}
-                </div>
-                <div
-                  style={{
-                    width: 104,
-                    height: h * step,
-                    marginTop: 8,
-                    borderRadius: "10px 10px 0 0",
-                    background: `linear-gradient(180deg, ${NEON}, rgba(4,228,0,${0.25 + i * 0.06}))`,
-                    boxShadow: last ? "0 0 30px rgba(4,228,0,0.7)" : undefined,
-                  }}
-                />
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+      {t >= CTA.follow - 0.05 ? <Follow /> : null}
     </AbsoluteFill>
   );
 };
