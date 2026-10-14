@@ -40,15 +40,15 @@ const usePop = (at: number, damping = 10) => {
 // 300×560. Cada pierna se dibuja en su propio lienzo de 150 de ancho con la cara
 // lateral a la izquierda; la pierna de la derecha del espectador es su espejo.
 
-const THIGH =
+export const THIGH =
   "M 12 62 C 0 160, 6 280, 30 390 C 38 430, 44 455, 48 470 L 106 470 C 112 450, 120 410, 128 340 C 140 240, 144 140, 142 62 Z";
-const SHIN =
+export const SHIN =
   "M 46 504 C 42 530, 48 550, 52 560 L 102 560 C 106 550, 110 530, 108 504 Z";
-const RF =
+export const RF =
   "M 80 78 C 58 150, 54 260, 60 350 C 64 400, 70 440, 72 458 L 86 458 C 90 440, 96 400, 100 350 C 106 260, 102 150, 80 78 Z";
-const VL =
+export const VL =
   "M 22 88 C 6 190, 8 300, 28 382 C 36 420, 46 446, 60 460 L 66 452 C 54 410, 48 330, 50 250 C 52 170, 58 120, 64 90 Z";
-const VM =
+export const VM =
   "M 110 272 C 136 316, 140 390, 124 434 C 116 450, 104 460, 92 462 L 90 450 C 102 410, 106 350, 110 272 Z";
 const RF_FIBERS = [
   "M 80 110 C 70 200, 70 320, 78 440",

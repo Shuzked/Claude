@@ -13,7 +13,7 @@ import { DOUBLE, GLOW_FRAMES, glows, TRIM } from "./timeline";
 // con su textura) que sube, brilla un momento y se apaga. Va dentro de la cámara
 // virtual, así que sigue exactamente los zooms.
 
-const MAX = 0.45; // sutil: se sigue viendo el músculo
+const MAX = 0.9; // verde lima luminoso con glow (referencias del cliente) // sutil: se sigue viendo el músculo
 
 const envelope = (t: number) => {
   let e = 0;
@@ -52,7 +52,7 @@ export const ThighGlow: React.FC = () => {
         width: "100%",
         height: "100%",
         opacity: Math.min(1, e) * MAX,
-        filter: `drop-shadow(0 0 ${10 + 14 * e}px rgba(4,228,0,${0.55 * Math.min(1, e)}))`,
+        filter: `drop-shadow(0 0 ${8 + 10 * e}px rgba(110,255,60,${0.75 * Math.min(1, e)})) drop-shadow(0 0 ${22 + 18 * e}px rgba(4,228,0,${0.45 * Math.min(1, e)}))`,
       }}
     />
   );

@@ -8,7 +8,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { toScreen } from "./Camera";
 import { RomDiagram } from "./Figures";
+import { poseAt } from "./pose";
 import { FONT, GREEN, PAPER } from "./theme";
 import {
   f,
@@ -18,7 +20,6 @@ import {
   SCENE_OUT,
   scenes,
   SOURCE_END,
-  DOUBLE,
   LIST_END,
   listItems,
   T,
@@ -452,59 +453,6 @@ const sceneFrom = (id: string) => scenes.find((s) => s.id === id)!.from;
 const rel = (id: string, sourceSeconds: number) =>
   sourceSeconds - scenes.find((s) => s.id === id)!.from;
 
-/** Sello que cae de golpe sobre un elemento. */
-const RED = "#FF2E3A";
-
-/** Sello rojo que cae de golpe en el centro de la pantalla. */
-const Stamp: React.FC<{ at: number; text: string; top?: number }> = ({
-  at,
-  text,
-  top = 800,
-}) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const t = frame / fps;
-  if (t < at) return null;
-  const slam = spring({
-    frame: frame - at * fps,
-    fps,
-    config: { damping: 11, stiffness: 320, mass: 0.6 },
-  });
-  const k = (t - at) * fps;
-  const shake = k < 10 ? Math.sin(k * 2.7) * 10 * Math.exp(-k / 3) : 0;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "center",
-        transform: `translate(${shake}px, ${-shake * 0.6}px)`,
-      }}
-    >
-      <div
-        style={{
-          transform: `rotate(-9deg) scale(${2.6 - 1.6 * slam})`,
-          opacity: Math.min(1, slam * 2),
-          border: `10px solid ${RED}`,
-          borderRadius: 18,
-          padding: "14px 40px 8px",
-          ...display,
-          fontSize: 120,
-          color: RED,
-          textShadow: "0 0 24px rgba(255,46,58,0.55)",
-          filter: "drop-shadow(0 0 16px rgba(255,46,58,0.5))",
-          background: "rgba(255,46,58,0.06)",
-        }}
-      >
-        {text}
-      </div>
-    </div>
-  );
-};
-
 // ---------------------------------------------------------------------------
 // Piezas comunes de esta pieza
 
@@ -688,33 +636,6 @@ const StudyScene: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------------
-// E05 · dos parciales no son lo mismo (pantalla completa, mismo carrusel)
-
-const TramoScene: React.FC = () => (
-  <>
-    <Headline
-      lines={headlines.tramo}
-      origin={sceneFrom("tramo")}
-      size={92}
-      top={230}
-    />
-    <RomCarousel
-      bigTop={440}
-      smallTop={1230}
-      items={[
-        { title: "Parcial final", from: 65, to: 30, at: rel("tramo", 36.68) },
-        {
-          title: "Parcial inicial",
-          from: 100,
-          to: 65,
-          at: rel("tramo", T.tramoInitial),
-        },
-      ]}
-    />
-  </>
-);
-
-// ---------------------------------------------------------------------------
 // Rótulo mínimo mientras brilla el músculo (sin velo, se ve la persona)
 
 const MuscleLabel: React.FC<{
@@ -791,97 +712,133 @@ const LblVl: React.FC = () => (
 );
 
 // ---------------------------------------------------------------------------
-// El doble: sello «FALSO» (fuera de las escenas, así los subtítulos siguen)
+// Parte final: panel a la derecha con tres puntos de una palabra. Cada punto nace
+// en la punta del dedo (donde señala) y vuela a su hueco del panel.
 
-const FalsoLayer: React.FC = () => {
-  const t = useT();
-  const out = interpolate(
-    t,
-    [DOUBLE.stampEnd - DOUBLE.stamp - 0.25, DOUBLE.stampEnd - DOUBLE.stamp],
-    [1, 0],
-    clamp,
-  );
-  return (
-    <AbsoluteFill style={{ opacity: out }}>
-      <Stamp at={0} text="Falso" top={1060} />
-    </AbsoluteFill>
-  );
+const LIST_FROM = 57.86; // el panel entra con el plano, justo antes del primer punto
+
+const fingerTip = (t: number) => {
+  for (const d of [0, -0.04, 0.04, -0.08, 0.08]) {
+    const p = poseAt(t + d);
+    if (!p) continue;
+    const dx = p.li[0] - p.le[0];
+    const dy = p.li[1] - p.le[1];
+    const len = Math.hypot(dx, dy) || 1;
+    return { x: p.li[0] + (dx / len) * 40, y: p.li[1] + (dy / len) * 40 };
+  }
+  return null;
 };
 
-// ---------------------------------------------------------------------------
-// Lista de la parte final: la persona a la izquierda y las ideas a la derecha,
-// donde apunta. Cada una entra al nombrarse y la actual queda resaltada.
-
 const ListLayer: React.FC = () => {
-  const t = useT();
+  const local = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const frame = useCurrentFrame();
-  const t0 = listItems[0].at;
-  const out = interpolate(
-    t,
-    [LIST_END - t0 - 0.35, LIST_END - t0],
-    [1, 0],
-    clamp,
-  );
-  const current = listItems.filter((l) => t >= l.at - t0).length - 1;
+  const frame = local + f(LIST_FROM);
+  const t = frame / fps;
+  const PANEL = { x: 590, y: 470, w: 460, row: 136 };
+  const panelIn = spring({
+    frame: local,
+    fps,
+    config: { damping: 16, stiffness: 160, mass: 0.7 },
+  });
+  const out = interpolate(t, [LIST_END - 0.35, LIST_END], [1, 0], clamp);
+  const current = listItems.filter((l) => t >= l.at).length - 1;
   return (
     <AbsoluteFill style={{ opacity: out }}>
-      <div style={{ position: "absolute", left: 585, top: 450, width: 480 }}>
-        {listItems.map((l, i) => {
-          const at = l.at - t0;
-          if (t < at) return null;
-          const p = spring({
-            frame: frame - at * fps,
-            fps,
-            config: { damping: 13, stiffness: 190, mass: 0.6 },
-          });
-          const on = i === current;
-          return (
+      {/* panel */}
+      <div
+        style={{
+          position: "absolute",
+          left: PANEL.x,
+          top: PANEL.y - 30,
+          width: PANEL.w,
+          height: listItems.length * PANEL.row + 40,
+          background: "rgba(12,12,12,0.62)",
+          border: "1.5px solid rgba(255,255,255,0.14)",
+          backdropFilter: "blur(6px)",
+          transform: `translateX(${(1 - panelIn) * 120}px)`,
+          opacity: Math.min(1, panelIn * 1.5),
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 5,
+            height: "100%",
+            background: GREEN,
+            filter: GLOW,
+          }}
+        />
+      </div>
+      {listItems.map((l, i) => {
+        if (t < l.at) return null;
+        const born = spring({
+          frame: frame - f(l.at),
+          fps,
+          config: { damping: 11, stiffness: 220, mass: 0.5 },
+        });
+        const fly = interpolate(t, [l.at + 0.35, l.at + 0.8], [0, 1], {
+          ...clamp,
+          easing: easeInOut,
+        });
+        const tipVideo = fingerTip(l.at + 0.05);
+        const tip = tipVideo
+          ? toScreen(f(l.at + 0.05), fps, tipVideo)
+          : { x: 760, y: 640 };
+        const slot = { x: PANEL.x + 30, y: PANEL.y + i * PANEL.row };
+        const x = tip.x + (slot.x - tip.x) * fly;
+        const y = tip.y - 40 + (slot.y - (tip.y - 40)) * fly;
+        const on = i === current;
+        return (
+          <div
+            key={l.text}
+            style={{
+              position: "absolute",
+              left: x,
+              top: y,
+              display: "flex",
+              alignItems: "center",
+              gap: 18,
+              transform: `scale(${(0.3 + 0.7 * born) * (on ? 1 : 0.9)})`,
+              transformOrigin: "0 50%",
+              opacity: Math.min(1, born * 2) * (on ? 1 : 0.6),
+            }}
+          >
             <div
-              key={l.text}
               style={{
+                width: 58,
+                height: 58,
                 display: "flex",
                 alignItems: "center",
-                gap: 18,
-                height: 104,
-                transform: `translateX(${(1 - p) * 80}px) scale(${on ? 1 : 0.92})`,
-                transformOrigin: "0 50%",
-                opacity: Math.min(1, p * 2) * (on ? 1 : 0.55),
+                justifyContent: "center",
+                background: on ? GREEN : "rgba(20,20,20,0.9)",
+                border: `2.5px solid ${on ? GREEN : "rgba(255,255,255,0.35)"}`,
+                filter: on ? GLOW : undefined,
+                ...display,
+                fontSize: 32,
+                color: on ? "#0A0A0A" : PAPER,
+                textShadow: "none",
               }}
             >
-              <div
-                style={{
-                  width: 54,
-                  height: 54,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: on ? GREEN : "rgba(20,20,20,0.85)",
-                  border: `2.5px solid ${on ? GREEN : "rgba(255,255,255,0.35)"}`,
-                  filter: on ? GLOW : undefined,
-                  ...display,
-                  fontSize: 30,
-                  color: on ? "#0A0A0A" : PAPER,
-                  textShadow: "none",
-                }}
-              >
-                {i + 1}
-              </div>
-              <div
-                style={{
-                  ...display,
-                  fontSize: 40,
-                  WebkitTextStroke: "8px rgba(0,0,0,0.85)",
-                  paintOrder: "stroke fill",
-                }}
-              >
-                {l.text}
-              </div>
+              {i + 1}
             </div>
-          );
-        })}
-      </div>
+            <div
+              style={{
+                ...display,
+                fontSize: 46,
+                lineHeight: 1,
+                whiteSpace: "normal",
+                width: 340,
+                WebkitTextStroke: "8px rgba(0,0,0,0.85)",
+                paintOrder: "stroke fill",
+              }}
+            >
+              {l.text}
+            </div>
+          </div>
+        );
+      })}
     </AbsoluteFill>
   );
 };
@@ -1025,7 +982,6 @@ const SCENES: Record<string, React.FC> = {
   study: StudyScene,
   lblRf2: LblRf2,
   lblVl: LblVl,
-  tramo: TramoScene,
   master: MasterScene,
   cta: CtaScene,
 };
@@ -1034,15 +990,8 @@ const SCENES: Record<string, React.FC> = {
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
     <Sequence
-      from={f(DOUBLE.stamp)}
-      durationInFrames={f(DOUBLE.stampEnd) - f(DOUBLE.stamp)}
-      name="Sello FALSO"
-    >
-      <FalsoLayer />
-    </Sequence>
-    <Sequence
-      from={f(listItems[0].at)}
-      durationInFrames={f(LIST_END) - f(listItems[0].at)}
+      from={f(LIST_FROM)}
+      durationInFrames={f(LIST_END) - f(LIST_FROM)}
       name="Lista final"
     >
       <ListLayer />

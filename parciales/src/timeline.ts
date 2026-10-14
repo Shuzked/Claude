@@ -239,13 +239,6 @@ export const scenes: Scene[] = [
     scrim: false,
   },
   {
-    id: "tramo",
-    from: 36.6,
-    to: OUT_AFTER_CUT(40.08),
-    title: "Tramo",
-    mode: "full",
-  },
-  {
     id: "master",
     from: 68.05,
     to: 71.68,
@@ -298,10 +291,6 @@ export const headlines: Record<string, HeadlineLine[]> = {
   studySerie: [
     { text: "Desde el inicio", at: 15.16, marker: 15.5 },
     { text: "de la serie", at: 15.84, marker: 16.08 },
-  ],
-  tramo: [
-    { text: "Misma amplitud,", at: 36.85 },
-    { text: "distinta zona", at: 37.6, marker: 37.9 },
   ],
 };
 
@@ -363,20 +352,30 @@ export const focuses: Focus[] = [
   { from: 10.15, to: 11.9, zoom: 1.4, on: "thighs" },
   { from: 24.85, to: 26.7, zoom: 1.6, on: "thighs" },
   { from: 28.75, to: 30.5, zoom: 1.45, on: "thighs" },
-  { from: 34.6, to: 36.62, zoom: 1.3, on: "legs" },
+  { from: 34.55, to: 40.1, zoom: 1.3, on: "legs" },
   { from: 40.15, to: 42.32, zoom: 1.55, on: "face" },
   { from: 42.3, to: 43.84, zoom: 1.32, on: "face" }, // el doble: la pose ya es la suya
   { from: 57.84, to: 65.15, zoom: 1.45, on: "left" },
 ];
 
 // --- El doble -----------------------------------------------------------------
-// Aparece de golpe: esa parte va en blanco y negro, el de atrás desenfocado
-// (public/bgblur) y el sello «FALSO» entra pronto y se queda.
+// Aparece de golpe: esa parte va en blanco y negro y el de atrás desenfocado
+// (public/bgblur).
 export const DOUBLE = {
   from: 42.3,
   to: 43.84,
-  stamp: 42.75,
-  stampEnd: 44.35,
+};
+
+// --- Recorrido sobre sus piernas (0:34–0:40) -----------------------------------
+// Mientras hace la extensión: palos sobre muslo y pierna, ángulo en vivo de la
+// rodilla y el tramo del que habla marcado alrededor de la rodilla.
+export const LEG_ROM = {
+  from: 34.6,
+  to: 40.08,
+  zones: [
+    { at: 34.88, from: 65, to: 30, label: "Parcial final" }, // «las parciales al final…»
+    { at: 39.28, from: 100, to: 65, label: "Parcial inicial" }, // «…que las del comienzo»
+  ],
 };
 
 // --- Hologramas en las manos (0:45) ------------------------------------------
@@ -384,15 +383,14 @@ export const HOLO = {
   a: { at: 45.04, hand: "l" as const }, // «qué parte del recorrido»
   grab: { at: 46.72, hand: "r" as const }, // coge algo de la otra mano: puntito de luz
   b: { at: 47.42, hand: "r" as const }, // abre la mano: proyecta «qué músculo»
-  orbit: [49.0, 49.62] as [number, number], // junta las manos: orbitan y se difuminan
+  collapse: [49.0, 49.45] as [number, number], // junta las manos: se recogen en las palmas
 };
 
 // --- Lista de la parte final (0:57) --------------------------------------------
 export const listItems = [
-  { at: 57.8, text: "Cuándo usarla" },
-  { at: 59.12, text: "Si sustituye" },
-  { at: 61.56, text: "O se añade" },
-  { at: 63.32, text: "Cómo encajarla" },
+  { at: 58.0, text: "Utilización" }, // «cuándo utilizarla»
+  { at: 59.12, text: "Sustituir o añadir" }, // «si sustituye… o si tiene sentido añadirla»
+  { at: 63.68, text: "Encajar" }, // «cómo encajar todo esto en tu rutina»
 ];
 export const LIST_END = 65.12;
 
@@ -405,16 +403,19 @@ const graphicsSfx: Sfx[] = [
   // el músculo se enciende
   ...glows.map((g) => ({ at: g.at, src: "shine" as const, volume: 0.35 })),
   ...pop(T.rfSub, T.vlSub),
-  // tramo
-  ...pop(T.tramoFinal, T.tramoFinal + 0.3),
   // el doble
   { at: DOUBLE.from, src: "whoosh-a", volume: 0.3 },
-  { at: DOUBLE.stamp, src: "stamp", volume: 0.5 },
+  // recorrido sobre las piernas
+  ...LEG_ROM.zones.map((z) => ({
+    at: z.at,
+    src: "pop" as const,
+    volume: 0.28,
+  })),
   // hologramas
   { at: HOLO.a.at, src: "shine", volume: 0.35 },
   { at: HOLO.grab.at, src: "pop", volume: 0.2 },
   { at: HOLO.b.at, src: "shine", volume: 0.35 },
-  { at: HOLO.orbit[0], src: "whoosh-b", volume: 0.2 },
+  { at: HOLO.collapse[0] + 0.15, src: "whoosh-b", volume: 0.18 },
   // lista
   ...listItems.map((l) => ({ at: l.at, src: "pop" as const, volume: 0.28 })),
   // masterclass

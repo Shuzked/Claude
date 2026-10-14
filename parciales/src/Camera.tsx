@@ -53,9 +53,9 @@ const faceAt = (sourceSeconds: number) => {
 
 const BASE = 1.04; // margen para que la deriva nunca enseñe bordes
 
-const useCamera = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+/** Encuadre de la cámara virtual en un fotograma (función pura: también la usan
+ *  las capas en pantalla que necesitan saber dónde cae un punto del vídeo). */
+export const cameraAt = (frame: number, fps: number) => {
   const t = TRIM + frame / fps;
 
   const index = Math.max(
@@ -252,8 +252,9 @@ const useCamera = () => {
 };
 
 export const Camera: React.FC = () => {
-  const { scale, x, y, rot, blur, t } = useCamera();
+  const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const { scale, x, y, rot, blur, t } = cameraAt(frame, fps);
   const transform: React.CSSProperties = {
     transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
     // centro en la cara: los zooms acercan el rostro, no el pecho
@@ -301,4 +302,18 @@ export const Camera: React.FC = () => {
       </AbsoluteFill>
     </AbsoluteFill>
   );
+};
+
+/** Punto del vídeo (1080×1920) → punto en pantalla con el encuadre de ese fotograma. */
+export const toScreen = (
+  frame: number,
+  fps: number,
+  p: { x: number; y: number },
+) => {
+  const c = cameraAt(frame, fps);
+  return {
+    x: ORIGIN.x + c.scale * (p.x - ORIGIN.x) + c.x,
+    y: ORIGIN.y + c.scale * (p.y - ORIGIN.y) + c.y,
+    scale: c.scale,
+  };
 };
