@@ -803,7 +803,7 @@ const FalsoLayer: React.FC = () => {
   );
   return (
     <AbsoluteFill style={{ opacity: out }}>
-      <Stamp at={0} text="Falso" top={860} />
+      <Stamp at={0} text="Falso" top={1060} />
     </AbsoluteFill>
   );
 };
@@ -826,7 +826,7 @@ const ListLayer: React.FC = () => {
   const current = listItems.filter((l) => t >= l.at - t0).length - 1;
   return (
     <AbsoluteFill style={{ opacity: out }}>
-      <div style={{ position: "absolute", left: 640, top: 450, width: 420 }}>
+      <div style={{ position: "absolute", left: 585, top: 450, width: 480 }}>
         {listItems.map((l, i) => {
           const at = l.at - t0;
           if (t < at) return null;
@@ -871,7 +871,7 @@ const ListLayer: React.FC = () => {
               <div
                 style={{
                   ...display,
-                  fontSize: 46,
+                  fontSize: 40,
                   WebkitTextStroke: "8px rgba(0,0,0,0.85)",
                   paintOrder: "stroke fill",
                 }}
