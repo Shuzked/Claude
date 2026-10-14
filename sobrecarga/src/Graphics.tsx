@@ -272,7 +272,7 @@ const Notes: React.FC = () => {
           {t >= NOTES.eleven - 0.05
             ? row(
                 "D",
-                <span style={{ position: "relative", display: "inline-block", color: fail > 0 ? RED : NOTE_GREEN }}>
+                <span style={{ position: "relative", display: "inline-block", color: RED }}>
                   11
                   {/* tachón de rotulador por encima: el 11 se sigue leyendo */}
                   <svg width={120} height={70} viewBox="0 0 120 70" style={{ position: "absolute", left: -18, top: 4, opacity: 0.8 }}>
