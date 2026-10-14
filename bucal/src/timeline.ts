@@ -65,30 +65,41 @@ const timed: Word[] = (
   });
 export const words = timed.filter((w) => w.text !== "");
 
-// --- Montaje: se conserva la voz; los silencios > 0,55 s se dejan en ~0,35 s ------
-const LEAD = 0.15;
-const TAIL = 0.2;
-const MAX_GAP = 0.55;
-// Planos donde no se corta (la reacción del hook y el plano recurso del banco).
-const KEEP: [number, number][] = [
-  [0, 4.6],
-  [67.2, 70.3],
+// --- Montaje: se recortan los silencios reales de la voz (silencedetect −38 dB) ---
+// De cada silencio quedan ~0,1 s a cada lado; el resto se corta (más ritmo).
+const SILENCES: [number, number][] = [
+  [4.09, 4.74],
+  [11.47, 12.11],
+  [16.79, 17.19],
+  [20.96, 22.07],
+  [29.77, 30.07],
+  [33.36, 33.67],
+  [38.51, 39.01],
+  [42.12, 42.62],
+  [49.27, 49.63],
+  [52.86, 53.25],
+  [57.69, 58.31],
+  [67.1, 67.59],
+  [70.15, 70.56],
 ];
+const PAD_IN = 0.1; // voz antes del corte
+const PAD_OUT = 0.08; // aire antes de la siguiente frase
+const START = 0.25; // un instante de mirada antes del hook
 
 export const SEGMENTS: [number, number][] = (() => {
+  const cuts: [number, number][] = [
+    ...SILENCES.map(([a, b]) => [a + PAD_IN, b - PAD_OUT] as [number, number]),
+    [RETAKE[0], RETAKE[1]] as [number, number],
+  ].sort((x, y) => x[0] - y[0]);
   const segs: [number, number][] = [];
-  let a = 0;
-  for (let i = 0; i < timed.length - 1; i++) {
-    const end = timed[i].end;
-    const next = timed[i + 1].start;
-    const inKeep = KEEP.some(([x, y]) => end >= x && next <= y);
-    if (next - end > MAX_GAP && !inKeep) {
-      segs.push([a, end + TAIL]);
-      a = next - LEAD;
-    }
+  let a = START;
+  for (const [x, y] of cuts) {
+    if (y <= a) continue;
+    segs.push([a, Math.max(a, x)]);
+    a = y;
   }
-  segs.push([a, Math.min(SOURCE_END, timed[timed.length - 1].end + 0.7)]);
-  return segs;
+  segs.push([a, SOURCE_END - 0.3]);
+  return segs.filter(([x, y]) => y - x > 0.05);
 })();
 
 const segOut: number[] = [];
@@ -127,7 +138,15 @@ export const segmentsOut = SEGMENTS.map(([a, b], i) => ({
 
 /** Cambios de plano (cortes del original + del montaje): la cámara virtual alterna
  *  encuadre medio / cerrado en cada uno. */
-export const JUMPS = [4.5, 21.28, 49.48, 58.0, 67.32, 70.44, 77.73, 84.9];
+// Cortes de plano del original (cambio de cámara / plano recurso)
+export const SHOT_CUTS = [16.88, 21.28, 33.52, 49.48, 58.0, 67.32, 70.44];
+export const JUMPS = [
+  ...new Set([ ...SHOT_CUTS, ...SEGMENTS.slice(1).map(([a]) => a)]),
+].sort((a, b) => a - b);
+
+// Plano recurso del banco (boli en la boca): la cara está abajo y el detector se
+// pierde; encuadre fijo centrado en su cara y algo más cerrado.
+export const BROLL = { from: 67.32, to: 70.44, face: [620, 960] as [number, number], scale: 1.5 };
 
 /** Segundo del original → fotograma del montaje. */
 export const f = (sourceSeconds: number) =>
@@ -143,16 +162,16 @@ export const BLACK: [number, number][] = [
 export const HOOK = {
   question: 0.4, // «¿Por qué este chaval usa chupete…»
   pacifier: 2.28, // «chupete»
-  end: 4.5, // «Pues ojo»: Yago a pantalla completa
-  ojo: 4.56,
+  end: 4.66, // «Pues ojo»: Yago a pantalla completa
+  ojo: 4.74,
   strength: 9.08, // «sí que puede mejorar algunas pruebas de fuerza»
 };
 
 // E02 · P1 (Boroojerdi et al., 2000): mandíbula → sistema nervioso → otros músculos
-export const NERVE = { from: 11.92, jaw: 12.3, nerve: 14.84, muscles: 16.04, to: 16.6 };
+export const NERVE = { from: 11.92, jaw: 12.1, nerve: 13.9, muscles: 15.3, to: 17.0 };
 
 // La pregunta de hipertrofia (plano negro)
-export const QUESTION = { from: 16.88, bite: 18.32, muscle: 19.8, card: 20.5, to: 21.28 };
+export const QUESTION = { from: 16.88, bite: 18.32, muscle: 19.8, card: 20.2, to: 22.7 };
 
 // «Separar dos cosas»
 export const TWO = { from: 22.9, clench: 25.2, guard: 26.8, to: 29.4 };
@@ -180,7 +199,7 @@ export const MEASURE = { question: 51.0, no: 54.04, to: 57.4 };
 export const SYNTH = { from: 62.0, to: 66.9 };
 
 // Plano recurso del banco con bucal: «Otra cosa es que te lo haya indicado tu dentista»
-export const DENTIST = { from: 67.44, label: 68.84, to: 70.3 };
+export const DENTIST = { from: 67.44, label: 68.3, stamp: 69.5, to: 70.25 };
 
 // CTA (E08)
 export const FOLLOW = { at: 88.72, criterio: 89.84 };
@@ -193,7 +212,7 @@ export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 export type Punch = { at: number; amount: number; hold: number };
 export const punches: Punch[] = [
   { at: 0.4, amount: 0.05, hold: 3.0 },
-  { at: 4.56, amount: 0.08, hold: 0.8 }, // «Pues ojo»
+  { at: 4.66, amount: 0.08, hold: 0.8 }, // «Pues ojo»
   { at: 9.08, amount: 0.05, hold: 1.8 }, // «sí que puede»
   { at: 51.0, amount: 0.08, hold: 1.2 }, // «¿Cuánto músculo más ganaron?»
   { at: 54.04, amount: 0.05, hold: 1.0 }, // «eso no lo midieron»
@@ -295,9 +314,18 @@ export const allSfx: Sfx[] = [
   { at: MEASURE.no, src: "stamp", volume: 0.35 },
   // síntesis, dentista y CTA
   { at: SYNTH.from, src: "whoosh-b", volume: 0.22 },
-  { at: DENTIST.label, src: "pop", volume: 0.22 },
+  { at: DENTIST.label, src: "paper", volume: 0.3 },
+  { at: DENTIST.stamp, src: "stamp", volume: 0.4 },
   { at: FOLLOW.at, src: "whoosh-a", volume: 0.25 },
   { at: FOLLOW.at + 0.6, src: "shine", volume: 0.25 },
+  // barridos en los cortes (los de dentro de los planos negros no se oyen)
+  ...JUMPS.filter(
+    (j) => !BLACK.some(([a, b]) => j > a - 0.3 && j < b + 1.5) && j > 5,
+  ).map((j, i) => ({
+    at: j,
+    src: (i % 2 ? "whoosh-a" : "whoosh-b") as FxName,
+    volume: SHOT_CUTS.includes(j) ? 0.22 : 0.12,
+  })),
 ];
 
 // --- Subtítulos ----------------------------------------------------------------------

@@ -9,7 +9,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT, GREEN } from "./theme";
-import { f, HOOK } from "./timeline";
+import { f, HOOK, SEGMENTS } from "./timeline";
 
 // E01 · Hook en pantalla dividida: arriba el vídeo de referencia (V01, el chaval con
 // el bucal azul), abajo Yago reaccionando. En «Pues ojo» se va el vídeo de arriba y
@@ -46,7 +46,7 @@ export const HookSplit: React.FC = () => {
             transformOrigin: "0 0",
           }}
         >
-          <Video src={staticFile("video.mp4")} muted objectFit="cover" style={{ width: "100%", height: "100%" }} />
+          <Video src={staticFile("video.mp4")} muted trimBefore={Math.round(SEGMENTS[0][0] * fps)} objectFit="cover" style={{ width: "100%", height: "100%" }} />
         </div>
       </div>
       {/* arriba: vídeo de referencia */}

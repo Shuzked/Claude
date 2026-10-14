@@ -11,7 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
-import { JUMPS, punches, segmentsOut, toSrc } from "./timeline";
+import { BROLL, f, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -26,12 +26,41 @@ const TARGET = { x: 540, y: 640 };
 const EDGE_MARGIN = 14;
 
 const track = faceTrack as { fps: number; points: [number, number][] };
+// Tracking estabilizado por plano: media móvil de 1,2 s y, como mucho, ±50 px de la
+// mediana del plano (evita que la cámara «caiga» cuando el detector se pierde).
+const smooth: [number, number][] = (() => {
+  const P = track.points;
+  const bounds = [0, ...SHOT_CUTS, 1e9].map((s) => Math.round(s * track.fps));
+  const out: [number, number][] = P.map((p) => [p[0], p[1]]);
+  const half = Math.round(0.6 * track.fps);
+  for (let b = 0; b < bounds.length - 1; b++) {
+    const a = bounds[b];
+    const z = Math.min(P.length, bounds[b + 1]);
+    if (z <= a) continue;
+    const med = (k: 0 | 1) => {
+      const v = P.slice(a, z).map((p) => p[k]).sort((m, n) => m - n);
+      return v[Math.floor(v.length / 2)];
+    };
+    const mx = med(0);
+    const my = med(1);
+    for (let i = a; i < z; i++) {
+      let sx = 0;
+      let sy = 0;
+      let n = 0;
+      for (let j = Math.max(a, i - half); j < Math.min(z, i + half + 1); j++) {
+        sx += Math.max(mx - 50, Math.min(mx + 50, P[j][0]));
+        sy += Math.max(my - 50, Math.min(my + 50, P[j][1]));
+        n++;
+      }
+      out[i] = [sx / n, sy / n];
+    }
+  }
+  return out;
+})();
 const faceAt = (t: number) => {
-  const i = Math.min(
-    track.points.length - 1,
-    Math.max(0, Math.round(t * track.fps)),
-  );
-  return { x: track.points[i][0], y: track.points[i][1] };
+  if (t >= BROLL.from && t < BROLL.to) return { x: BROLL.face[0], y: BROLL.face[1] };
+  const i = Math.min(smooth.length - 1, Math.max(0, Math.round(t * track.fps)));
+  return { x: smooth[i][0], y: smooth[i][1] };
 };
 
 const FRAMING = [1.32, 1.6]; // medio, cerrado
@@ -74,7 +103,19 @@ export const cameraAt = (frame: number, fps: number) => {
   const y = Math.cos(frame / 53) * 5 + Math.sin(frame / 23) * 1.5;
   const rot = Math.sin(frame / 67) * 0.25;
 
-  const scale = base + drift + punch + slam;
+  const broll = t >= BROLL.from && t < BROLL.to;
+  const scale = (broll ? BROLL.scale + drift : base + drift) + punch + slam;
+
+  // barridos en los cortes: desenfoque de movimiento + empujón (como en los anteriores)
+  let blur = 0;
+  let whipY = 0;
+  for (const at of JUMPS) {
+    const k = frame - f(at);
+    if (k < -3 || k > 6) continue;
+    const a = k < 0 ? (k + 3) / 3 : Math.exp(-k / 1.8);
+    blur = Math.max(blur, 12 * a);
+    whipY += (k < 0 ? -1 : 1) * 36 * a;
+  }
   const face = faceAt(t);
   const clampAxis = (tr: number, o: number, size: number) =>
     Math.max(
@@ -91,16 +132,17 @@ export const cameraAt = (frame: number, fps: number) => {
     ORIGIN.y,
     1920,
   );
-  return { scale, x: trX + x, y: trY + y, rot, t };
+  return { scale, x: trX + x, y: trY + y + whipY, rot, t, blur };
 };
 
 export const Camera: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { scale, x, y, rot } = cameraAt(frame, fps);
+  const { scale, x, y, rot, blur } = cameraAt(frame, fps);
   const transform: React.CSSProperties = {
     transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
     transformOrigin: "50% 32%",
+    filter: blur > 0.3 ? `blur(${blur}px)` : undefined,
   };
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>

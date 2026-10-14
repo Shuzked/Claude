@@ -28,6 +28,7 @@ import {
 
 
 const NEON = "#3BFF2E";
+const RED = "#FF3B30";
 const INK = "#0A0A0A";
 const GLOW = "drop-shadow(0 0 10px rgba(4,228,0,0.6))";
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -142,24 +143,93 @@ const Lower: React.FC<{
   );
 };
 
-/** Fondo a pantalla completa para los planos negros del original. */
-const Stage: React.FC<{ from: number; to: number; children: React.ReactNode }> = ({
-  from,
-  to,
-  children,
-}) => {
-  const { t, ramp } = useClock();
-  if (t < from - 0.02 || t > to + 0.02) return null;
-  const o = ramp(from - 0.02, from + 0.12) * (1 - ramp(to - 0.12, to));
+/** Fondo a pantalla completa para los planos negros del original: el mismo de
+ *  «La rutina optimizada» (textura vintage con cuadrícula, grano, líneas de escaneo y
+ *  el título gigante en contorno), con cortinilla diagonal de borde verde. */
+const WIPE_IN = 0.42;
+const WIPE_OUT = 0.36;
+const Stage: React.FC<{
+  from: number;
+  to: number;
+  title: string;
+  children: React.ReactNode;
+}> = ({ from, to, title, children }) => {
+  const { t, frame, ramp } = useClock();
+  if (t < from - WIPE_IN / 2 - 0.02 || t > to + 0.02) return null;
+  const inQ = ramp(from - WIPE_IN / 2, from + WIPE_IN / 2, easeInOut);
+  const outQ = ramp(to - WIPE_OUT, to, easeInOut);
+  const a = inQ * 130;
+  const b = outQ * 130;
+  const clip = `polygon(${b}% 0, ${a}% 0, ${a - 30}% 100%, ${b - 30}% 100%)`;
+  const seed = Math.floor(frame / 2) % 9;
+  const flicker = 1 + Math.sin(frame * 1.7) * 0.015 + Math.sin(frame * 0.37) * 0.012;
+  const scratch = (frame * 37) % 97 < 5;
+  const scratchX = ((frame * 53) % 89) + 5;
+  const drift = (t - from) * 26;
+  const id = title.replace(/\W/g, "");
   return (
-    <AbsoluteFill
-      style={{
-        opacity: o,
-        background:
-          "radial-gradient(ellipse at 50% 35%, #18201a 0%, #0b0d0b 55%, #050505 100%)",
-      }}
-    >
-      {children}
+    <AbsoluteFill>
+      <AbsoluteFill style={{ clipPath: clip }}>
+        <AbsoluteFill style={{ background: "#121212", filter: `brightness(${flicker})` }}>
+          <AbsoluteFill
+            style={{
+              background:
+                "radial-gradient(ellipse 80% 45% at 50% 28%, rgba(255,255,255,0.06), transparent 70%)",
+            }}
+          />
+          <AbsoluteFill
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+              backgroundPosition: `${-drift * 0.3}px ${-drift * 0.15}px`,
+            }}
+          />
+          <svg width={4200} height={400} style={{ position: "absolute", top: 1470, left: 60 - drift, overflow: "visible" }}>
+            <defs>
+              <filter id={`outline-${id}`} x="-5%" y="-20%" width="110%" height="140%">
+                <feMorphology in="SourceAlpha" operator="dilate" radius={2.5} result="grown" />
+                <feComposite in="grown" in2="SourceAlpha" operator="out" result="ring" />
+                <feFlood floodColor="#ffffff" floodOpacity={0.08} />
+                <feComposite in2="ring" operator="in" />
+              </filter>
+            </defs>
+            <text x={0} y={330} fill="#ffffff" filter={`url(#outline-${id})`} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={330}>
+              {`${title} · ${title} · ${title}`.toUpperCase()}
+            </text>
+          </svg>
+          <svg width="100%" height="100%" style={{ position: "absolute", opacity: 0.2, mixBlendMode: "screen" }}>
+            <filter id={`bd-${id}-${seed}`}>
+              <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves={2} seed={seed} />
+              <feColorMatrix type="saturate" values="0" />
+            </filter>
+            <rect width="100%" height="100%" filter={`url(#bd-${id}-${seed})`} />
+          </svg>
+          <AbsoluteFill
+            style={{
+              background:
+                "repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px)",
+            }}
+          />
+          {scratch ? (
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: `${scratchX}%`, width: 1.5, background: "rgba(255,255,255,0.14)" }} />
+          ) : null}
+          <AbsoluteFill style={{ boxShadow: "inset 0 0 200px rgba(0,0,0,0.3)" }} />
+          {children}
+        </AbsoluteFill>
+      </AbsoluteFill>
+      {/* borde de la cortinilla */}
+      {inQ < 1 || outQ > 0 ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: GREEN,
+            clipPath: `polygon(${(inQ < 1 ? a : b) - 1.2}% 0, ${inQ < 1 ? a : b}% 0, ${(inQ < 1 ? a : b) - 30}% 100%, ${(inQ < 1 ? a : b) - 31.2}% 100%)`,
+            filter: GLOW,
+          }}
+        />
+      ) : null}
     </AbsoluteFill>
   );
 };
@@ -296,7 +366,7 @@ const Question: React.FC = () => {
   const b = pop(QUESTION.muscle - 0.05, 9);
   const card = pop(QUESTION.card, 10);
   return (
-    <Stage from={QUESTION.from} to={QUESTION.to}>
+    <Stage from={QUESTION.from} to={QUESTION.to} title="Bucal">
       <div
         style={{
           position: "absolute",
@@ -440,7 +510,7 @@ const Study: React.FC = () => {
     );
   };
   return (
-    <Stage from={STUDY.from} to={STUDY.to}>
+    <Stage from={STUDY.from} to={STUDY.to} title="Miró 2023">
       {/* página A: quién, qué y cómo */}
       <AbsoluteFill style={{ opacity: 1 - page, transform: `translateY(${-page * 60}px)` }}>
         <div
@@ -619,7 +689,7 @@ const Measure: React.FC = () => {
         <div>
           <div style={{ ...label, fontSize: 22, color: "rgba(255,255,255,0.6)" }}>Crecimiento muscular</div>
           <div style={{ ...display, fontSize: 64, marginTop: 6, transform: `scale(${q})`, transformOrigin: "left" }}>
-            <span style={{ textDecoration: t >= MEASURE.no ? "line-through" : "none", textDecorationColor: GREEN, textDecorationThickness: 6, opacity: t >= MEASURE.no ? 0.5 : 1 }}>+ ¿? kg</span>
+            <span style={{ textDecoration: t >= MEASURE.no ? "line-through" : "none", textDecorationColor: RED, textDecorationThickness: 6, opacity: t >= MEASURE.no ? 0.5 : 1 }}>+ ¿? kg</span>
           </div>
         </div>
         <div
@@ -631,7 +701,7 @@ const Measure: React.FC = () => {
             opacity: Math.min(1, no * 3),
           }}
         >
-          <div style={{ ...display, fontSize: 44, color: GREEN, border: `5px solid ${GREEN}`, padding: "10px 18px 6px", borderRadius: 10, filter: GLOW }}>
+          <div style={{ ...display, fontSize: 44, color: RED, border: `5px solid ${RED}`, padding: "10px 18px 6px", borderRadius: 10, filter: "drop-shadow(0 0 10px rgba(255,59,48,0.6))" }}>
             No medido
           </div>
         </div>
@@ -670,18 +740,81 @@ const Synth: React.FC = () => {
   );
 };
 
-const Dentist: React.FC = () => (
-  <Lower from={DENTIST.label} to={DENTIST.to + 0.1} top={260}>
-    <div style={{ display: "flex", justifyContent: "center" }}>
-      <Glass style={{ padding: "16px 28px 12px", display: "flex", alignItems: "center", gap: 16 }}>
-        <Tooth size={48} color={GREEN} />
-        <div style={{ ...display, fontSize: 38 }}>
-          Indicación dental: <span style={{ color: GREEN }}>otra cuestión</span>
+/** Plano del banco: «Otra cosa es que te lo haya indicado tu dentista». Una hoja de
+ *  indicación entra girando y en «dentista» cae el sello «Otra cuestión». */
+const Dentist: React.FC = () => {
+  const { t, pop, ramp } = useClock();
+  if (t < DENTIST.label - 0.1 || t > DENTIST.to + 0.05) return null;
+  const p = pop(DENTIST.label, 12, 170);
+  const lines = ramp(DENTIST.label + 0.15, DENTIST.label + 0.7);
+  const st = pop(DENTIST.stamp, 9, 260);
+  const out = ramp(DENTIST.to - 0.25, DENTIST.to, easeInOut);
+  return (
+    <AbsoluteFill style={{ opacity: 1 - out }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 150,
+          left: 230,
+          width: 620,
+          transform: `translateY(${(1 - p) * -420}px) rotate(${-4 + (1 - p) * 18}deg)`,
+          transformOrigin: "50% 0%",
+        }}
+      >
+        <div
+          style={{
+            background: "#F4F2EC",
+            borderRadius: 10,
+            padding: "26px 32px 30px",
+            boxShadow: "0 30px 60px rgba(0,0,0,0.55)",
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 16, borderBottom: "3px solid #1a1a1a", paddingBottom: 14 }}>
+            <Tooth size={56} color={INK} />
+            <div style={{ ...display, fontSize: 40, color: INK }}>Indicación dental</div>
+          </div>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              style={{
+                height: 4,
+                width: `${[86, 70, 52][i] * Math.min(1, Math.max(0, lines * 3 - i))}%`,
+                background: "rgba(10,10,10,0.25)",
+                borderRadius: 2,
+                marginTop: 26,
+              }}
+            />
+          ))}
+          {/* sello */}
+          <div
+            style={{
+              position: "absolute",
+              right: 26,
+              bottom: 22,
+              transform: `scale(${2.2 - 1.2 * st}) rotate(-12deg)`,
+              opacity: Math.min(1, st * 3),
+            }}
+          >
+            <div
+              style={{
+                ...display,
+                fontSize: 46,
+                color: "#02a800",
+                border: "6px solid #02a800",
+                borderRadius: 12,
+                padding: "10px 18px 6px",
+                mixBlendMode: "multiply",
+              }}
+            >
+              Otra cuestión
+            </div>
+          </div>
         </div>
-      </Glass>
-    </div>
-  </Lower>
-);
+      </div>
+    </AbsoluteFill>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // E08 · «Sígueme · Entrena con criterio» (mismo concepto minimalista del quiz)
