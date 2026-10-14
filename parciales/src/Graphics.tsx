@@ -506,24 +506,33 @@ const RomCarousel: React.FC<{
   const CX = 480; // centro del área de contenido (960 de ancho)
   const W = 300; // ancho base del esquema
   const gap = 30;
-  const rowW = items.length * W * SMALL + (items.length - 1) * gap;
+  // la fila de abajo solo cuenta los que ya han encogido (el último se queda grande),
+  // así siempre queda centrada y sin huecos
+  const shrinkOf = (i: number) =>
+    items[i + 1]
+      ? interpolate(
+          t,
+          [items[i + 1].at - 0.05, items[i + 1].at + 0.45],
+          [0, 1],
+          {
+            ...clamp,
+            easing: easeInOut,
+          },
+        )
+      : 0;
+  const rowCount = items.reduce((acc, _, i) => acc + shrinkOf(i), 0);
+  const rowW = rowCount * W * SMALL + Math.max(0, rowCount - 1) * gap;
   const current = items.filter((it) => t >= it.at).length - 1;
   return (
     <>
       {items.map((it, i) => {
         if (t < it.at) return null;
-        const next = items[i + 1];
         const enter = spring({
           frame: frame - it.at * fps,
           fps,
           config: { damping: 13, stiffness: 170, mass: 0.7 },
         });
-        const shrink = next
-          ? interpolate(t, [next.at - 0.05, next.at + 0.45], [0, 1], {
-              ...clamp,
-              easing: easeInOut,
-            })
-          : 0;
+        const shrink = shrinkOf(i);
         // grande en el centro → pequeño en su hueco de la fila
         const bigX = CX - (W * BIG) / 2;
         const smallX = CX - rowW / 2 + i * (W * SMALL + gap);
