@@ -432,15 +432,15 @@ const Cta: React.FC = () => {
           style={{
             position: "relative",
             marginTop: 14,
-            width: 760,
+            width: 860,
             height: 250,
             transform: `scale(${(0.3 + 0.7 * Math.max(key, t >= CTA.master + 0.7 ? c : 0)) * breathe}) rotate(${-3 + 2 * c}deg)`,
             opacity: Math.min(1, c * 2.5),
             filter: "drop-shadow(0 0 18px rgba(4,228,0,0.45))",
           }}
         >
-          <svg width={760} height={250} style={{ position: "absolute", inset: 0 }}>
-            <path d="M 10 12 L 750 4 L 740 186 L 240 196 L 140 246 L 154 196 L 18 200 Z" fill={GREEN} />
+          <svg width={860} height={250} style={{ position: "absolute", inset: 0 }}>
+            <path d="M 10 12 L 850 4 L 840 186 L 270 196 L 160 246 L 176 196 L 18 200 Z" fill={GREEN} />
           </svg>
           <div
             style={{
@@ -453,9 +453,10 @@ const Cta: React.FC = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 98,
+              fontSize: 86,
+              letterSpacing: 0,
               color: INK,
-              transform: `translateX(-8px) scale(${1 + 0.08 * Math.sin(Math.min(1, key) * Math.PI)})`,
+              transform: `translateX(-4px) scale(${1 + 0.08 * Math.sin(Math.min(1, key) * Math.PI)})`,
             }}
           >
             Sobrecarga
