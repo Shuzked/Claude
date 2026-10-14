@@ -456,9 +456,9 @@ export const visiblePages = captionPages.filter(
   (p) => p[0].start >= HOOK_END && pageStart(p) < p[p.length - 1].end + 0.1,
 );
 
-// TIC en cada palabra que aparece en pantalla (subtítulos y hook).
+// TIC solo en las palabras del hook; los subtítulos van sin tic (feedback del cliente).
 const tics: Sfx[] = words
-  .filter((w) => w.start >= TRIM && !sceneAt(w.start))
+  .filter((w) => w.start >= TRIM && w.start < HOOK_END)
   .map((w) => ({ at: w.start, src: "tic" as const, volume: 0.28 }));
 
 export const allSfx: Sfx[] = [...sfx, ...tics];
