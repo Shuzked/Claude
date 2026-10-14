@@ -4,6 +4,7 @@ import { Camera } from "./Camera";
 import { Captions } from "./Captions";
 import { Finish } from "./Finish";
 import { Graphics } from "./Graphics";
+import { DentistClip } from "./DentistClip";
 import { HookSplit } from "./Hook";
 import { Sound } from "./Sound";
 import { FPS, HEIGHT, WIDTH } from "./theme";
@@ -13,6 +14,7 @@ export const Bucal: React.FC = () => (
   <AbsoluteFill style={{ backgroundColor: "black" }}>
     <Camera />
     <HookSplit />
+    <DentistClip />
     <Graphics />
     <Finish />
     <Captions />
