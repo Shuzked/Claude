@@ -109,7 +109,6 @@ export const punches: Punch[] = [
   { at: 4.16, amount: 0.07, hold: 1.2 }, // «más detalle en tus piernas»
   { at: 33.36, amount: 0.07, hold: 1.0 }, // «lo realmente interesante»
   { at: 41.28, amount: 0.04, hold: 0.9 }, // «la conclusión…»
-  { at: 42.4, amount: 0.14, hold: 1.25 }, // el doble: zoom de golpe (burla)
   { at: 50.92, amount: 0.04, hold: 2.8 }, // «una repetición incompleta…»
   { at: 55.4, amount: 0.07, hold: 2.6 }, // «te falta una decisión más importante» (E07)
   { at: 65.44, amount: 0.04, hold: 2.3 }, // «pues justo esto…»
@@ -209,20 +208,20 @@ export const scenes: Scene[] = [
   // rótulos mínimos mientras brilla el músculo (sin velo: se ve la persona)
   {
     id: "lblRf1",
-    from: 7.7,
+    from: 10.2,
     to: 11.9,
     title: "Recto femoral",
     mode: "overlay",
     scrim: false,
   },
+  // el estudio enlaza con las tres formas en la misma escena a pantalla completa
   {
     id: "study",
     from: 12.1,
-    to: OUT_AFTER_CUT(16.44),
+    to: OUT_AFTER_CUT(21.76),
     title: "Estudio",
     mode: "full",
   },
-  { id: "forms", from: 16.46, to: 21.7, title: "Recorrido", mode: "overlay" },
   {
     id: "lblRf2",
     from: 24.85,
@@ -245,15 +244,6 @@ export const scenes: Scene[] = [
     to: OUT_AFTER_CUT(40.08),
     title: "Tramo",
     mode: "full",
-  },
-  // el doble: edición de burla
-  {
-    id: "burla",
-    from: 42.28,
-    to: 44.15,
-    title: "Burla",
-    mode: "overlay",
-    scrim: false,
   },
   {
     id: "master",
@@ -285,7 +275,6 @@ const designed: Sfx[] = [
   // remates puntuales: solo snaps
   { at: 4.16, src: "snap", volume: 0.3 },
   { at: 33.36, src: "snap", volume: 0.3 },
-  { at: 42.4, src: "snap", volume: 0.35 },
 ];
 
 const near = (list: Sfx[], at: number, gap: number) =>
@@ -351,47 +340,61 @@ export const T = {
 // enciende, brilla un momento y se apaga. Mientras, la cámara se acerca al muslo.
 export type Glow = { at: number; end: number };
 export const glows: Glow[] = [
-  { at: 7.8, end: 9.0 }, // «recto femoral»
-  { at: 10.32, end: 11.7 }, // «parte anterior de tus muslos»
+  { at: 10.32, end: 11.7 }, // «parte anterior de tus muslos»: recto femoral
   { at: 24.96, end: 26.5 }, // «más desarrollo del recto femoral»
   { at: 28.84, end: 30.4 }, // «vasto lateral»
-  { at: 34.88, end: 36.5 }, // «las parciales al final del recorrido» (haciendo el ejercicio)
 ];
 /** Fotogramas con capa de brillo generada (segundos del original). */
 export const GLOW_FRAMES: [number, number][] = [
-  [7.6, 11.96],
+  [9.6, 11.96],
   [24.7, 27.64],
   [28.6, 32.44],
-  [34.5, 36.8],
 ];
 
-export type Focus = { from: number; to: number; zoom: number };
+// Encuadres: «thighs» = muslos, «legs» = piernas enteras (se ve el movimiento),
+// «face» = cara (nariz de la pose), «left» = persona a la izquierda para la lista.
+export type Focus = {
+  from: number;
+  to: number;
+  zoom: number;
+  on: "thighs" | "legs" | "face" | "left";
+};
 export const focuses: Focus[] = [
-  { from: 7.72, to: 8.72, zoom: 1.5 },
-  { from: 10.15, to: 11.9, zoom: 1.4 },
-  { from: 24.85, to: 26.7, zoom: 1.6 },
-  { from: 28.75, to: 30.5, zoom: 1.45 },
-  { from: 34.75, to: 36.55, zoom: 1.5 },
+  { from: 10.15, to: 11.9, zoom: 1.4, on: "thighs" },
+  { from: 24.85, to: 26.7, zoom: 1.6, on: "thighs" },
+  { from: 28.75, to: 30.5, zoom: 1.45, on: "thighs" },
+  { from: 34.6, to: 36.62, zoom: 1.3, on: "legs" },
+  { from: 40.15, to: 42.32, zoom: 1.55, on: "face" },
+  { from: 42.3, to: 43.84, zoom: 1.32, on: "face" }, // el doble: la pose ya es la suya
+  { from: 57.84, to: 65.15, zoom: 1.45, on: "left" },
 ];
 
-// --- El doble (burla) -------------------------------------------------------
-export const BURLA = {
-  nose: 42.55, // nariz de payaso
-  wobble: [42.4, 43.7] as [number, number],
-  stamp: 43.6, // «FALSO»
+// --- El doble -----------------------------------------------------------------
+// Aparece de golpe: esa parte va en blanco y negro, el de atrás desenfocado
+// (public/bgblur) y el sello «FALSO» entra pronto y se queda.
+export const DOUBLE = {
+  from: 42.3,
+  to: 43.84,
+  stamp: 42.75,
+  stampEnd: 44.35,
 };
 
-// --- Objetos en las manos y donde apunta ------------------------------------
-export const handItems = [
-  { at: 45.04, end: 49.55, hand: "l" as const, kind: "tramo" as const }, // «qué parte del recorrido»
-  { at: 47.28, end: 49.55, hand: "r" as const, kind: "musculo" as const }, // «qué musculatura»
+// --- Hologramas en las manos (0:45) ------------------------------------------
+export const HOLO = {
+  a: { at: 45.04, hand: "l" as const }, // «qué parte del recorrido»
+  grab: { at: 46.72, hand: "r" as const }, // coge algo de la otra mano: puntito de luz
+  b: { at: 47.42, hand: "r" as const }, // abre la mano: proyecta «qué músculo»
+  orbit: [49.0, 49.62] as [number, number], // junta las manos: orbitan y se difuminan
+};
+
+// --- Lista de la parte final (0:57) --------------------------------------------
+export const listItems = [
+  { at: 57.8, text: "Cuándo usarla" },
+  { at: 59.12, text: "Si sustituye" },
+  { at: 61.56, text: "O se añade" },
+  { at: 63.32, text: "Cómo encajarla" },
 ];
-export const pointItems = [
-  { at: 59.12, kind: "sustituir" as const },
-  { at: 61.92, kind: "anadir" as const },
-  { at: 63.32, kind: "rutina" as const },
-];
-export const POINT_END = 65.1;
+export const LIST_END = 65.12;
 
 const graphicsSfx: Sfx[] = [
   ...headline(...headlineWordTimes),
@@ -404,25 +407,16 @@ const graphicsSfx: Sfx[] = [
   ...pop(T.rfSub, T.vlSub),
   // tramo
   ...pop(T.tramoFinal, T.tramoFinal + 0.3),
-  // burla
-  { at: BURLA.nose, src: "boing", volume: 0.5 },
-  ...[42.32, 42.56, 42.84, 43.28, 43.44].map((t) => ({
-    at: t,
-    src: "pop" as const,
-    volume: 0.25,
-  })),
-  { at: BURLA.stamp, src: "stamp", volume: 0.5 },
-  { at: BURLA.stamp, src: "buzzer", volume: 0.3 },
-  { at: BURLA.stamp + 0.2, src: "trombone", volume: 0.3 },
-  // objetos en las manos y donde apunta
-  ...handItems.flatMap((h) => [
-    { at: h.at, src: "pop" as const, volume: 0.3 },
-    { at: h.at, src: "shine" as const, volume: 0.2 },
-  ]),
-  ...pointItems.flatMap((p) => [
-    { at: p.at, src: "pop" as const, volume: 0.3 },
-    { at: p.at - 0.05, src: "whoosh-b" as const, volume: 0.18 },
-  ]),
+  // el doble
+  { at: DOUBLE.from, src: "whoosh-a", volume: 0.3 },
+  { at: DOUBLE.stamp, src: "stamp", volume: 0.5 },
+  // hologramas
+  { at: HOLO.a.at, src: "shine", volume: 0.35 },
+  { at: HOLO.grab.at, src: "pop", volume: 0.2 },
+  { at: HOLO.b.at, src: "shine", volume: 0.35 },
+  { at: HOLO.orbit[0], src: "whoosh-b", volume: 0.2 },
+  // lista
+  ...listItems.map((l) => ({ at: l.at, src: "pop" as const, volume: 0.28 })),
   // masterclass
   ...headline(T.master, T.master + 0.6),
   { at: T.master + 0.7, src: "ding", volume: 0.18 },

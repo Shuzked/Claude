@@ -209,17 +209,19 @@ export const RomDiagram: React.FC<{
   from: number; // flexión inicial (°)
   to: number; // flexión final (°)
   title: string;
-  active: boolean; // la que se nombra ahora: en verde y repitiendo
+  active: boolean; // la que se nombra ahora: en verde
   scale?: number;
-}> = ({ at, from, to, title, active, scale = 1 }) => {
+  pop?: boolean; // entrada con muelle (desactivar si la anima el contenedor)
+}> = ({ at, from, to, title, active, scale = 1, pop = true }) => {
   const t = useT();
-  const p = usePop(at, 11);
+  const popIn = usePop(at, 11);
+  const p = pop ? popIn : 1;
   const sweep = interpolate(t, [at + 0.1, at + 0.6], [0, 1], {
     ...clamp,
     easing: easeOut,
   });
-  // repeticiones en bucle dentro del tramo (solo la activa)
-  const cycle = active ? (1 - Math.cos((t - at) * 4.2)) / 2 : 0;
+  // repeticiones en bucle dentro del tramo: nunca dejan de moverse
+  const cycle = (1 - Math.cos((t - at) * 4.2)) / 2;
   const angle = from + (to - from) * cycle;
   const shin = polar(angle, SHIN_LEN);
   const color = active ? GREEN : "rgba(255,255,255,0.55)";

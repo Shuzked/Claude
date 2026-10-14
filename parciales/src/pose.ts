@@ -1,7 +1,7 @@
 import pose from "./pose.json";
 
 // Pose por fotograma (MediaPipe, suavizada): caderas, rodillas, tobillos, codos,
-// muñecas, índices, nariz y ojos, en coordenadas del vídeo 1080×1920.
+// hombros, muñecas, índices, meñiques, pulgares, nariz y ojos, en coordenadas del vídeo 1080×1920.
 export type Pt = [number, number, number];
 export type Pose = Record<
   | "lh"
@@ -18,7 +18,13 @@ export type Pose = Record<
   | "li"
   | "ri"
   | "ley"
-  | "rey",
+  | "rey"
+  | "lp"
+  | "rp"
+  | "lt"
+  | "rt"
+  | "ls"
+  | "rs",
   Pt
 >;
 

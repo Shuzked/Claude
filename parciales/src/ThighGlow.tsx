@@ -7,7 +7,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { GLOW_FRAMES, glows, TRIM } from "./timeline";
+import { DOUBLE, GLOW_FRAMES, glows, TRIM } from "./timeline";
 
 // El músculo se enciende: rotoscopia del muslo (la propia piel teñida de verde,
 // con su textura) que sube, brilla un momento y se apaga. Va dentro de la cámara
@@ -53,6 +53,32 @@ export const ThighGlow: React.FC = () => {
         height: "100%",
         opacity: Math.min(1, e) * MAX,
         filter: `drop-shadow(0 0 ${10 + 14 * e}px rgba(4,228,0,${0.55 * Math.min(1, e)}))`,
+      }}
+    />
+  );
+};
+
+// Cuando aparece el doble: todo lo que no es él, desenfocado (capa precalculada).
+export const BgBlur: React.FC<{ filter?: string }> = ({ filter }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = TRIM + frame / fps;
+  if (t < DOUBLE.from + 0.02 || t >= DOUBLE.to - 0.02) return null;
+  const n = String(Math.round(t * 25)).padStart(4, "0");
+  const o = interpolate(t, [DOUBLE.from, DOUBLE.from + 0.25], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  return (
+    <Img
+      src={staticFile(`bgblur/b_${n}.png`)}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        opacity: o,
+        filter,
       }}
     />
   );

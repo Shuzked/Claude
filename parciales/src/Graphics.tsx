@@ -18,7 +18,9 @@ import {
   SCENE_OUT,
   scenes,
   SOURCE_END,
-  BURLA,
+  DOUBLE,
+  LIST_END,
+  listItems,
   T,
   type HeadlineLine,
   type Scene,
@@ -539,104 +541,178 @@ const Rise: React.FC<{
 // ---------------------------------------------------------------------------
 // E03 · el estudio (pantalla completa)
 
-const StudyScene: React.FC = () => (
-  <>
-    <Headline lines={headlines.study} origin={sceneFrom("study")} top={520} />
-    <Rise
-      at={rel("study", T.context)}
-      style={{ position: "absolute", top: 680, left: 0, right: 0 }}
-    >
-      <div style={{ ...body(40, "rgba(255,255,255,0.75)"), fontWeight: 800 }}>
-        45 mujeres · 12 semanas
-      </div>
-    </Rise>
-    <Headline
-      lines={headlines.studySerie}
-      origin={sceneFrom("study")}
-      size={100}
-      top={940}
-    />
-  </>
-);
-
-// ---------------------------------------------------------------------------
-// E03 · las tres formas, mientras las lee del móvil (sobre la persona)
-
-const FORMS = [
-  { title: "Completa", from: 100, to: 30 },
-  { title: "Parcial inicial", from: 100, to: 65 },
-  { title: "Parcial final", from: 65, to: 30 },
-];
-
-const FormsScene: React.FC = () => {
+/** Carrusel de esquemas: el que se nombra sale en grande en el centro; al nombrar
+ *  el siguiente, encoge a su hueco en la fila inferior. Todos siguen moviéndose y el
+ *  que se está nombrando lleva un pequeño pulso de escala. Tiempos relativos a la escena. */
+const RomCarousel: React.FC<{
+  items: { title: string; from: number; to: number; at: number }[];
+  bigTop: number;
+  smallTop: number;
+}> = ({ items, bigTop, smallTop }) => {
   const t = useT();
-  const times = T.forms.map((x) => rel("forms", x));
-  const current = times.filter((x) => t >= x).length - 1;
-  return (
-    <div style={{ paddingTop: 130 }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 18 }}>
-        {FORMS.map((fm, i) => (
-          <RomDiagram
-            key={fm.title}
-            at={times[i]}
-            from={fm.from}
-            to={fm.to}
-            title={fm.title}
-            active={i === current}
-            scale={0.98}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// E05 · dos parciales no son lo mismo (pantalla completa)
-
-const TramoScene: React.FC = () => {
-  const t = useT();
-  const pulse = rel("tramo", T.tramoInitial);
-  const both = rel("tramo", 36.7);
+  const { fps } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const BIG = 2.4;
+  const SMALL = 1.0;
+  const CX = 480; // centro del área de contenido (960 de ancho)
+  const W = 300; // ancho base del esquema
+  const gap = 30;
+  const rowW = items.length * W * SMALL + (items.length - 1) * gap;
+  const current = items.filter((it) => t >= it.at).length - 1;
   return (
     <>
-      <Headline
-        lines={headlines.tramo}
-        origin={sceneFrom("tramo")}
-        size={96}
-        top={420}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: 760,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-          gap: 40,
-        }}
-      >
-        <RomDiagram
-          at={both}
-          from={100}
-          to={65}
-          title="Parcial inicial"
-          active={t >= pulse}
-          scale={1.3}
-        />
-        <RomDiagram
-          at={both + 0.15}
-          from={65}
-          to={30}
-          title="Parcial final"
-          active={t < pulse}
-          scale={1.3}
-        />
-      </div>
+      {items.map((it, i) => {
+        if (t < it.at) return null;
+        const next = items[i + 1];
+        const enter = spring({
+          frame: frame - it.at * fps,
+          fps,
+          config: { damping: 13, stiffness: 170, mass: 0.7 },
+        });
+        const shrink = next
+          ? interpolate(t, [next.at - 0.05, next.at + 0.45], [0, 1], {
+              ...clamp,
+              easing: easeInOut,
+            })
+          : 0;
+        // grande en el centro → pequeño en su hueco de la fila
+        const bigX = CX - (W * BIG) / 2;
+        const smallX = CX - rowW / 2 + i * (W * SMALL + gap);
+        const x = bigX + (smallX - bigX) * shrink;
+        const y = bigTop + (smallTop - bigTop) * shrink;
+        const k = (BIG + (SMALL - BIG) * shrink) * (0.6 + 0.4 * enter);
+        // pulso de escala al nombrarse
+        const pulse =
+          i === current
+            ? 1 +
+              0.05 *
+                Math.exp(-Math.max(0, t - it.at - 0.2) * 3) *
+                Math.sin((t - it.at) * 9)
+            : 1;
+        return (
+          <div
+            key={it.title}
+            style={{
+              position: "absolute",
+              left: x,
+              top: y,
+              width: W,
+              transform: `scale(${k * pulse})`,
+              transformOrigin: "0 0",
+              opacity: Math.min(1, enter * 2) * (i === current ? 1 : 0.7),
+            }}
+          >
+            <RomDiagram
+              at={it.at}
+              from={it.from}
+              to={it.to}
+              title={it.title}
+              active={i === current}
+              pop={false}
+            />
+          </div>
+        );
+      })}
     </>
   );
 };
+
+const FORMS_AT = 16.32; // el estudio deja paso a las tres formas
+
+const StudyScene: React.FC = () => {
+  const t = useT();
+  const exit = interpolate(
+    t,
+    [rel("study", FORMS_AT), rel("study", FORMS_AT) + 0.3],
+    [0, 1],
+    { ...clamp, easing: easeInOut },
+  );
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 1 - exit,
+          transform: `translateY(${-exit * 120}px) scale(${1 - 0.1 * exit})`,
+        }}
+      >
+        <Headline
+          lines={headlines.study}
+          origin={sceneFrom("study")}
+          top={520}
+        />
+        <Rise
+          at={rel("study", T.context)}
+          style={{ position: "absolute", top: 680, left: 0, right: 0 }}
+        >
+          <div
+            style={{ ...body(40, "rgba(255,255,255,0.75)"), fontWeight: 800 }}
+          >
+            45 mujeres · 12 semanas
+          </div>
+        </Rise>
+        <Headline
+          lines={headlines.studySerie}
+          origin={sceneFrom("study")}
+          size={100}
+          top={940}
+        />
+      </div>
+      <RomCarousel
+        bigTop={250}
+        smallTop={1150}
+        items={[
+          {
+            title: "Completa",
+            from: 100,
+            to: 30,
+            at: rel("study", T.forms[0]),
+          },
+          {
+            title: "Parcial inicial",
+            from: 100,
+            to: 65,
+            at: rel("study", T.forms[1]),
+          },
+          {
+            title: "Parcial final",
+            from: 65,
+            to: 30,
+            at: rel("study", T.forms[2]),
+          },
+        ]}
+      />
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// E05 · dos parciales no son lo mismo (pantalla completa, mismo carrusel)
+
+const TramoScene: React.FC = () => (
+  <>
+    <Headline
+      lines={headlines.tramo}
+      origin={sceneFrom("tramo")}
+      size={92}
+      top={230}
+    />
+    <RomCarousel
+      bigTop={440}
+      smallTop={1230}
+      items={[
+        { title: "Parcial final", from: 65, to: 30, at: rel("tramo", 36.68) },
+        {
+          title: "Parcial inicial",
+          from: 100,
+          to: 65,
+          at: rel("tramo", T.tramoInitial),
+        },
+      ]}
+    />
+  </>
+);
 
 // ---------------------------------------------------------------------------
 // Rótulo mínimo mientras brilla el músculo (sin velo, se ve la persona)
@@ -715,75 +791,98 @@ const LblVl: React.FC = () => (
 );
 
 // ---------------------------------------------------------------------------
-// Burla: el doble repite el mito con subtítulos «de burla» y se lleva un FALSO
+// El doble: sello «FALSO» (fuera de las escenas, así los subtítulos siguen)
 
-const MOCK = [
-  { text: "hAcEr", at: 42.32 },
-  { text: "MeNoS", at: 42.56 },
-  { text: "rEcOrRiDo", at: 42.84 },
-  { text: "Es", at: 43.28 },
-  { text: "MeJoR", at: 43.44 },
-];
-
-const MockWord: React.FC<{ text: string; at: number; i: number }> = ({
-  text,
-  at,
-  i,
-}) => {
-  const p = useSpringAt(at, 7);
+const FalsoLayer: React.FC = () => {
   const t = useT();
-  if (t < at) return null;
-  const wob = Math.sin((t - at) * 16 + i * 2) * 5;
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        transform: `scale(${0.3 + 0.7 * p}) rotate(${(i % 2 ? 7 : -7) + wob}deg)`,
-        margin: "0 10px",
-      }}
-    >
-      {text}
-    </span>
-  );
-};
-
-const BurlaScene: React.FC = () => {
-  const origin = sceneFrom("burla");
-  const t = useT();
-  const stampAt = rel("burla", BURLA.stamp);
-  const fade = interpolate(
+  const out = interpolate(
     t,
-    [stampAt - 0.05, stampAt + 0.1],
-    [1, 0.35],
+    [DOUBLE.stampEnd - DOUBLE.stamp - 0.25, DOUBLE.stampEnd - DOUBLE.stamp],
+    [1, 0],
     clamp,
   );
   return (
-    <>
-      <div
-        style={{
-          position: "absolute",
-          top: 110,
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          fontFamily: FONT,
-          fontWeight: 900,
-          fontSize: 84,
-          color: "#FFE14D",
-          WebkitTextStroke: "11px rgba(0,0,0,0.92)",
-          paintOrder: "stroke fill",
-          opacity: fade,
-          padding: "0 40px",
-        }}
-      >
-        {MOCK.map((w, i) => (
-          <MockWord key={i} text={w.text} at={w.at - origin} i={i} />
-        ))}
+    <AbsoluteFill style={{ opacity: out }}>
+      <Stamp at={0} text="Falso" top={860} />
+    </AbsoluteFill>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Lista de la parte final: la persona a la izquierda y las ideas a la derecha,
+// donde apunta. Cada una entra al nombrarse y la actual queda resaltada.
+
+const ListLayer: React.FC = () => {
+  const t = useT();
+  const { fps } = useVideoConfig();
+  const frame = useCurrentFrame();
+  const t0 = listItems[0].at;
+  const out = interpolate(
+    t,
+    [LIST_END - t0 - 0.35, LIST_END - t0],
+    [1, 0],
+    clamp,
+  );
+  const current = listItems.filter((l) => t >= l.at - t0).length - 1;
+  return (
+    <AbsoluteFill style={{ opacity: out }}>
+      <div style={{ position: "absolute", left: 640, top: 450, width: 420 }}>
+        {listItems.map((l, i) => {
+          const at = l.at - t0;
+          if (t < at) return null;
+          const p = spring({
+            frame: frame - at * fps,
+            fps,
+            config: { damping: 13, stiffness: 190, mass: 0.6 },
+          });
+          const on = i === current;
+          return (
+            <div
+              key={l.text}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+                height: 104,
+                transform: `translateX(${(1 - p) * 80}px) scale(${on ? 1 : 0.92})`,
+                transformOrigin: "0 50%",
+                opacity: Math.min(1, p * 2) * (on ? 1 : 0.55),
+              }}
+            >
+              <div
+                style={{
+                  width: 54,
+                  height: 54,
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: on ? GREEN : "rgba(20,20,20,0.85)",
+                  border: `2.5px solid ${on ? GREEN : "rgba(255,255,255,0.35)"}`,
+                  filter: on ? GLOW : undefined,
+                  ...display,
+                  fontSize: 30,
+                  color: on ? "#0A0A0A" : PAPER,
+                  textShadow: "none",
+                }}
+              >
+                {i + 1}
+              </div>
+              <div
+                style={{
+                  ...display,
+                  fontSize: 46,
+                  WebkitTextStroke: "8px rgba(0,0,0,0.85)",
+                  paintOrder: "stroke fill",
+                }}
+              >
+                {l.text}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <Stamp at={stampAt} text="Falso" top={-170} />
-    </>
+    </AbsoluteFill>
   );
 };
 
@@ -793,8 +892,6 @@ const BurlaScene: React.FC = () => {
 const MasterScene: React.FC = () => {
   const a = useSpringAt(rel("master", T.master), 10);
   const b = useSpringAt(rel("master", T.master) + 0.6, 9);
-  const t = useT();
-  const ring = (t * 0.8) % 1;
   return (
     <div
       style={{
@@ -813,31 +910,6 @@ const MasterScene: React.FC = () => {
           opacity: Math.min(1, a * 2),
         }}
       >
-        <svg
-          width={92}
-          height={92}
-          viewBox="0 0 92 92"
-          style={{ overflow: "visible", filter: GLOW }}
-        >
-          <circle
-            cx={46}
-            cy={46}
-            r={40 + ring * 16}
-            fill="none"
-            stroke={GREEN}
-            strokeWidth={3}
-            opacity={1 - ring}
-          />
-          <circle
-            cx={46}
-            cy={46}
-            r={40}
-            fill="none"
-            stroke={GREEN}
-            strokeWidth={5}
-          />
-          <path d="M 36 28 L 66 46 L 36 64 Z" fill={GREEN} />
-        </svg>
         <div style={{ ...display, fontSize: 104 }}>Masterclass</div>
       </div>
       <div
@@ -951,18 +1023,30 @@ export const SceneBackdrops: React.FC = () => (
 const SCENES: Record<string, React.FC> = {
   lblRf1: LblRf1,
   study: StudyScene,
-  forms: FormsScene,
   lblRf2: LblRf2,
   lblVl: LblVl,
   tramo: TramoScene,
-  burla: BurlaScene,
   master: MasterScene,
   cta: CtaScene,
 };
 
-/** Capa por encima del vídeo: contenido de cada escena. */
+/** Capa por encima del vídeo: contenido de cada escena y capas sueltas. */
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
+    <Sequence
+      from={f(DOUBLE.stamp)}
+      durationInFrames={f(DOUBLE.stampEnd) - f(DOUBLE.stamp)}
+      name="Sello FALSO"
+    >
+      <FalsoLayer />
+    </Sequence>
+    <Sequence
+      from={f(listItems[0].at)}
+      durationInFrames={f(LIST_END) - f(listItems[0].at)}
+      name="Lista final"
+    >
+      <ListLayer />
+    </Sequence>
     {scenes.map((s) => {
       const C = SCENES[s.id];
       return (

@@ -10,13 +10,14 @@ import {
   useVideoConfig,
 } from "remotion";
 import { HookCutout, HookFront, HookWords } from "./Hook";
-import { ThighGlow } from "./ThighGlow";
+import { BgBlur, ThighGlow } from "./ThighGlow";
 import faceTrack from "./faceTrack.json";
 import { poseAt } from "./pose";
 import { Tracked } from "./Tracked";
 import {
-  BURLA,
+  DOUBLE,
   focuses,
+  type Focus,
   impacts,
   punches,
   shots,
@@ -166,7 +167,39 @@ const useCamera = () => {
     1920,
   );
 
-  // 9. enfoque al muslo: mezcla el encuadre de la cara con uno centrado en los muslos
+  // 9. encuadres guiados por la pose (muslos, piernas, cara, persona a la izquierda).
+  //    El centro se promedia en los últimos fotogramas para que los cambios de
+  //    sujeto (el doble) sean un paneo rápido y suave, no un salto.
+  const center = (on: Focus["on"]) => {
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (let k = 0; k < 9; k++) {
+      const p = poseAt(t - k * 0.04);
+      if (!p) continue;
+      const pts =
+        on === "thighs"
+          ? [p.lh, p.rh, p.lk, p.rk]
+          : on === "legs"
+            ? [p.lh, p.rh, p.lk, p.rk, p.la, p.ra]
+            : on === "face"
+              ? [p.nose]
+              : [p.ls, p.rs, p.lh, p.rh];
+      const wk = 1 - k / 10;
+      for (const q of pts) {
+        sx += q[0] * wk;
+        sy += q[1] * wk;
+        n += wk;
+      }
+    }
+    return n ? { x: sx / n, y: sy / n } : null;
+  };
+  const SCREEN: Record<Focus["on"], { x: number; y: number }> = {
+    thighs: { x: 540, y: 1060 },
+    legs: { x: 540, y: 1000 },
+    face: { x: 540, y: 720 },
+    left: { x: 300, y: 940 },
+  };
   let fScale = scale;
   let fX = trX;
   let fY = trY;
@@ -183,52 +216,43 @@ const useCamera = () => {
         easing: Easing.bezier(0.65, 0, 0.35, 1),
       }),
     );
-    const p = poseAt(t);
-    if (w <= 0 || !p) continue;
-    const c = {
-      x: (p.lh[0] + p.rh[0] + p.lk[0] + p.rk[0]) / 4,
-      y: (p.lh[1] + p.rh[1] + p.lk[1] + p.rk[1]) / 4,
-    };
+    if (w <= 0) continue;
+    const c = center(fc.on);
+    if (!c) continue;
     const zs = fc.zoom + punch * 0.5;
     const clampF = (tr: number, o: number, size: number) =>
       Math.max(
         -(zs - 1) * (size - o) + EDGE_MARGIN,
         Math.min((zs - 1) * o - EDGE_MARGIN, tr),
       );
-    const zx = clampF(540 - ORIGIN.x - zs * (c.x - ORIGIN.x), ORIGIN.x, 1080);
-    const zy = clampF(1060 - ORIGIN.y - zs * (c.y - ORIGIN.y), ORIGIN.y, 1920);
-    fScale = scale + (zs - scale) * w;
-    fX = trX + (zx - trX) * w;
-    fY = trY + (zy - trY) * w;
+    const target = SCREEN[fc.on];
+    const zx = clampF(
+      target.x - ORIGIN.x - zs * (c.x - ORIGIN.x),
+      ORIGIN.x,
+      1080,
+    );
+    const zy = clampF(
+      target.y - ORIGIN.y - zs * (c.y - ORIGIN.y),
+      ORIGIN.y,
+      1920,
+    );
+    fScale += (zs - fScale) * w;
+    fX += (zx - fX) * w;
+    fY += (zy - fY) * w;
   }
-
-  // 10. burla: tambaleo de dibujos animados
-  const wob = interpolate(
-    t,
-    [
-      BURLA.wobble[0],
-      BURLA.wobble[0] + 0.15,
-      BURLA.wobble[1] - 0.2,
-      BURLA.wobble[1],
-    ],
-    [0, 1, 1, 0],
-    {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-    },
-  );
 
   return {
     scale: fScale,
     x: fX + x + shakeX,
     y: fY + y + shakeY + whipY,
-    rot: rot + Math.sin(t * 13) * 2.4 * wob,
+    rot,
     blur,
+    t,
   };
 };
 
 export const Camera: React.FC = () => {
-  const { scale, x, y, rot, blur } = useCamera();
+  const { scale, x, y, rot, blur, t } = useCamera();
   const { fps } = useVideoConfig();
   const transform: React.CSSProperties = {
     transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
@@ -236,7 +260,20 @@ export const Camera: React.FC = () => {
     transformOrigin: "50% 32%",
   };
   // color original del vídeo: sin etalonaje, solo el desenfoque de los barridos
-  const look = blur > 0.3 ? `blur(${blur}px)` : undefined;
+  // la aparición del doble va en blanco y negro
+  const gray = interpolate(
+    t,
+    [DOUBLE.from - 0.04, DOUBLE.from + 0.12, DOUBLE.to - 0.06, DOUBLE.to],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const look =
+    [
+      blur > 0.3 ? `blur(${blur}px)` : "",
+      gray > 0.01 ? `grayscale(${gray}) contrast(${1 + 0.08 * gray})` : "",
+    ]
+      .join(" ")
+      .trim() || undefined;
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>
       <AbsoluteFill style={transform}>
@@ -246,6 +283,7 @@ export const Camera: React.FC = () => {
           objectFit="cover"
           style={{ width: "100%", height: "100%", filter: look }}
         />
+        <BgBlur filter={look} />
       </AbsoluteFill>
       {/* hook: las palabras van en coordenadas de pantalla (siempre caben) y el
           recorte de la persona se pinta encima con la MISMA transformación que
