@@ -13,7 +13,7 @@ import { DOUBLE, GLOW_FRAMES, glows, TRIM } from "./timeline";
 // con su textura) que sube, brilla un momento y se apaga. Va dentro de la cámara
 // virtual, así que sigue exactamente los zooms.
 
-const MAX = 0.9; // verde lima luminoso con glow (referencias del cliente) // sutil: se sigue viendo el músculo
+const MAX = 0.9; // verde lima luminoso con glow (referencias del cliente)
 
 const envelope = (t: number) => {
   let e = 0;
