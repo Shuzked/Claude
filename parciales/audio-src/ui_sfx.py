@@ -61,4 +61,44 @@ thud = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 14)
 slap = bp(rng.standard_normal(n), 1200, 6000) * np.exp(-t * 60) * 0.6
 save("stamp.wav", np.tanh((thud + slap) * 2), 0.8)
 
+# Boing de dibujos: muelle que oscila hacia arriba (nariz de payaso)
+n = int(0.55 * SR)
+t = np.arange(n) / SR
+f = 180 + 260 * (1 - np.exp(-t * 9)) + 60 * np.sin(2 * np.pi * 11 * t) * np.exp(-t * 4)
+boing = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 5.5) * np.minimum(1, t / 0.004)
+save("boing.wav", np.tanh(boing * 1.4), 0.6)
+
+# Zumbador de respuesta incorrecta
+n = int(0.6 * SR)
+t = np.arange(n) / SR
+saw = 2 * ((t * 110) % 1) - 1 + 0.6 * (2 * ((t * 116.5) % 1) - 1)
+buzz = sosfilt(butter(2, 1800, btype="low", fs=SR, output="sos"), saw)
+env = np.minimum(1, t / 0.01) * np.where(t < 0.5, 1, np.exp(-(t - 0.5) * 40))
+save("buzzer.wav", np.tanh(buzz * env * 2), 0.5)
+
+# Trombón triste «wah wah wah waaah»
+notes = [(0.0, 0.32, 233.1), (0.36, 0.32, 220.0), (0.72, 0.32, 207.7), (1.08, 0.9, 196.0)]
+n = int(2.1 * SR)
+t = np.arange(n) / SR
+tromb = np.zeros(n)
+for st, du, fr in notes:
+    k = (t >= st) & (t < st + du)
+    tl = t[k] - st
+    vib = 1 + (0.012 * np.sin(2 * np.pi * 6 * tl) if du > 0.5 else 0)
+    ph = 2 * np.pi * np.cumsum(fr * vib) / SR
+    tone = sum(np.sin(h * ph) / h ** 0.9 for h in range(1, 9))
+    wah = 0.35 + 0.65 * np.minimum(1, tl / 0.12)
+    env = np.minimum(1, tl / 0.03) * np.minimum(1, (st + du - t[k]) / 0.06)
+    tromb[k] += tone * env * wah
+tromb = sosfilt(butter(2, [150, 2600], btype="band", fs=SR, output="sos"), tromb)
+save("trombone.wav", np.tanh(tromb * 1.2), 0.55)
+
+# Destello: brillo suave cuando se enciende el músculo
+n = int(0.7 * SR)
+t = np.arange(n) / SR
+sh = sum(np.sin(2 * np.pi * f0 * t + rng.uniform(0, 6)) for f0 in (1760, 2217, 2637, 3520))
+air = bp(rng.standard_normal(n), 4000, 11000) * 0.4
+env = np.minimum(1, t / 0.08) * np.exp(-t * 5)
+save("shine.wav", (sh * 0.25 + air) * env, 0.45)
+
 print("ok", sorted(os.listdir(OUT)))

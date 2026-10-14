@@ -15,3 +15,6 @@ public/audio/fx/
 
 # Recorte (rotoscopia) del hook: se genera desde el metraje, no se sube
 public/roto/
+public/glow/
+public/thigh/
+public/legmask/

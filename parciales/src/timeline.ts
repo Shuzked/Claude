@@ -108,7 +108,8 @@ export const punches: Punch[] = [
   { at: 0.04, amount: 0.04, hold: 1.6 }, // hook
   { at: 4.16, amount: 0.07, hold: 1.2 }, // «más detalle en tus piernas»
   { at: 33.36, amount: 0.07, hold: 1.0 }, // «lo realmente interesante»
-  { at: 41.28, amount: 0.05, hold: 2.3 }, // «la conclusión…»
+  { at: 41.28, amount: 0.04, hold: 0.9 }, // «la conclusión…»
+  { at: 42.4, amount: 0.14, hold: 1.25 }, // el doble: zoom de golpe (burla)
   { at: 50.92, amount: 0.04, hold: 2.8 }, // «una repetición incompleta…»
   { at: 55.4, amount: 0.07, hold: 2.6 }, // «te falta una decisión más importante» (E07)
   { at: 65.44, amount: 0.04, hold: 2.3 }, // «pues justo esto…»
@@ -130,7 +131,11 @@ export type FxName =
   | "pop"
   | "paper"
   | "ding"
-  | "stamp";
+  | "stamp"
+  | "boing"
+  | "buzzer"
+  | "trombone"
+  | "shine";
 
 export const FX_PEAK: Record<FxName, number> = {
   hit: 0.27,
@@ -144,6 +149,10 @@ export const FX_PEAK: Record<FxName, number> = {
   paper: 0.05,
   ding: 0.003,
   stamp: 0.01,
+  boing: 0.01,
+  buzzer: 0.01,
+  trombone: 0.03,
+  shine: 0.08,
 };
 
 // Carpeta de cada efecto: fx/ son los aportados (no se suben al repo),
@@ -160,6 +169,10 @@ export const FX_DIR: Record<FxName, "fx" | "ui"> = {
   paper: "ui",
   ding: "ui",
   stamp: "ui",
+  boing: "ui",
+  buzzer: "ui",
+  trombone: "ui",
+  shine: "ui",
 };
 
 export type Sfx = { at: number; src: FxName | "whoosh"; volume: number };
@@ -181,6 +194,8 @@ export type Scene = {
   title: string;
   // "full": todo motion graphics, tapa el vídeo. "overlay": gráficos encima de la persona.
   mode: "full" | "overlay";
+  // velo oscuro bajo los gráficos sobre la persona (por defecto sí)
+  scrim?: boolean;
 };
 
 export const SCENE_IN = 0.42;
@@ -191,7 +206,15 @@ export const SCENE_OUT = 0.36;
 const OUT_AFTER_CUT = (cut: number) => cut + 0.38;
 
 export const scenes: Scene[] = [
-  { id: "rf", from: 7.62, to: 11.9, title: "Recto femoral", mode: "overlay" },
+  // rótulos mínimos mientras brilla el músculo (sin velo: se ve la persona)
+  {
+    id: "lblRf1",
+    from: 7.7,
+    to: 11.9,
+    title: "Recto femoral",
+    mode: "overlay",
+    scrim: false,
+  },
   {
     id: "study",
     from: 12.1,
@@ -199,24 +222,39 @@ export const scenes: Scene[] = [
     title: "Estudio",
     mode: "full",
   },
-  { id: "forms", from: 16.9, to: 21.7, title: "Recorrido", mode: "overlay" },
+  { id: "forms", from: 16.46, to: 21.7, title: "Recorrido", mode: "overlay" },
   {
-    id: "result",
-    from: 24.0,
-    to: OUT_AFTER_CUT(27.64),
-    title: "Resultado",
-    mode: "full",
+    id: "lblRf2",
+    from: 24.85,
+    to: 27.6,
+    title: "Recto femoral",
+    mode: "overlay",
+    scrim: false,
   },
-  { id: "vl", from: 28.5, to: 32.4, title: "Vasto lateral", mode: "overlay" },
+  {
+    id: "lblVl",
+    from: 28.75,
+    to: 32.4,
+    title: "Vasto lateral",
+    mode: "overlay",
+    scrim: false,
+  },
   {
     id: "tramo",
-    from: 34.6,
+    from: 36.6,
     to: OUT_AFTER_CUT(40.08),
     title: "Tramo",
     mode: "full",
   },
-  { id: "focus", from: 44.9, to: 49.6, title: "Qué", mode: "overlay" },
-  { id: "fit", from: 58.95, to: 65.12, title: "Rutina", mode: "overlay" },
+  // el doble: edición de burla
+  {
+    id: "burla",
+    from: 42.28,
+    to: 44.15,
+    title: "Burla",
+    mode: "overlay",
+    scrim: false,
+  },
   {
     id: "master",
     from: 68.05,
@@ -247,6 +285,7 @@ const designed: Sfx[] = [
   // remates puntuales: solo snaps
   { at: 4.16, src: "snap", volume: 0.3 },
   { at: 33.36, src: "snap", volume: 0.3 },
+  { at: 42.4, src: "snap", volume: 0.35 },
 ];
 
 const near = (list: Sfx[], at: number, gap: number) =>
@@ -266,20 +305,15 @@ export type HeadlineLine = { text: string; at: number; marker?: number };
 export const HEADLINE_STAGGER = 0.11;
 
 export const headlines: Record<string, HeadlineLine[]> = {
-  rf: [{ text: "Recto femoral", at: 7.8, marker: 8.2 }],
   study: [{ text: "Este estudio", at: 12.25 }],
   studySerie: [
     { text: "Desde el inicio", at: 15.16, marker: 15.5 },
     { text: "de la serie", at: 15.84, marker: 16.08 },
   ],
-  result: [{ text: "Recto femoral", at: 24.96, marker: 25.3 }],
-  vl: [{ text: "Vasto lateral", at: 28.84, marker: 29.2 }],
   tramo: [
-    { text: "Misma amplitud,", at: 36.6 },
-    { text: "distinta zona", at: 37.4, marker: 37.7 },
+    { text: "Misma amplitud,", at: 36.85 },
+    { text: "distinta zona", at: 37.6, marker: 37.9 },
   ],
-  focus1: [{ text: "Qué tramo", at: 45.04, marker: 45.4 }],
-  focus2: [{ text: "Qué músculo", at: 47.28, marker: 47.6 }],
 };
 
 /** Momento (segundos del original) en que aparece cada palabra de cada titular. */
@@ -301,48 +335,94 @@ const pop = (...at: number[]): Sfx[] =>
 
 // Momentos de los gráficos (compartidos con Graphics.tsx).
 export const T = {
-  rfLight: 7.8,
-  anterior: 10.32,
-  chips: [12.6, 12.92, 13.52],
+  context: 12.92,
   forms: [16.48, 17.96, 20.12], // «ejecución normal», «rango parcial al comienzo», «…al final»
-  initialWin: 24.12,
-  vsFull: 26.12,
-  rfQuote: 26.5,
-  vlLight: 28.84,
-  vlNoAdv: 29.84,
-  vlQuote: 30.84,
+  rfSub: 24.12,
+  vlSub: 29.84,
   tramoFinal: 35.64,
   tramoInitial: 39.28,
-  tramoSynth: 38.6,
-  replace: 59.12,
-  add: 61.92,
-  fit: 63.68,
   master: 68.2,
   comenta: 71.76,
   keyword: 72.4,
 };
 
+// --- Músculo encendido -------------------------------------------------------
+// La rotoscopia del muslo (public/glow/g_NNNN.png, piel teñida de verde) se
+// enciende, brilla un momento y se apaga. Mientras, la cámara se acerca al muslo.
+export type Glow = { at: number; end: number };
+export const glows: Glow[] = [
+  { at: 7.8, end: 9.0 }, // «recto femoral»
+  { at: 10.32, end: 11.7 }, // «parte anterior de tus muslos»
+  { at: 24.96, end: 26.5 }, // «más desarrollo del recto femoral»
+  { at: 28.84, end: 30.4 }, // «vasto lateral»
+  { at: 34.88, end: 36.5 }, // «las parciales al final del recorrido» (haciendo el ejercicio)
+];
+/** Fotogramas con capa de brillo generada (segundos del original). */
+export const GLOW_FRAMES: [number, number][] = [
+  [7.6, 11.96],
+  [24.7, 27.64],
+  [28.6, 32.44],
+  [34.5, 36.8],
+];
+
+export type Focus = { from: number; to: number; zoom: number };
+export const focuses: Focus[] = [
+  { from: 7.72, to: 8.72, zoom: 1.5 },
+  { from: 10.15, to: 11.9, zoom: 1.4 },
+  { from: 24.85, to: 26.7, zoom: 1.6 },
+  { from: 28.75, to: 30.5, zoom: 1.45 },
+  { from: 34.75, to: 36.55, zoom: 1.5 },
+];
+
+// --- El doble (burla) -------------------------------------------------------
+export const BURLA = {
+  nose: 42.55, // nariz de payaso
+  wobble: [42.4, 43.7] as [number, number],
+  stamp: 43.6, // «FALSO»
+};
+
+// --- Objetos en las manos y donde apunta ------------------------------------
+export const handItems = [
+  { at: 45.04, end: 49.55, hand: "l" as const, kind: "tramo" as const }, // «qué parte del recorrido»
+  { at: 47.28, end: 49.55, hand: "r" as const, kind: "musculo" as const }, // «qué musculatura»
+];
+export const pointItems = [
+  { at: 59.12, kind: "sustituir" as const },
+  { at: 61.92, kind: "anadir" as const },
+  { at: 63.32, kind: "rutina" as const },
+];
+export const POINT_END = 65.1;
+
 const graphicsSfx: Sfx[] = [
   ...headline(...headlineWordTimes),
   ...marker(...headlineMarkers),
-  // anatomía: el recto femoral se ilumina
-  ...pop(T.rfLight + 0.1, T.anterior),
-  // estudio: datos de contexto
-  ...pop(...T.chips),
-  // tres formas de hacer la extensión
-  ...pop(...T.forms),
+  // estudio y las tres formas
+  ...pop(T.context, ...T.forms),
   { at: T.forms[2] + 0.5, src: "paper", volume: 0.2 },
-  // resultado recto femoral
-  ...pop(T.initialWin, T.vsFull, T.rfQuote),
-  { at: T.initialWin + 0.15, src: "ding", volume: 0.18 },
-  // vasto lateral
-  ...pop(T.vlLight, T.vlNoAdv, T.vlQuote),
+  // el músculo se enciende
+  ...glows.map((g) => ({ at: g.at, src: "shine" as const, volume: 0.35 })),
+  ...pop(T.rfSub, T.vlSub),
   // tramo
-  ...pop(T.tramoFinal, T.tramoInitial),
-  ...headline(T.tramoSynth),
-  // sustituir / añadir
-  ...pop(T.replace, T.replace + 0.35, T.add, T.add + 0.3, T.fit),
-  { at: T.replace + 0.3, src: "whoosh-b", volume: 0.22 },
+  ...pop(T.tramoFinal, T.tramoFinal + 0.3),
+  // burla
+  { at: BURLA.nose, src: "boing", volume: 0.5 },
+  ...[42.32, 42.56, 42.84, 43.28, 43.44].map((t) => ({
+    at: t,
+    src: "pop" as const,
+    volume: 0.25,
+  })),
+  { at: BURLA.stamp, src: "stamp", volume: 0.5 },
+  { at: BURLA.stamp, src: "buzzer", volume: 0.3 },
+  { at: BURLA.stamp + 0.2, src: "trombone", volume: 0.3 },
+  // objetos en las manos y donde apunta
+  ...handItems.flatMap((h) => [
+    { at: h.at, src: "pop" as const, volume: 0.3 },
+    { at: h.at, src: "shine" as const, volume: 0.2 },
+  ]),
+  ...pointItems.flatMap((p) => [
+    { at: p.at, src: "pop" as const, volume: 0.3 },
+    { at: p.at - 0.05, src: "whoosh-b" as const, volume: 0.18 },
+  ]),
   // masterclass
   ...headline(T.master, T.master + 0.6),
   { at: T.master + 0.7, src: "ding", volume: 0.18 },

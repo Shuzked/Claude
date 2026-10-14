@@ -10,8 +10,19 @@ import {
   useVideoConfig,
 } from "remotion";
 import { HookCutout, HookFront, HookWords } from "./Hook";
+import { ThighGlow } from "./ThighGlow";
 import faceTrack from "./faceTrack.json";
-import { impacts, punches, shots, TRIM, whips } from "./timeline";
+import { poseAt } from "./pose";
+import { Tracked } from "./Tracked";
+import {
+  BURLA,
+  focuses,
+  impacts,
+  punches,
+  shots,
+  TRIM,
+  whips,
+} from "./timeline";
 
 // Cámara virtual: el vídeo nunca está quieto.
 //  1. Cada plano tiene su encuadre base y un empuje lento (alternando dentro/fuera).
@@ -19,6 +30,7 @@ import { impacts, punches, shots, TRIM, whips } from "./timeline";
 //  3. Los remates llevan un golpe de zoom con muelle que se mantiene y se suelta.
 //  4. Una deriva mínima de cámara en mano para que no parezca un plano fijo.
 //  5–7. Entrada de golpe, sacudidas en los golpes y barridos en los cortes.
+//  9. Enfoques: en los momentos del músculo la cámara se va al muslo.
 //  8. Tracking de cabeza: el encuadre sigue la cara (faceTrack.json, detectada y
 //     suavizada por plano) y la lleva hacia el centro; sube el zoom solo lo
 //     necesario para no enseñar bordes.
@@ -154,11 +166,63 @@ const useCamera = () => {
     1920,
   );
 
+  // 9. enfoque al muslo: mezcla el encuadre de la cara con uno centrado en los muslos
+  let fScale = scale;
+  let fX = trX;
+  let fY = trY;
+  for (const fc of focuses) {
+    const w = Math.min(
+      interpolate(t, [fc.from, fc.from + 0.4], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: Easing.bezier(0.65, 0, 0.35, 1),
+      }),
+      interpolate(t, [fc.to - 0.45, fc.to], [1, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: Easing.bezier(0.65, 0, 0.35, 1),
+      }),
+    );
+    const p = poseAt(t);
+    if (w <= 0 || !p) continue;
+    const c = {
+      x: (p.lh[0] + p.rh[0] + p.lk[0] + p.rk[0]) / 4,
+      y: (p.lh[1] + p.rh[1] + p.lk[1] + p.rk[1]) / 4,
+    };
+    const zs = fc.zoom + punch * 0.5;
+    const clampF = (tr: number, o: number, size: number) =>
+      Math.max(
+        -(zs - 1) * (size - o) + EDGE_MARGIN,
+        Math.min((zs - 1) * o - EDGE_MARGIN, tr),
+      );
+    const zx = clampF(540 - ORIGIN.x - zs * (c.x - ORIGIN.x), ORIGIN.x, 1080);
+    const zy = clampF(1060 - ORIGIN.y - zs * (c.y - ORIGIN.y), ORIGIN.y, 1920);
+    fScale = scale + (zs - scale) * w;
+    fX = trX + (zx - trX) * w;
+    fY = trY + (zy - trY) * w;
+  }
+
+  // 10. burla: tambaleo de dibujos animados
+  const wob = interpolate(
+    t,
+    [
+      BURLA.wobble[0],
+      BURLA.wobble[0] + 0.15,
+      BURLA.wobble[1] - 0.2,
+      BURLA.wobble[1],
+    ],
+    [0, 1, 1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
+
   return {
-    scale,
-    x: trX + x + shakeX,
-    y: trY + y + shakeY + whipY,
-    rot,
+    scale: fScale,
+    x: fX + x + shakeX,
+    y: fY + y + shakeY + whipY,
+    rot: rot + Math.sin(t * 13) * 2.4 * wob,
     blur,
   };
 };
@@ -186,11 +250,17 @@ export const Camera: React.FC = () => {
       {/* hook: las palabras van en coordenadas de pantalla (siempre caben) y el
           recorte de la persona se pinta encima con la MISMA transformación que
           el vídeo, así queda perfectamente alineado */}
+      <AbsoluteFill style={transform}>
+        <ThighGlow />
+      </AbsoluteFill>
       <HookWords />
       <AbsoluteFill style={{ ...transform, filter: look }}>
         <HookCutout />
       </AbsoluteFill>
       <HookFront />
+      <AbsoluteFill style={transform}>
+        <Tracked />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

@@ -8,7 +8,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { LegAnatomy, RomDiagram } from "./Figures";
+import { RomDiagram } from "./Figures";
 import { FONT, GREEN, PAPER } from "./theme";
 import {
   f,
@@ -18,6 +18,7 @@ import {
   SCENE_OUT,
   scenes,
   SOURCE_END,
+  BURLA,
   T,
   type HeadlineLine,
   type Scene,
@@ -308,7 +309,7 @@ const Content: React.FC<{ scene: Scene; children: React.ReactNode }> = ({
   const scrimIn = interpolate(t, [0, 0.3], [0, 1], clamp);
   return (
     <AbsoluteFill>
-      {overlay ? (
+      {overlay && scene.scrim !== false ? (
         <AbsoluteFill
           style={{
             opacity: scrimIn * (1 - out),
@@ -449,6 +450,59 @@ const sceneFrom = (id: string) => scenes.find((s) => s.id === id)!.from;
 const rel = (id: string, sourceSeconds: number) =>
   sourceSeconds - scenes.find((s) => s.id === id)!.from;
 
+/** Sello que cae de golpe sobre un elemento. */
+const RED = "#FF2E3A";
+
+/** Sello rojo que cae de golpe en el centro de la pantalla. */
+const Stamp: React.FC<{ at: number; text: string; top?: number }> = ({
+  at,
+  text,
+  top = 800,
+}) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+  if (t < at) return null;
+  const slam = spring({
+    frame: frame - at * fps,
+    fps,
+    config: { damping: 11, stiffness: 320, mass: 0.6 },
+  });
+  const k = (t - at) * fps;
+  const shake = k < 10 ? Math.sin(k * 2.7) * 10 * Math.exp(-k / 3) : 0;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top,
+        left: 0,
+        right: 0,
+        display: "flex",
+        justifyContent: "center",
+        transform: `translate(${shake}px, ${-shake * 0.6}px)`,
+      }}
+    >
+      <div
+        style={{
+          transform: `rotate(-9deg) scale(${2.6 - 1.6 * slam})`,
+          opacity: Math.min(1, slam * 2),
+          border: `10px solid ${RED}`,
+          borderRadius: 18,
+          padding: "14px 40px 8px",
+          ...display,
+          fontSize: 120,
+          color: RED,
+          textShadow: "0 0 24px rgba(255,46,58,0.55)",
+          filter: "drop-shadow(0 0 16px rgba(255,46,58,0.5))",
+          background: "rgba(255,46,58,0.06)",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // Piezas comunes de esta pieza
 
@@ -482,176 +536,26 @@ const Rise: React.FC<{
   );
 };
 
-/** Cita del estudio: original en inglés y traducción, con barra verde. */
-const Quote: React.FC<{
-  at: number;
-  en: string;
-  es: string;
-  width?: number;
-}> = ({ at, en, es, width = 900 }) => {
-  const bar = useReveal(at, 0.4);
-  return (
-    <Rise at={at} style={{ display: "flex", justifyContent: "center" }}>
-      <div
-        style={{
-          position: "relative",
-          width,
-          padding: "18px 26px 18px 34px",
-          background: "rgba(255,255,255,0.04)",
-          border: "1.5px solid rgba(255,255,255,0.1)",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: 6,
-            height: `${bar * 100}%`,
-            background: GREEN,
-            filter: GLOW,
-          }}
-        />
-        <div
-          style={{
-            ...body(22, "rgba(255,255,255,0.55)"),
-            fontStyle: "italic",
-            fontWeight: 600,
-            textAlign: "left",
-          }}
-        >
-          «{en}»
-        </div>
-        <div style={{ ...body(28), textAlign: "left", marginTop: 8 }}>{es}</div>
-        <div
-          style={{
-            ...label,
-            fontSize: 16,
-            letterSpacing: 3,
-            marginTop: 10,
-            color: "rgba(255,255,255,0.4)",
-            textShadow: "none",
-          }}
-        >
-          Pedrosa et al. · 2022
-        </div>
-      </div>
-    </Rise>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// E02 · recto femoral (sobre la persona)
-
-const RfScene: React.FC = () => (
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 50,
-      paddingTop: 40,
-    }}
-  >
-    <LegAnatomy at={0.05} lit="rf" litAt={rel("rf", T.rfLight)} scale={0.68} />
-    <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    >
-      <Headline
-        lines={headlines.rf.map((l) => ({ ...l, text: "Recto" }))}
-        origin={sceneFrom("rf")}
-        size={92}
-        absolute={false}
-      />
-      <Headline
-        lines={[{ text: "femoral", at: 7.91, marker: headlines.rf[0].marker }]}
-        origin={sceneFrom("rf")}
-        size={92}
-        absolute={false}
-      />
-      <Rise at={rel("rf", T.anterior)} style={{ marginTop: 30 }}>
-        <div style={{ ...body(32, "rgba(255,255,255,0.75)") }}>
-          Parte anterior
-          <br />
-          del muslo
-        </div>
-      </Rise>
-    </div>
-  </div>
-);
-
 // ---------------------------------------------------------------------------
 // E03 · el estudio (pantalla completa)
 
-const Chip: React.FC<{ at: number; children: React.ReactNode }> = ({
-  at,
-  children,
-}) => {
-  const p = useSpringAt(at, 11);
-  const line = useReveal(at + 0.05, 0.3);
-  return (
-    <div
-      style={{
-        position: "relative",
-        padding: "16px 34px 16px 40px",
-        background: "rgba(255,255,255,0.04)",
-        border: "1.5px solid rgba(255,255,255,0.12)",
-        transform: `translateX(${(1 - p) * -60}px)`,
-        opacity: Math.min(1, p * 2),
-        ...body(40),
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 7 * line,
-          background: GREEN,
-          filter: GLOW,
-        }}
-      />
-      {children}
-    </div>
-  );
-};
-
 const StudyScene: React.FC = () => (
   <>
-    <Headline lines={headlines.study} origin={sceneFrom("study")} top={330} />
-    <div
-      style={{
-        position: "absolute",
-        top: 560,
-        left: 0,
-        right: 0,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 22,
-      }}
+    <Headline lines={headlines.study} origin={sceneFrom("study")} top={520} />
+    <Rise
+      at={rel("study", T.context)}
+      style={{ position: "absolute", top: 680, left: 0, right: 0 }}
     >
-      <Chip at={rel("study", T.chips[0])}>45 mujeres sin entrenamiento</Chip>
-      <Chip at={rel("study", T.chips[1])}>12 semanas</Chip>
-      <Chip at={rel("study", T.chips[2])}>9 por grupo</Chip>
-    </div>
+      <div style={{ ...body(40, "rgba(255,255,255,0.75)"), fontWeight: 800 }}>
+        45 mujeres · 12 semanas
+      </div>
+    </Rise>
     <Headline
       lines={headlines.studySerie}
       origin={sceneFrom("study")}
-      size={92}
-      top={1030}
+      size={100}
+      top={940}
     />
-    <Rise
-      at={rel("study", 16.08) + 0.15}
-      style={{ position: "absolute", top: 1260, left: 0, right: 0 }}
-    >
-      <div style={{ ...body(30, "rgba(255,255,255,0.6)") }}>
-        No añadidas después del fallo
-      </div>
-    </Rise>
   </>
 );
 
@@ -668,7 +572,6 @@ const FormsScene: React.FC = () => {
   const t = useT();
   const times = T.forms.map((x) => rel("forms", x));
   const current = times.filter((x) => t >= x).length - 1;
-  const note = useReveal(times[2] + 0.6, 0.4);
   return (
     <div style={{ paddingTop: 130 }}>
       <div style={{ display: "flex", justifyContent: "center", gap: 18 }}>
@@ -684,234 +587,29 @@ const FormsScene: React.FC = () => {
           />
         ))}
       </div>
-      <div
-        style={{
-          ...body(22, "rgba(255,255,255,0.45)"),
-          marginTop: 26,
-          opacity: note,
-        }}
-      >
-        0° = rodilla extendida
-      </div>
     </div>
   );
 };
-
-// ---------------------------------------------------------------------------
-// E04 · resultado en el recto femoral (pantalla completa)
-
-const UpArrow: React.FC<{ at: number }> = ({ at }) => {
-  const p = useSpringAt(at, 9);
-  const t = useT();
-  const bob =
-    Math.sin((t - at) * 5) * 4 * Math.min(1, Math.max(0, t - at - 0.4));
-  return (
-    <svg
-      width={70}
-      height={80}
-      viewBox="0 0 70 80"
-      style={{
-        filter: GLOW,
-        transform: `translateY(${(1 - p) * 30 + bob}px) scale(${p})`,
-      }}
-    >
-      <path
-        d="M 35 4 L 66 40 L 46 40 L 46 76 L 24 76 L 24 40 L 4 40 Z"
-        fill={GREEN}
-      />
-    </svg>
-  );
-};
-
-const ResultScene: React.FC = () => (
-  <>
-    <Headline
-      lines={headlines.result}
-      origin={sceneFrom("result")}
-      size={110}
-      top={300}
-    />
-    <div
-      style={{
-        position: "absolute",
-        top: 520,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 50,
-      }}
-    >
-      <LegAnatomy
-        at={0.1}
-        lit="rf"
-        litAt={rel("result", headlines.result[0].at)}
-        scale={0.9}
-      />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: 430,
-        }}
-      >
-        <Rise at={rel("result", T.initialWin)}>
-          <div
-            style={{
-              ...label,
-              fontSize: 28,
-              letterSpacing: 4,
-              textAlign: "center",
-            }}
-          >
-            Parcial inicial
-          </div>
-        </Rise>
-        <div style={{ marginTop: 18 }}>
-          <UpArrow at={rel("result", T.initialWin) + 0.12} />
-        </div>
-        <Rise at={rel("result", T.initialWin) + 0.2} style={{ marginTop: 10 }}>
-          <div
-            style={{
-              ...display,
-              fontSize: 52,
-              textAlign: "center",
-              lineHeight: 1,
-            }}
-          >
-            Más
-            <br />
-            crecimiento
-          </div>
-        </Rise>
-        <Rise at={rel("result", T.vsFull)} style={{ marginTop: 26 }}>
-          <div style={{ ...body(34, "rgba(255,255,255,0.7)") }}>
-            que las completas
-          </div>
-        </Rise>
-      </div>
-    </div>
-    <div style={{ position: "absolute", top: 1100, left: 0, right: 0 }}>
-      <Quote
-        at={rel("result", T.rfQuote)}
-        en="For the RF, INITIALROM and VARROM groups presented a greater change than the other groups"
-        es="Recto femoral: el parcial inicial y el variado superaron a los demás grupos"
-      />
-    </div>
-  </>
-);
-
-// ---------------------------------------------------------------------------
-// E04 · vasto lateral (sobre la persona)
-
-const VlScene: React.FC = () => (
-  <div style={{ paddingTop: 20 }}>
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 40,
-      }}
-    >
-      <LegAnatomy
-        at={0.05}
-        lit="vl"
-        litAt={rel("vl", T.vlLight)}
-        scale={0.56}
-      />
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: 520,
-        }}
-      >
-        <Headline
-          lines={headlines.vl}
-          origin={sceneFrom("vl")}
-          size={74}
-          absolute={false}
-        />
-        <Rise at={rel("vl", T.vlNoAdv)} style={{ marginTop: 22 }}>
-          <div
-            style={{
-              ...display,
-              fontSize: 46,
-              textAlign: "center",
-              lineHeight: 1.05,
-            }}
-          >
-            Sin ventaja
-            <br />
-            detectada
-          </div>
-        </Rise>
-        <Rise at={rel("vl", T.vlNoAdv) + 0.25} style={{ marginTop: 14 }}>
-          <div style={{ ...body(26, "rgba(255,255,255,0.7)") }}>
-            del parcial inicial
-            <br />
-            frente al completo
-          </div>
-        </Rise>
-      </div>
-    </div>
-    <div style={{ marginTop: 26 }}>
-      <Quote
-        at={rel("vl", T.vlQuote)}
-        en="For the VL, the INITIALROM, FULLROM, and VARROM groups presented similar responses"
-        es="Vasto lateral: respuestas similares entre parcial inicial, completo y variado"
-      />
-    </div>
-  </div>
-);
 
 // ---------------------------------------------------------------------------
 // E05 · dos parciales no son lo mismo (pantalla completa)
 
-const Badge: React.FC<{ at: number; text: string }> = ({ at, text }) => {
-  const p = useSpringAt(at, 10);
-  return (
-    <div
-      style={{
-        ...display,
-        fontSize: 40,
-        color: "#0A0A0A",
-        background: GREEN,
-        padding: "8px 20px 4px",
-        textShadow: "none",
-        filter: GLOW_SOFT,
-        transform: `scale(${p}) rotate(${-3 + 3 * p}deg)`,
-        opacity: Math.min(1, p * 2),
-      }}
-    >
-      {text}
-    </div>
-  );
-};
-
 const TramoScene: React.FC = () => {
   const t = useT();
-  const initialAt = rel("tramo", T.tramoFinal) + 0.3;
-  const finalAt = rel("tramo", T.tramoFinal);
-  // cada parcial repite cuando se nombra
-  const initialActive =
-    t < rel("tramo", T.tramoFinal) || t >= rel("tramo", T.tramoInitial);
+  const pulse = rel("tramo", T.tramoInitial);
+  const both = rel("tramo", 36.7);
   return (
     <>
       <Headline
         lines={headlines.tramo}
         origin={sceneFrom("tramo")}
         size={96}
-        top={300}
+        top={420}
       />
       <div
         style={{
           position: "absolute",
-          top: 600,
+          top: 760,
           left: 0,
           right: 0,
           display: "flex",
@@ -919,235 +617,175 @@ const TramoScene: React.FC = () => {
           gap: 40,
         }}
       >
-        {[
-          {
-            title: "Parcial inicial",
-            from: 100,
-            to: 65,
-            at: initialAt,
-            active: initialActive,
-          },
-          {
-            title: "Parcial final",
-            from: 65,
-            to: 30,
-            at: finalAt,
-            active: !initialActive,
-          },
-        ].map((d) => (
-          <div
-            key={d.title}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: 22,
-            }}
-          >
-            <RomDiagram
-              at={d.at}
-              from={d.from}
-              to={d.to}
-              title={d.title}
-              active={d.active}
-              scale={1.3}
-            />
-            <Badge at={rel("tramo", headlines.tramo[0].at) + 0.15} text="35°" />
-          </div>
-        ))}
+        <RomDiagram
+          at={both}
+          from={100}
+          to={65}
+          title="Parcial inicial"
+          active={t >= pulse}
+          scale={1.3}
+        />
+        <RomDiagram
+          at={both + 0.15}
+          from={65}
+          to={30}
+          title="Parcial final"
+          active={t < pulse}
+          scale={1.3}
+        />
       </div>
-      <Rise
-        at={rel("tramo", T.tramoSynth)}
-        style={{
-          position: "absolute",
-          top: 1270,
-          left: 0,
-          right: 0,
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <div style={{ ...label, fontSize: 34, letterSpacing: 3 }}>
-          El tramo del recorrido importa
-        </div>
-      </Rise>
     </>
   );
 };
 
 // ---------------------------------------------------------------------------
-// E06 · qué tramo / qué músculo (sobre la persona)
+// Rótulo mínimo mientras brilla el músculo (sin velo, se ve la persona)
 
-const FocusScene: React.FC = () => (
-  <div style={{ paddingTop: 110 }}>
-    <Headline
-      lines={headlines.focus1}
-      origin={sceneFrom("focus")}
-      size={120}
-      absolute={false}
-    />
-    <div style={{ height: 30 }} />
-    <Headline
-      lines={headlines.focus2}
-      origin={sceneFrom("focus")}
-      size={120}
-      absolute={false}
-    />
-  </div>
-);
-
-// ---------------------------------------------------------------------------
-// E07 · sustituir o añadir (sobre la persona). Tarjetas conceptuales, sin números.
-
-const ROW_H = 78;
-
-const RoutineRow: React.FC<{
-  y: number;
-  x?: number;
-  opacity?: number;
-  accent?: boolean;
-  text?: string;
-}> = ({ y, x = 0, opacity = 1, accent, text }) => (
-  <div
-    style={{
-      position: "absolute",
-      left: 0,
-      top: y,
-      width: 400,
-      height: ROW_H - 14,
-      transform: `translateX(${x}px)`,
-      opacity,
-      background: accent ? "rgba(4,228,0,0.16)" : "rgba(255,255,255,0.05)",
-      border: `2px solid ${accent ? GREEN : "rgba(255,255,255,0.16)"}`,
-      filter: accent ? GLOW : undefined,
-      display: "flex",
-      alignItems: "center",
-      gap: 14,
-      padding: "0 18px",
-    }}
-  >
+const MuscleLabel: React.FC<{
+  text: string;
+  sub?: string;
+  subAt?: number;
+  up?: boolean;
+}> = ({ text, sub, subAt = 0, up }) => {
+  const p = useSpringAt(0.08, 11);
+  const q = useSpringAt(subAt, 11);
+  return (
     <div
       style={{
-        width: 14,
-        height: 14,
-        background: accent ? GREEN : "rgba(255,255,255,0.35)",
+        position: "absolute",
+        top: 380,
+        left: 0,
+        right: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
       }}
-    />
-    {text ? (
+    >
       <div
         style={{
-          ...body(26),
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: 1,
+          ...display,
+          fontSize: 78,
+          WebkitTextStroke: "9px rgba(0,0,0,0.9)",
+          paintOrder: "stroke fill",
+          transform: `translateY(${(1 - p) * 30}px) scale(${0.7 + 0.3 * p})`,
+          opacity: Math.min(1, p * 2),
         }}
       >
         {text}
       </div>
-    ) : (
-      <div
-        style={{
-          flex: 1,
-          height: 10,
-          background: "rgba(255,255,255,0.14)",
-          maxWidth: 180,
-        }}
-      />
-    )}
-  </div>
-);
-
-const FitPanel: React.FC<{
-  at: number;
-  act: number;
-  mode: "replace" | "add";
-  title: string;
-}> = ({ at, act, mode, title }) => {
-  const t = useT();
-  const p = useSpringAt(at, 12);
-  const k = interpolate(t, [act, act + 0.5], [0, 1], {
-    ...clamp,
-    easing: easeInOut,
-  });
-  const m = useReveal(act, 0.35);
-  const rows = [0, 1, 2];
-  return (
-    <div
-      style={{
-        width: 420,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        transform: `translateY(${(1 - p) * 50}px)`,
-        opacity: Math.min(1, p * 2),
-      }}
-    >
-      <div style={{ height: 96, display: "flex", alignItems: "center" }}>
-        <Marker p={m}>
-          <div style={{ ...display, fontSize: 60, padding: "0 10px" }}>
-            {title}
-          </div>
-        </Marker>
-      </div>
-      <div
-        style={{
-          position: "relative",
-          width: 360,
-          height: 4 * ROW_H,
-          marginTop: 16,
-        }}
-      >
-        {rows.map((i) =>
-          mode === "replace" && i === 1 ? (
-            <RoutineRow key={i} y={i * ROW_H} x={k * 260} opacity={1 - k} />
-          ) : (
-            <RoutineRow key={i} y={i * ROW_H} />
-          ),
-        )}
-        {mode === "replace" ? (
-          <RoutineRow
-            y={ROW_H}
-            x={(1 - k) * -260}
-            opacity={k}
-            accent
-            text="Parciales"
-          />
-        ) : (
-          <RoutineRow
-            y={3 * ROW_H - (1 - k) * 40}
-            opacity={k}
-            accent
-            text="+ Parciales"
-          />
-        )}
-      </div>
+      {sub ? (
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            ...label,
+            fontSize: 30,
+            letterSpacing: 3,
+            WebkitTextStroke: "6px rgba(0,0,0,0.85)",
+            paintOrder: "stroke fill",
+            transform: `translateY(${(1 - q) * 20}px)`,
+            opacity: Math.min(1, q * 2),
+          }}
+        >
+          {up ? "▲" : null}
+          {sub}
+        </div>
+      ) : null}
     </div>
   );
 };
 
-const FitScene: React.FC = () => (
-  <div
-    style={{
-      paddingTop: 90,
-      display: "flex",
-      justifyContent: "center",
-      gap: 60,
-    }}
-  >
-    <FitPanel
-      at={0.05}
-      act={rel("fit", T.replace)}
-      mode="replace"
-      title="Sustituir"
-    />
-    <FitPanel
-      at={rel("fit", T.add) - 0.6}
-      act={rel("fit", T.add)}
-      mode="add"
-      title="Añadir"
-    />
-  </div>
+const LblRf1: React.FC = () => <MuscleLabel text="Recto femoral" />;
+const LblRf2: React.FC = () => (
+  <MuscleLabel
+    text="Recto femoral"
+    sub="Más crecimiento"
+    subAt={rel("lblRf2", 25.3)}
+    up
+  />
 );
+const LblVl: React.FC = () => (
+  <MuscleLabel
+    text="Vasto lateral"
+    sub="Sin ventaja detectada"
+    subAt={rel("lblVl", T.vlSub)}
+  />
+);
+
+// ---------------------------------------------------------------------------
+// Burla: el doble repite el mito con subtítulos «de burla» y se lleva un FALSO
+
+const MOCK = [
+  { text: "hAcEr", at: 42.32 },
+  { text: "MeNoS", at: 42.56 },
+  { text: "rEcOrRiDo", at: 42.84 },
+  { text: "Es", at: 43.28 },
+  { text: "MeJoR", at: 43.44 },
+];
+
+const MockWord: React.FC<{ text: string; at: number; i: number }> = ({
+  text,
+  at,
+  i,
+}) => {
+  const p = useSpringAt(at, 7);
+  const t = useT();
+  if (t < at) return null;
+  const wob = Math.sin((t - at) * 16 + i * 2) * 5;
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        transform: `scale(${0.3 + 0.7 * p}) rotate(${(i % 2 ? 7 : -7) + wob}deg)`,
+        margin: "0 10px",
+      }}
+    >
+      {text}
+    </span>
+  );
+};
+
+const BurlaScene: React.FC = () => {
+  const origin = sceneFrom("burla");
+  const t = useT();
+  const stampAt = rel("burla", BURLA.stamp);
+  const fade = interpolate(
+    t,
+    [stampAt - 0.05, stampAt + 0.1],
+    [1, 0.35],
+    clamp,
+  );
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          top: 110,
+          left: 0,
+          right: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          fontFamily: FONT,
+          fontWeight: 900,
+          fontSize: 84,
+          color: "#FFE14D",
+          WebkitTextStroke: "11px rgba(0,0,0,0.92)",
+          paintOrder: "stroke fill",
+          opacity: fade,
+          padding: "0 40px",
+        }}
+      >
+        {MOCK.map((w, i) => (
+          <MockWord key={i} text={w.text} at={w.at - origin} i={i} />
+        ))}
+      </div>
+      <Stamp at={stampAt} text="Falso" top={-170} />
+    </>
+  );
+};
 
 // ---------------------------------------------------------------------------
 // E08 · masterclass gratuita (un solo rótulo, sobre la persona)
@@ -1311,14 +949,13 @@ export const SceneBackdrops: React.FC = () => (
 );
 
 const SCENES: Record<string, React.FC> = {
-  rf: RfScene,
+  lblRf1: LblRf1,
   study: StudyScene,
   forms: FormsScene,
-  result: ResultScene,
-  vl: VlScene,
+  lblRf2: LblRf2,
+  lblVl: LblVl,
   tramo: TramoScene,
-  focus: FocusScene,
-  fit: FitScene,
+  burla: BurlaScene,
   master: MasterScene,
   cta: CtaScene,
 };
