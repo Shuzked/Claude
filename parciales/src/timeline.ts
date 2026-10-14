@@ -206,14 +206,6 @@ const OUT_AFTER_CUT = (cut: number) => cut + 0.38;
 
 export const scenes: Scene[] = [
   // rótulos mínimos mientras brilla el músculo (sin velo: se ve la persona)
-  {
-    id: "lblRf1",
-    from: 10.2,
-    to: 11.9,
-    title: "Recto femoral",
-    mode: "overlay",
-    scrim: false,
-  },
   // el estudio enlaza con las tres formas en la misma escena a pantalla completa
   {
     id: "study",
@@ -221,22 +213,6 @@ export const scenes: Scene[] = [
     to: OUT_AFTER_CUT(21.76),
     title: "Estudio",
     mode: "full",
-  },
-  {
-    id: "lblRf2",
-    from: 24.85,
-    to: 27.6,
-    title: "Recto femoral",
-    mode: "overlay",
-    scrim: false,
-  },
-  {
-    id: "lblVl",
-    from: 28.75,
-    to: 32.4,
-    title: "Vasto lateral",
-    mode: "overlay",
-    scrim: false,
   },
   {
     id: "master",
@@ -324,6 +300,29 @@ export const T = {
   keyword: 72.4,
 };
 
+// --- Tarjeta anatómica (como en las referencias) --------------------------------
+// Mientras brilla el músculo, abajo sale una tarjeta con la pierna y el músculo en
+// verde. No tapa los subtítulos.
+export const anatomyCards = [
+  { from: 10.32, to: 11.9, muscle: "rf" as const, title: "Recto femoral" },
+  {
+    from: 24.96,
+    to: 27.6,
+    muscle: "rf" as const,
+    title: "Recto femoral",
+    sub: "▲ Más crecimiento",
+    subAt: 25.3,
+  },
+  {
+    from: 28.84,
+    to: 32.4,
+    muscle: "vl" as const,
+    title: "Vasto lateral",
+    sub: "Sin ventaja detectada",
+    subAt: 29.84,
+  },
+];
+
 // --- Músculo encendido -------------------------------------------------------
 // La rotoscopia del muslo (public/glow/g_NNNN.png, piel teñida de verde) se
 // enciende, brilla un momento y se apaga. Mientras, la cámara se acerca al muslo.
@@ -355,7 +354,7 @@ export const focuses: Focus[] = [
   { from: 34.55, to: 40.1, zoom: 1.3, on: "legs" },
   { from: 40.15, to: 42.32, zoom: 1.55, on: "face" },
   { from: 42.3, to: 43.84, zoom: 1.32, on: "face" }, // el doble: la pose ya es la suya
-  { from: 57.84, to: 65.15, zoom: 1.45, on: "left" },
+  { from: 57.84, to: 65.15, zoom: 1.08, on: "left" },
 ];
 
 // --- El doble -----------------------------------------------------------------

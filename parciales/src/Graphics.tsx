@@ -8,8 +8,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { toScreen } from "./Camera";
-import { RomDiagram } from "./Figures";
+import { PANEL_X, toScreen } from "./Camera";
+import { LegAnatomy, RomDiagram } from "./Figures";
 import { poseAt } from "./pose";
 import { FONT, GREEN, PAPER } from "./theme";
 import {
@@ -20,6 +20,7 @@ import {
   SCENE_OUT,
   scenes,
   SOURCE_END,
+  anatomyCards,
   LIST_END,
   listItems,
   T,
@@ -636,86 +637,71 @@ const StudyScene: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------------
-// Rótulo mínimo mientras brilla el músculo (sin velo, se ve la persona)
+// Tarjeta anatómica (estilo de las referencias): abajo, redondeada, con la pierna y
+// el músculo en verde. Va fuera de las escenas para que los subtítulos sigan.
 
-const MuscleLabel: React.FC<{
-  text: string;
+const AnatomyCard: React.FC<{
+  muscle: "rf" | "vl";
+  title: string;
   sub?: string;
-  subAt?: number;
-  up?: boolean;
-}> = ({ text, sub, subAt = 0, up }) => {
-  const p = useSpringAt(0.08, 11);
-  const q = useSpringAt(subAt, 11);
+  subAt?: number; // segundos desde que entra la tarjeta
+  dur: number;
+}> = ({ muscle, title, sub, subAt = 0, dur }) => {
+  const t = useT();
+  const p = useSpringAt(0, 12);
+  const q = useSpringAt(subAt, 12);
+  const out = interpolate(t, [dur - 0.3, dur], [1, 0], clamp);
+  const float = Math.sin(t * 2.2) * 5;
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 380,
-        left: 0,
-        right: 0,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-      }}
-    >
+    <AbsoluteFill style={{ opacity: out }}>
       <div
         style={{
-          ...display,
-          fontSize: 78,
-          WebkitTextStroke: "9px rgba(0,0,0,0.9)",
-          paintOrder: "stroke fill",
-          transform: `translateY(${(1 - p) * 30}px) scale(${0.7 + 0.3 * p})`,
+          position: "absolute",
+          left: 540 - 165,
+          top: 1520 + float,
+          width: 330,
+          borderRadius: 28,
+          border: "3px solid rgba(255,255,255,0.85)",
+          background: "linear-gradient(180deg, #232323 0%, #121212 100%)",
+          boxShadow: "0 18px 50px rgba(0,0,0,0.6), 0 0 24px rgba(4,228,0,0.25)",
+          overflow: "hidden",
+          padding: "18px 0 16px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          transform: `translateY(${(1 - p) * 60}px) scale(${0.7 + 0.3 * p})`,
           opacity: Math.min(1, p * 2),
         }}
       >
-        {text}
-      </div>
-      {sub ? (
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            ...label,
-            fontSize: 30,
-            letterSpacing: 3,
-            WebkitTextStroke: "6px rgba(0,0,0,0.85)",
-            paintOrder: "stroke fill",
-            transform: `translateY(${(1 - q) * 20}px)`,
-            opacity: Math.min(1, q * 2),
-          }}
-        >
-          {up ? "▲" : null}
-          {sub}
+        <div style={{ height: 200, display: "flex", alignItems: "center" }}>
+          <LegAnatomy at={0.05} lit={muscle} litAt={0.25} scale={0.36} />
         </div>
-      ) : null}
-    </div>
+        <div style={{ ...display, fontSize: 34, marginTop: 10 }}>{title}</div>
+        {sub ? (
+          <div
+            style={{
+              ...label,
+              fontSize: 18,
+              letterSpacing: 2,
+              marginTop: 6,
+              opacity: Math.min(1, q * 2),
+              transform: `translateY(${(1 - q) * 10}px)`,
+            }}
+          >
+            {sub}
+          </div>
+        ) : null}
+      </div>
+    </AbsoluteFill>
   );
 };
 
-const LblRf1: React.FC = () => <MuscleLabel text="Recto femoral" />;
-const LblRf2: React.FC = () => (
-  <MuscleLabel
-    text="Recto femoral"
-    sub="Más crecimiento"
-    subAt={rel("lblRf2", 25.3)}
-    up
-  />
-);
-const LblVl: React.FC = () => (
-  <MuscleLabel
-    text="Vasto lateral"
-    sub="Sin ventaja detectada"
-    subAt={rel("lblVl", T.vlSub)}
-  />
-);
-
 // ---------------------------------------------------------------------------
-// Parte final: panel a la derecha con tres puntos de una palabra. Cada punto nace
-// en la punta del dedo (donde señala) y vuela a su hueco del panel.
+// Parte final: panel a toda la altura a la derecha (la persona queda en la mitad
+// izquierda, ver Camera.tsx). Tres filas, una palabra clave cada una; cada punto
+// sale de la punta del dedo y vuela a su fila, que se enciende.
 
-const LIST_FROM = 57.86; // el panel entra con el plano, justo antes del primer punto
+const LIST_FROM = 57.86; // el panel entra con el plano
 
 const fingerTip = (t: number) => {
   for (const d of [0, -0.04, 0.04, -0.08, 0.08]) {
@@ -729,114 +715,239 @@ const fingerTip = (t: number) => {
   return null;
 };
 
+const ListIcon: React.FC<{ i: number; on: boolean }> = ({ i, on }) => {
+  const c = on ? GREEN : "rgba(255,255,255,0.55)";
+  return (
+    <svg
+      width={96}
+      height={96}
+      viewBox="0 0 96 96"
+      style={{ filter: on ? GLOW : undefined, flexShrink: 0 }}
+    >
+      {i === 0 ? (
+        <g fill="none" stroke={c} strokeWidth={7} strokeLinecap="round">
+          <circle cx={48} cy={50} r={36} />
+          <path d="M 48 28 L 48 50 L 64 60" />
+        </g>
+      ) : i === 1 ? (
+        <g
+          fill="none"
+          stroke={c}
+          strokeWidth={7}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M 12 32 L 70 32 M 58 20 L 70 32 L 58 44" />
+          <path d="M 84 64 L 26 64 M 38 52 L 26 64 L 38 76" />
+        </g>
+      ) : (
+        <path
+          d="M 14 30 L 36 30 C 36 16, 58 16, 58 30 L 80 30 L 80 50 C 66 50, 66 72, 80 72 L 80 86 L 14 86 Z"
+          fill="none"
+          stroke={c}
+          strokeWidth={7}
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+};
+
 const ListLayer: React.FC = () => {
   const local = useCurrentFrame();
   const { fps } = useVideoConfig();
   const frame = local + f(LIST_FROM);
   const t = frame / fps;
-  const PANEL = { x: 590, y: 470, w: 460, row: 136 };
+  const W = 1080 - PANEL_X;
+  const ROW = { top: 300, h: 440, gap: 26 };
   const panelIn = spring({
     frame: local,
     fps,
-    config: { damping: 16, stiffness: 160, mass: 0.7 },
+    config: { damping: 18, stiffness: 150, mass: 0.8 },
   });
-  const out = interpolate(t, [LIST_END - 0.35, LIST_END], [1, 0], clamp);
+  const panelOut = interpolate(t, [LIST_END - 0.3, LIST_END + 0.05], [0, 1], {
+    ...clamp,
+    easing: easeInOut,
+  });
   const current = listItems.filter((l) => t >= l.at).length - 1;
+  const seed = Math.floor(local / 2) % 9;
   return (
-    <AbsoluteFill style={{ opacity: out }}>
-      {/* panel */}
+    <AbsoluteFill>
       <div
         style={{
           position: "absolute",
-          left: PANEL.x,
-          top: PANEL.y - 30,
-          width: PANEL.w,
-          height: listItems.length * PANEL.row + 40,
-          background: "rgba(12,12,12,0.62)",
-          border: "1.5px solid rgba(255,255,255,0.14)",
-          backdropFilter: "blur(6px)",
-          transform: `translateX(${(1 - panelIn) * 120}px)`,
-          opacity: Math.min(1, panelIn * 1.5),
+          left: PANEL_X,
+          top: 0,
+          width: W,
+          height: 1920,
+          transform: `translateX(${(1 - panelIn + panelOut) * W}px)`,
+          background: BG,
+          overflow: "hidden",
+          boxShadow: "-30px 0 60px rgba(0,0,0,0.55)",
         }}
       >
+        {/* textura como los fondos de escena */}
+        <AbsoluteFill
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+        <svg
+          width="100%"
+          height="100%"
+          style={{
+            position: "absolute",
+            opacity: 0.18,
+            mixBlendMode: "screen",
+          }}
+        >
+          <filter id={`lg-${seed}`}>
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.8"
+              numOctaves={2}
+              seed={seed}
+            />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter={`url(#lg-${seed})`} />
+        </svg>
         <div
           style={{
             position: "absolute",
             left: 0,
             top: 0,
-            width: 5,
+            width: 6,
             height: "100%",
             background: GREEN,
             filter: GLOW,
           }}
         />
+        <div
+          style={{
+            position: "absolute",
+            top: 170,
+            left: 0,
+            right: 0,
+            textAlign: "center",
+            ...label,
+            fontSize: 30,
+            letterSpacing: 8,
+          }}
+        >
+          Parciales
+        </div>
+        {listItems.map((l, i) => {
+          const shown = t >= l.at + 0.3;
+          const on = i === current && shown;
+          const pop = spring({
+            frame: frame - f(l.at + 0.3),
+            fps,
+            config: { damping: 11, stiffness: 210, mass: 0.55 },
+          });
+          return (
+            <div
+              key={l.text}
+              style={{
+                position: "absolute",
+                left: 34,
+                right: 28,
+                top: ROW.top + i * (ROW.h + ROW.gap),
+                height: ROW.h,
+                border: `2px solid ${on ? GREEN : "rgba(255,255,255,0.12)"}`,
+                background: on
+                  ? "rgba(4,228,0,0.08)"
+                  : "rgba(255,255,255,0.025)",
+                boxShadow: on
+                  ? "0 0 30px rgba(4,228,0,0.35), inset 0 0 40px rgba(4,228,0,0.12)"
+                  : undefined,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                padding: "0 34px",
+                gap: 22,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 24,
+                  opacity: shown ? Math.min(1, pop * 2) : 0.18,
+                  transform: `scale(${shown ? 0.85 + 0.15 * pop : 1})`,
+                  transformOrigin: "0 50%",
+                }}
+              >
+                <div
+                  style={{
+                    ...display,
+                    fontSize: 110,
+                    color: on ? GREEN : "rgba(255,255,255,0.35)",
+                    textShadow: on ? GREEN_TEXT_GLOW : "none",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </div>
+                <ListIcon i={i} on={on} />
+              </div>
+              <div
+                style={{
+                  ...display,
+                  // tamaño ajustado para que ninguna palabra se salga del panel
+                  fontSize: Math.min(
+                    56,
+                    Math.floor(
+                      370 /
+                        (Math.max(...l.text.split(" ").map((w) => w.length)) *
+                          0.72),
+                    ),
+                  ),
+                  lineHeight: 1.02,
+                  whiteSpace: "normal",
+                  paddingRight: 12,
+                  opacity: shown ? Math.min(1, pop * 2) * (on ? 1 : 0.6) : 0,
+                  transform: `translateY(${(1 - pop) * 24}px)`,
+                }}
+              >
+                {l.text}
+              </div>
+            </div>
+          );
+        })}
       </div>
+      {/* chispa: sale de la punta del dedo y vuela a su fila */}
       {listItems.map((l, i) => {
-        if (t < l.at) return null;
-        const born = spring({
-          frame: frame - f(l.at),
-          fps,
-          config: { damping: 11, stiffness: 220, mass: 0.5 },
-        });
-        const fly = interpolate(t, [l.at + 0.35, l.at + 0.8], [0, 1], {
+        const k = interpolate(t, [l.at, l.at + 0.32], [0, 1], {
           ...clamp,
-          easing: easeInOut,
+          easing: Easing.in(Easing.quad),
         });
-        const tipVideo = fingerTip(l.at + 0.05);
-        const tip = tipVideo
-          ? toScreen(f(l.at + 0.05), fps, tipVideo)
-          : { x: 760, y: 640 };
-        const slot = { x: PANEL.x + 30, y: PANEL.y + i * PANEL.row };
-        const x = tip.x + (slot.x - tip.x) * fly;
-        const y = tip.y - 40 + (slot.y - (tip.y - 40)) * fly;
-        const on = i === current;
+        if (t < l.at || k >= 1) return null;
+        const tipV = fingerTip(l.at);
+        const tip = tipV
+          ? toScreen(f(l.at), fps, tipV)
+          : { x: PANEL_X, y: 900 };
+        const dst = {
+          x: PANEL_X + 110,
+          y: ROW.top + i * (ROW.h + ROW.gap) + ROW.h / 2,
+        };
+        const x = tip.x + (dst.x - tip.x) * k;
+        const y = tip.y + (dst.y - tip.y) * k - Math.sin(k * Math.PI) * 120;
         return (
           <div
-            key={l.text}
+            key={`spark-${i}`}
             style={{
               position: "absolute",
-              left: x,
-              top: y,
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-              transform: `scale(${(0.3 + 0.7 * born) * (on ? 1 : 0.9)})`,
-              transformOrigin: "0 50%",
-              opacity: Math.min(1, born * 2) * (on ? 1 : 0.6),
+              left: x - 14,
+              top: y - 14,
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "white",
+              boxShadow: "0 0 16px #3BFF2E, 0 0 40px rgba(4,228,0,0.8)",
             }}
-          >
-            <div
-              style={{
-                width: 58,
-                height: 58,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: on ? GREEN : "rgba(20,20,20,0.9)",
-                border: `2.5px solid ${on ? GREEN : "rgba(255,255,255,0.35)"}`,
-                filter: on ? GLOW : undefined,
-                ...display,
-                fontSize: 32,
-                color: on ? "#0A0A0A" : PAPER,
-                textShadow: "none",
-              }}
-            >
-              {i + 1}
-            </div>
-            <div
-              style={{
-                ...display,
-                fontSize: 46,
-                lineHeight: 1,
-                whiteSpace: "normal",
-                width: 340,
-                WebkitTextStroke: "8px rgba(0,0,0,0.85)",
-                paintOrder: "stroke fill",
-              }}
-            >
-              {l.text}
-            </div>
-          </div>
+          />
         );
       })}
     </AbsoluteFill>
@@ -978,10 +1089,7 @@ export const SceneBackdrops: React.FC = () => (
 );
 
 const SCENES: Record<string, React.FC> = {
-  lblRf1: LblRf1,
   study: StudyScene,
-  lblRf2: LblRf2,
-  lblVl: LblVl,
   master: MasterScene,
   cta: CtaScene,
 };
@@ -989,6 +1097,22 @@ const SCENES: Record<string, React.FC> = {
 /** Capa por encima del vídeo: contenido de cada escena y capas sueltas. */
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
+    {anatomyCards.map((c) => (
+      <Sequence
+        key={c.from}
+        from={f(c.from)}
+        durationInFrames={f(c.to) - f(c.from)}
+        name={`Tarjeta · ${c.title}`}
+      >
+        <AnatomyCard
+          muscle={c.muscle}
+          title={c.title}
+          sub={c.sub}
+          subAt={c.subAt ? c.subAt - c.from : 0}
+          dur={c.to - c.from}
+        />
+      </Sequence>
+    ))}
     <Sequence
       from={f(LIST_FROM)}
       durationInFrames={f(LIST_END) - f(LIST_FROM)}

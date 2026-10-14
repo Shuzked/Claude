@@ -41,6 +41,7 @@ const TARGET = { x: 540, y: 700 }; // dónde queremos la cara en pantalla
 const CENTERING = 0.5; // cuánto se corrige el descentrado (0 = nada, 1 = centrado total)
 const MAX_TRACK_ZOOM = 1.4;
 const EDGE_MARGIN = 14; // px de margen para la deriva y las sacudidas
+export const PANEL_X = 560; // borde izquierdo del panel de la parte final
 
 const track = faceTrack as { fps: number; points: [number, number][] };
 const faceAt = (sourceSeconds: number) => {
@@ -198,7 +199,7 @@ export const cameraAt = (frame: number, fps: number) => {
     thighs: { x: 540, y: 1060 },
     legs: { x: 540, y: 1000 },
     face: { x: 540, y: 720 },
-    left: { x: 300, y: 940 },
+    left: { x: 280, y: 960 },
   };
   let fScale = scale;
   let fX = trX;
@@ -226,11 +227,18 @@ export const cameraAt = (frame: number, fps: number) => {
         Math.min((zs - 1) * o - EDGE_MARGIN, tr),
       );
     const target = SCREEN[fc.on];
-    const zx = clampF(
-      target.x - ORIGIN.x - zs * (c.x - ORIGIN.x),
-      ORIGIN.x,
-      1080,
-    );
+    // con el panel de la derecha tapando, el borde derecho del vídeo puede entrar
+    // hasta donde empieza el panel (x = PANEL_X)
+    const zx =
+      fc.on === "left"
+        ? Math.max(
+            PANEL_X - ORIGIN.x - zs * (1080 - ORIGIN.x),
+            Math.min(
+              (zs - 1) * ORIGIN.x - EDGE_MARGIN,
+              target.x - ORIGIN.x - zs * (c.x - ORIGIN.x),
+            ),
+          )
+        : clampF(target.x - ORIGIN.x - zs * (c.x - ORIGIN.x), ORIGIN.x, 1080);
     const zy = clampF(
       target.y - ORIGIN.y - zs * (c.y - ORIGIN.y),
       ORIGIN.y,

@@ -8,9 +8,11 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { PANEL_X } from "./Camera";
 import { FONT, GREEN } from "./theme";
 import {
   f,
+  LIST_END,
   pageStart,
   scenes,
   TRIM,
@@ -104,9 +106,16 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
   const { fps } = useVideoConfig();
   const t = page[0].start + frame / fps;
   const cta = page[0].speaker === "CTA";
+  // con el panel lateral de la parte final, los subtítulos van en la mitad izquierda
+  const side = page[0].start >= 57.8 && page[0].start < LIST_END;
   return (
     <AbsoluteFill
-      style={{ top: cta ? 1400 : 1360, height: "auto", alignItems: "center" }}
+      style={{
+        top: cta ? 1400 : 1360,
+        height: "auto",
+        alignItems: "center",
+        ...(side ? { width: PANEL_X, right: "auto" } : {}),
+      }}
     >
       <div
         style={{
@@ -115,7 +124,7 @@ const Page: React.FC<{ page: Word[] }> = ({ page }) => {
           justifyContent: "center",
           columnGap: 22,
           rowGap: 6,
-          maxWidth: 880,
+          maxWidth: side ? PANEL_X - 50 : 880,
           fontFamily: FONT,
           fontWeight: 800,
           fontSize: 72,

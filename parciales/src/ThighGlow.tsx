@@ -43,6 +43,15 @@ export const ThighGlow: React.FC = () => {
   const has = GLOW_FRAMES.some(([a, b]) => t >= a && t < b - 0.02);
   if (e < 0.01 || !has) return null;
   const n = String(Math.round(t * 25)).padStart(4, "0");
+  // el color «carga» el músculo de arriba abajo al encenderse (como las referencias)
+  const g = glows.find((x) => t >= x.at - 0.05 && t <= x.end) ?? glows[0];
+  const fill = interpolate(t, [g.at - 0.05, g.at + 0.4], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.bezier(0.33, 0, 0.2, 1),
+  });
+  const edge = fill * 125 - 15;
+  const wipe = `linear-gradient(to bottom, black ${edge}%, transparent ${edge + 15}%)`;
   return (
     <Img
       src={staticFile(`glow/g_${n}.png`)}
@@ -52,6 +61,8 @@ export const ThighGlow: React.FC = () => {
         width: "100%",
         height: "100%",
         opacity: Math.min(1, e) * MAX,
+        maskImage: wipe,
+        WebkitMaskImage: wipe,
         filter: `drop-shadow(0 0 ${8 + 10 * e}px rgba(110,255,60,${0.75 * Math.min(1, e)})) drop-shadow(0 0 ${22 + 18 * e}px rgba(4,228,0,${0.45 * Math.min(1, e)}))`,
       }}
     />
