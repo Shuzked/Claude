@@ -770,9 +770,15 @@ const ListLayer: React.FC = () => {
     easing: easeInOut,
   });
   const current = listItems.filter((l) => t >= l.at).length - 1;
-  const seed = Math.floor(local / 2) % 9;
   return (
     <AbsoluteFill>
+      {/* degradado negro sobre el vídeo, como en la referencia */}
+      <AbsoluteFill
+        style={{
+          opacity: panelIn * (1 - panelOut),
+          background: `linear-gradient(90deg, rgba(0,0,0,0) ${PANEL_X - 260}px, rgba(0,0,0,0.78) ${PANEL_X + 40}px, rgba(0,0,0,0.92) ${PANEL_X + 220}px, rgba(0,0,0,0.95) 100%)`,
+        }}
+      />
       <div
         style={{
           position: "absolute",
@@ -781,50 +787,8 @@ const ListLayer: React.FC = () => {
           width: W,
           height: 1920,
           transform: `translateX(${(1 - panelIn + panelOut) * W}px)`,
-          background: BG,
-          overflow: "hidden",
-          boxShadow: "-30px 0 60px rgba(0,0,0,0.55)",
         }}
       >
-        {/* textura como los fondos de escena */}
-        <AbsoluteFill
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
-        <svg
-          width="100%"
-          height="100%"
-          style={{
-            position: "absolute",
-            opacity: 0.18,
-            mixBlendMode: "screen",
-          }}
-        >
-          <filter id={`lg-${seed}`}>
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.8"
-              numOctaves={2}
-              seed={seed}
-            />
-            <feColorMatrix type="saturate" values="0" />
-          </filter>
-          <rect width="100%" height="100%" filter={`url(#lg-${seed})`} />
-        </svg>
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: 6,
-            height: "100%",
-            background: GREEN,
-            filter: GLOW,
-          }}
-        />
         <div
           style={{
             position: "absolute",

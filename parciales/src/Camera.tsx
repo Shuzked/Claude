@@ -232,7 +232,7 @@ export const cameraAt = (frame: number, fps: number) => {
     const zx =
       fc.on === "left"
         ? Math.max(
-            PANEL_X - ORIGIN.x - zs * (1080 - ORIGIN.x),
+            PANEL_X + 170 - ORIGIN.x - zs * (1080 - ORIGIN.x),
             Math.min(
               (zs - 1) * ORIGIN.x - EDGE_MARGIN,
               target.x - ORIGIN.x - zs * (c.x - ORIGIN.x),
