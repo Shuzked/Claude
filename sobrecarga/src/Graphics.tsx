@@ -236,7 +236,7 @@ const Notes: React.FC = () => {
     >
       <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 38, color: "#1d1d1d", width: 210 }}>Sesión {label}</div>
       <div style={{ flex: 1, borderBottom: "3px dotted rgba(0,0,0,0.25)", transform: "translateY(-10px)" }} />
-      <div style={{ fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 56, color: "#11307a", width: 110, textAlign: "right" }}>
+      <div style={{ fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 56, color: "#11307a", width: 110, textAlign: "right", whiteSpace: "nowrap" }}>
         {v}
       </div>
     </div>
@@ -270,10 +270,11 @@ const Notes: React.FC = () => {
           {t >= NOTES.eleven - 0.05
             ? row(
                 "D",
-                <span style={{ position: "relative", color: fail > 0 ? RED : "#11307a" }}>
+                <span style={{ position: "relative", display: "inline-block", color: fail > 0 ? RED : "#11307a" }}>
                   11
-                  <svg width={110} height={80} viewBox="0 0 110 80" style={{ position: "absolute", left: -20, top: -6 }}>
-                    <path d="M 10 10 L 90 70 M 90 10 L 10 70" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={110} strokeDashoffset={110 * (1 - fail)} />
+                  {/* tachón de rotulador por encima: el 11 se sigue leyendo */}
+                  <svg width={120} height={70} viewBox="0 0 120 70" style={{ position: "absolute", left: -18, top: 4, opacity: 0.8 }}>
+                    <path d="M 8 52 C 40 40, 80 22, 112 10" stroke={RED} strokeWidth={7} fill="none" strokeLinecap="round" strokeDasharray={120} strokeDashoffset={120 * (1 - fail)} />
                   </svg>
                 </span>,
                 eleven,
