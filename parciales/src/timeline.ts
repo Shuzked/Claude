@@ -327,17 +327,10 @@ export const anatomyCards = [
 // La rotoscopia del muslo (public/glow/g_NNNN.png, piel teñida de verde) se
 // enciende, brilla un momento y se apaga. Mientras, la cámara se acerca al muslo.
 export type Glow = { at: number; end: number };
-export const glows: Glow[] = [
-  { at: 10.32, end: 11.7 }, // «parte anterior de tus muslos»: recto femoral
-  { at: 24.96, end: 26.5 }, // «más desarrollo del recto femoral»
-  { at: 28.84, end: 30.4 }, // «vasto lateral»
-];
+// El cliente hará el brillo del músculo por su cuenta: sin capa de brillo.
+export const glows: Glow[] = [];
 /** Fotogramas con capa de brillo generada (segundos del original). */
-export const GLOW_FRAMES: [number, number][] = [
-  [9.6, 11.96],
-  [24.7, 27.64],
-  [28.6, 32.44],
-];
+export const GLOW_FRAMES: [number, number][] = [];
 
 // Encuadres: «thighs» = muslos, «legs» = piernas enteras (se ve el movimiento),
 // «face» = cara (nariz de la pose), «left» = persona a la izquierda para la lista.
@@ -400,7 +393,6 @@ const graphicsSfx: Sfx[] = [
   ...pop(T.context, ...T.forms),
   { at: T.forms[2] + 0.5, src: "paper", volume: 0.2 },
   // el músculo se enciende
-  ...glows.map((g) => ({ at: g.at, src: "shine" as const, volume: 0.35 })),
   ...pop(T.rfSub, T.vlSub),
   // el doble
   { at: DOUBLE.from, src: "whoosh-a", volume: 0.3 },
