@@ -42,12 +42,21 @@ const poseAt = (t: number): Pose | null => {
 };
 
 /** Cable detectado: x = a + b·y, termina en y = end (la unión con la cuerda). */
-const CAB = cables as Record<string, { t0: number; frames: number[][] }>;
+const CAB = cables as Record<string, { t0: number; top?: number[]; frames: number[][] }>;
 const cableAt = (name: string, t: number) => {
   const c = CAB[name];
-  const i = Math.max(0, Math.min(c.frames.length - 1, Math.round((t - c.t0) * 25)));
-  const [a, b, end] = c.frames[i];
-  return { x: (y: number) => a + b * y, end };
+  const k = Math.max(0, Math.min(c.frames.length - 1.001, (t - c.t0) * 25));
+  const i = Math.floor(k);
+  const u = k - i;
+  const A = c.frames[i];
+  const B = c.frames[Math.min(c.frames.length - 1, i + 1)];
+  const a = A[0] + (B[0] - A[0]) * u;
+  const b = A[1] + (B[1] - A[1]) * u;
+  const end = A[2] + (B[2] - A[2]) * u;
+  const x = (y: number) => a + b * y;
+  const ty = c.top ? c.top[1] : 0;
+  // cable: de la salida de la polea al enganche de la cuerda
+  return { x, end, top: { x: x(ty), y: ty }, bot: { x: x(end), y: end } };
 };
 
 /** Cara (seguimiento por plano, suavizado ±0,4 s). */
@@ -192,15 +201,13 @@ const RopeNo: React.FC<{ t: number }> = ({ t }) => {
 // 1 · «El cable no va pegado al hombro y como va por dentro, le genera demandas»
 const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
-  const out = ramp(16.42, 16.66);
+  const out = ramp(15.95, 16.66, easeInOut);
   const cab = cableAt("obj", t);
   const cable = ramp(OBJ1.cable - 0.1, OBJ1.cable + 0.35) * (1 - out);
   const lines = ramp(14.44, 14.75) * (1 - out); // «al hombro»
   const gap = ramp(OBJ1.inside, OBJ1.inside + 0.25) * (1 - out); // «por dentro»
   const pull = pop(OBJ1.inside + 0.1, 10, 300) * (1 - out);
-  const yEnd = cab.end;
-  const top = { x: cab.x(0), y: 0 };
-  const bot = { x: cab.x(yEnd), y: yEnd };
+  const { top, bot } = cab;
   const yGap = pose.sh[0].y + 230;
   const labelAt = { x: cab.x(560), y: 560 };
   return (
@@ -322,8 +329,8 @@ const ObjRot: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => (
 // dentro (codos en rojo) y el hombro lo sujeta (hombros en verde)
 const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
-  const cab = cableAt("iso", t);
-  const cable = ramp(ISO.from, ISO.from + 0.45);
+  const cab = cableAt("iso", Math.max(t, 29.0));
+  const cable = ramp(29.14, 29.5);
   const pull = pop(ISO.inward - 0.1, 10, 300);
   const hold = pop(ISO.hold - 0.15, 9, 260);
   const out = ramp(ISO.to - 0.25, ISO.to);
@@ -331,7 +338,7 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
       <Svg>
-        <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={cable} w={6} />
+        {t >= 29.1 ? <Draw a={cab.top} b={cab.bot} p={cable} w={6} /> : null}
         {pose.el.map((e, i) => {
           const inward = i ? -1 : 1;
           return (
@@ -363,27 +370,32 @@ const ForeOn: React.FC<{ pose: Pose }> = ({ pose }) => {
 
 // Recorrido de perfil: cable, antebrazo y la distancia del codo a la línea del cable
 // (lo que «pesa» la carga sobre el codo), que se acorta al extender.
-const PULLEY_SIDE = { x: 334, y: 600 };
-const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
+const SideRange: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp } = useClock();
   const p = ramp(RANGE.from, RANGE.from + 0.5);
-  const out = ramp(75.3, 76.15, easeInOut);
+  const out = ramp(74.95, 75.6, easeInOut); // al subir la cuerda se apaga todo
+  const cab = cableAt("side", t);
   const e = pose.el[1];
   const w = pose.wr[1];
-  const dx = w.x - PULLEY_SIDE.x;
-  const dy = w.y - PULLEY_SIDE.y;
-  const l = Math.hypot(dx, dy);
-  const u = ((e.x - PULLEY_SIDE.x) * dx + (e.y - PULLEY_SIDE.y) * dy) / (l * l);
-  const foot = { x: PULLEY_SIDE.x + dx * u, y: PULLEY_SIDE.y + dy * u };
+  // antebrazo prolongado (codo → muñeca → hasta donde dé)
+  const fd = { x: w.x - e.x, y: w.y - e.y };
+  const fl = Math.hypot(fd.x, fd.y) || 1;
+  const far = { x: e.x + (fd.x / fl) * 1400, y: e.y + (fd.y / fl) * 1400 };
+  const back = { x: e.x - (fd.x / fl) * 1400, y: e.y - (fd.y / fl) * 1400 };
+  // distancia del codo a la línea del cable (lo que «pesa» la carga sobre el codo)
+  const cd = { x: cab.bot.x - cab.top.x, y: cab.bot.y - cab.top.y };
+  const cl2 = cd.x * cd.x + cd.y * cd.y || 1;
+  const u = ((e.x - cab.top.x) * cd.x + (e.y - cab.top.y) * cd.y) / cl2;
+  const foot = { x: cab.top.x + cd.x * u, y: cab.top.y + cd.y * u };
   const arm = Math.hypot(e.x - foot.x, e.y - foot.y);
-  // demanda: de rojo (alta) a verde (baja), mezclado con suavidad
-  const k = Math.max(0, Math.min(1, (arm - 100) / 120));
+  const k = Math.max(0, Math.min(1, (arm - 30) / 110));
   const mix = (a: number[], b: number[]) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(",")})`;
   const col = mix([4, 228, 0], [255, 59, 48]);
   const glow = `drop-shadow(0 0 8px ${col}) drop-shadow(0 0 18px ${col})`;
   return (
     <Svg opacity={p * (1 - out)}>
-      <Draw a={PULLEY_SIDE} b={w} p={p} w={6} />
+      <Draw a={cab.top} b={cab.bot} p={p} w={6} />
+      <Draw a={back} b={far} p={ramp(RANGE.from + 0.2, RANGE.from + 0.8)} color={PAPER} w={4} dash="16 12" glow={DARK} opacity={0.75} />
       <Draw a={e} b={w} p={p} color={PAPER} w={9} glow={DARK} />
       <Draw a={e} b={foot} p={ramp(RANGE.from + 0.3, RANGE.from + 0.7)} color={col} w={7} dash="10 9" glow={glow} />
       <circle cx={e.x} cy={e.y} r={12 + 6 * k} fill={col} style={{ filter: glow }} />
@@ -397,18 +409,17 @@ const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
 const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
   const cab = cableAt("front", t);
-  const p = ramp(FRONT.from + 0.1, FRONT.from + 0.5);
-  const ext = ramp(FRONT.from + 0.4, FRONT.from + 1.0);
-  const mark = pop(FRONT.from + 0.95, 9, 260);
+  const p = ramp(FRONT.from + 0.05, FRONT.from + 0.55);
+  const ext = ramp(FRONT.from + 0.9, FRONT.from + 1.5);
+  const mark = pop(FRONT.from + 1.45, 9, 260);
   const out = ramp(FRONT.to - 0.45, FRONT.to, easeInOut);
-  const dot = pop(FRONT.from + 0.35, 9, 260);
-  // el cable cuelga recto de la polea: vertical en su x real a media altura
-  const cx = cab.x(Math.min(cab.end, 900));
-  const top = { x: cx, y: 0 };
-  const cu = { x: 0, y: 1 };
+  const dotW = (i: number) => pop(FRONT.from + 0.45 + i * 0.12, 9, 260);
+  const dotE = (i: number) => pop(FRONT.from + 0.7 + i * 0.12, 9, 260);
+  // el cable: de la polea al enganche (medido fotograma a fotograma)
+  const cx = cab.x(900);
   return (
     <Svg opacity={1 - out}>
-      <Draw a={top} b={{ x: cx, y: cab.end }} p={p} w={6} />
+      <Draw a={cab.top} b={cab.bot} p={p} w={6} />
       {[0, 1].map((i) => {
         const w = pose.wr[i];
         const e = pose.el[i];
@@ -421,19 +432,19 @@ const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
         let X = w;
         if (Math.abs(d.x) > 1) {
           const s1 = (cx - w.x) / d.x;
-          const cand = { x: cx, y: w.y + d.y * s1 };
+          const cand = { x: cab.x(w.y + d.y * s1), y: w.y + d.y * s1 };
           if (s1 < 0 && Math.abs(cand.y - w.y) < 500) X = lerp(w, cand, k);
         }
         // marca de ángulo recto en el cruce (lado de cada brazo)
         const toW = { x: w.x - X.x, y: w.y - X.y };
         const lw = Math.hypot(toW.x, toW.y) || 1;
         const a1 = { x: (toW.x / lw) * 26, y: (toW.y / lw) * 26 };
-        const a2 = { x: -cu.x * 26, y: -cu.y * 26 };
+        const a2 = { x: 0, y: -26 };
         return (
           <g key={i}>
             <Draw a={e} b={X} p={ext} color={PAPER} w={6} dash="16 12" glow={DARK} />
-            <circle cx={w.x} cy={w.y} r={12 * dot} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
-            <circle cx={e.x} cy={e.y} r={9 * dot} fill={PAPER} stroke={GREEN} strokeWidth={4} style={{ filter: NEON }} />
+            <circle cx={w.x} cy={w.y} r={12 * dotW(i)} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
+            <circle cx={e.x} cy={e.y} r={9 * dotE(i)} fill={PAPER} stroke={GREEN} strokeWidth={4} style={{ filter: NEON }} />
             {mark * k > 0.02 ? (
               <path
                 d={`M ${X.x + a1.x} ${X.y + a1.y} L ${X.x + a1.x + a2.x} ${X.y + a1.y + a2.y} L ${X.x + a2.x} ${X.y + a2.y}`}
@@ -515,7 +526,7 @@ export const BodyLayer: React.FC = () => {
       {pose && t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
       {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
       {pose && t >= FORE.green - 0.15 && t < 60.16 ? <ForeOn pose={pose} /> : null}
-      {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} /> : null}
+      {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} t={t} /> : null}
       {pose && t >= FRONT.from && t < FRONT.to ? <FrontPerp pose={pose} t={t} /> : null}
       {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}
       {t >= CTA.follow ? <Handle t={t} /> : null}
