@@ -15,7 +15,7 @@ import {
 // Mezcla: la voz (ya procesada en el vídeo) manda; la música baja cuando se
 // habla y sube en las pausas; los efectos van por encima de la música.
 const MUSIC_GAP = 0.15; // nivel en pausas (cama sutil)
-const MUSIC_UNDER_VOICE = 0.1; // nivel mientras se habla: la voz manda
+const MUSIC_UNDER_VOICE = 0.085; // nivel mientras se habla: la voz manda
 const ATTACK = 0.08; // s que tarda en bajar
 const RELEASE = 0.35; // s que tarda en recuperarse
 
@@ -39,7 +39,7 @@ const duck: number[] = (() => {
 })();
 
 // Los efectos acompañan, no compiten con la voz.
-const SFX_MASTER = 0.55;
+const SFX_MASTER = 0.6;
 const SFX_GAIN: Partial<Record<FxName, number>> = { tic: 0.7, hit: 1.1 };
 
 export const Sound: React.FC = () => (

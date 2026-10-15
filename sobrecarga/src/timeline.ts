@@ -200,7 +200,7 @@ export const NOTES = { from: 18.9, rows: [19.3, 20.4, 21.12], eleven: 23.2, fail
 // E03 · pensamiento de Yago 1 (voz interior)
 export const THOUGHT = { from: THOUGHT_AT[0], to: THOUGHT_AT[1], wake: 31.36, out: 32.4 }; // se retira poco a poco desde «A ver, tranquilo»
 // E04 · «Tranquilo»: repetir marca ≠ demostrar que no creces / registro de rendimiento
-export const CALM = { at: 31.68, label: 32.16, no: 33.08, grow: 34.72, labelTo: 35.5 };
+export const CALM = { at: 31.68, in: 32.8, no: 33.08, grow: 34.72, labelTo: 35.5 }; // entra con el plano de la sudadera azul (32,8)
 // E05 · fatiga y ritmo
 export const FATIGUE = { from: 42.84, to: 45.7 };
 // E06 · una sesión frente a una tendencia
@@ -213,7 +213,7 @@ export const CHOICE = { keep: 77.2, change: 78.96, to: 79.8 };
 export const CTA = { from: 80.0, master: 83.44, keyword: 84.88 };
 
 // Sin subtítulos encima de la libreta (lo dice el rótulo)
-export const MUTE: [number, number][] = [[CALM.label - 0.05, CALM.labelTo]];
+export const MUTE: [number, number][] = [[CALM.in, CALM.labelTo]];
 export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 
 // --- Encuadre ----------------------------------------------------------------------
@@ -311,10 +311,11 @@ export const allSfx: Sfx[] = [
   ...NOTES.rows.map((at) => ({ at, src: "marker" as const, volume: 0.22 })),
   { at: NOTES.eleven, src: "riser", volume: 0.15 },
   { at: NOTES.fail, src: "buzzer", volume: 0.18 },
+  { at: NOTES.fail, src: "impact-hi", volume: 0.3 }, // sacudida de la barra
   // pensamiento: entra y lo corta el «tranquilo»
   { at: THOUGHT.from - 0.1, src: "riser", volume: 0.12 },
   { at: CALM.at - 0.05, src: "snap", volume: 0.35 },
-  { at: CALM.label, src: "whoosh-b", volume: 0.25 },
+  { at: CALM.in, src: "whoosh-b", volume: 0.3 },
   { at: CALM.no, src: "hit", volume: 0.3 },
   { at: CALM.grow, src: "whoosh-a", volume: 0.2 },
   { at: FATIGUE.from, src: "pop", volume: 0.22 },
@@ -324,14 +325,13 @@ export const allSfx: Sfx[] = [
   { at: IDEA.from, src: "whoosh-b", volume: 0.22 },
   { at: CHOICE.keep, src: "pop", volume: 0.25 },
   { at: CHOICE.change, src: "pop", volume: 0.25 },
-  { at: CHOICE.change + 0.6, src: "boing", volume: 0.12 },
   { at: CTA.master, src: "whoosh-a", volume: 0.25 },
   { at: CTA.keyword, src: "stamp", volume: 0.35 },
   // barridos en los cortes
   ...JUMPS.filter((j) => j > 1).map((j, i) => ({
     at: j,
     src: (i % 2 ? "whoosh-a" : "whoosh-b") as FxName,
-    volume: SHOT_CUTS.includes(j) || FIXED.some((x) => x.from === j) ? 0.2 : 0.1,
+    volume: SHOT_CUTS.includes(j) || FIXED.some((x) => x.from === j) ? 0.38 : 0.26,
   })),
 ];
 

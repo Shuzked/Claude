@@ -255,7 +255,10 @@ const Notes: React.FC = () => {
         >
           {n}
           {red ? (
-            <div style={{ position: "absolute", left: 12, right: -6, top: "46%", height: 7, borderRadius: 4, background: RED, transform: `rotate(-12deg) scaleX(${fail})`, transformOrigin: "left" }} />
+            <svg width={96} height={70} viewBox="0 0 96 70" style={{ position: "absolute", right: -8, top: -6, overflow: "visible" }}>
+              <path d="M 10 8 L 86 62" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - fail)} />
+              <path d="M 86 8 L 10 62" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - ramp(NOTES.fail + 0.1, NOTES.fail + 0.22))} />
+            </svg>
           ) : null}
         </div>
       </div>
@@ -308,12 +311,12 @@ const Thought: React.FC = () => {
 
 const Repeat: React.FC = () => {
   const { t, pop, ramp } = useClock();
-  if (t < CALM.label - 0.05 || t > CALM.labelTo + 0.05) return null;
+  if (t < CALM.in - 0.02 || t > CALM.labelTo + 0.05) return null;
   const out = ramp(CALM.labelTo - 0.3, CALM.labelTo, easeInOut);
-  const a = pop(CALM.label, 12, 230);
+  const a = pop(CALM.in, 12, 230);
   const b = pop(CALM.no, 8, 260);
   const c = pop(CALM.grow, 12, 230);
-  const blur = (p: number) => `blur(${Math.max(0, 1 - p) * 14}px)`;
+  const blur = (p: number) => `blur(${Math.max(0, 1 - p) * 5}px)`;
   return (
     <AbsoluteFill style={{ opacity: 1 - out }}>
       <div
@@ -325,7 +328,7 @@ const Repeat: React.FC = () => {
         }}
       />
       <div style={{ position: "absolute", top: 1040, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${-out * 40}px)` }}>
-        <div style={{ ...display, ...stroke(8), fontSize: 82, transform: `translateX(${(1 - a) * -500}px) skewX(${(1 - a) * -20}deg)`, filter: blur(a) }}>
+        <div style={{ ...display, ...stroke(8), fontSize: 82, opacity: Math.min(1, a * 3), transform: `translateX(${(1 - a) * -500}px) skewX(${(1 - a) * -20}deg)`, filter: blur(a) }}>
           Repetir una marca
         </div>
         <div
@@ -343,7 +346,7 @@ const Repeat: React.FC = () => {
         >
           No significa
         </div>
-        <div style={{ ...display, ...stroke(8), fontSize: 54, marginTop: 18, transform: `translateX(${(1 - c) * 500}px) skewX(${(1 - c) * 20}deg)`, filter: blur(c) }}>
+        <div style={{ ...display, ...stroke(8), fontSize: 54, marginTop: 18, opacity: Math.min(1, c * 3), transform: `translateX(${(1 - c) * 500}px) skewX(${(1 - c) * 20}deg)`, filter: blur(c) }}>
           que hayas dejado de <span style={{ color: GREEN }}>crecer</span>
         </div>
       </div>
@@ -444,18 +447,17 @@ const Idea: React.FC = () => (
 );
 
 // ---------------------------------------------------------------------------
-// E08 · «¿cuándo mantengo… y cuándo cambio algo?»: un interruptor que no se decide
+// E08 · «¿cuándo mantengo… y cuándo cambio algo?»: un interruptor que pasa de
+// «¿Mantener?» a «¿Cambiar?» y se queda ahí
 
 const Choice: React.FC = () => {
-  const { t, pop, ramp } = useClock();
+  const { t, ramp } = useClock();
   const st = useEnter(CHOICE.keep - 0.1, CHOICE.to);
   if (t < CHOICE.keep - 0.15 || t > CHOICE.to + 0.05) return null;
   const toKeep = ramp(CHOICE.keep, CHOICE.keep + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
   const toChange = ramp(CHOICE.change, CHOICE.change + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
-  const toMid = ramp(CHOICE.change + 0.45, CHOICE.change + 0.75, Easing.bezier(0.3, 1.4, 0.4, 1));
-  // posición del botón: -1 = mantener, 1 = cambiar, 0 = sin decidir
-  const pos = -1 * toKeep * (1 - toChange) + 1 * toChange * (1 - toMid);
-  const q = pop(CHOICE.change + 0.6, 9);
+  // posición del botón: -1 = mantener, 1 = cambiar (se queda ahí)
+  const pos = -1 * toKeep * (1 - toChange) + 1 * toChange;
   // interruptor en el centro, opciones a los lados: se ilumina la que toca
   const TW = 230;
   const K = 96;
@@ -497,7 +499,6 @@ const Choice: React.FC = () => {
               color: INK,
             }}
           >
-            <span style={{ transform: `scale(${q})`, opacity: Math.min(1, q * 2) }}>?</span>
           </div>
         </div>
         {opt("¿Cambiar?", Math.max(0, pos))}
