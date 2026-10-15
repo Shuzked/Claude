@@ -30,11 +30,10 @@ export type Word = {
 const fixes: Record<string, string> = {
   "6.12": "mejoro.",
   "7.08": "sabes",
-  "7.56": "dicen:",
-  "7.84": "",
+  "7.56": "dicen",
   "12.92": "¿Y",
   "14.04": "repe",
-  "15.8": "bíceps?",
+  "15.8": "cuádriceps?", // dice «cuádriceps» (la transcripción automática ponía «cuadro»)
   "27.08": "ese.",
   "27.84": "¿Habré",
   "29.04": "muscular?",
