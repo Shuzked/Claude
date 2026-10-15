@@ -28,7 +28,9 @@ export type Word = {
 
 // Correcciones (signos, palabras mal reconocidas). "" = no se subtitula.
 const fixes: Record<string, string> = {
+  "4.24": "hala.",
   "6.12": "mejoro.",
+  "23.2": "undécima,",
   "7.08": "sabes",
   "7.56": "dicen",
   "12.92": "¿Y",

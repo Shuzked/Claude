@@ -454,8 +454,14 @@ const Idea: React.FC = () => (
 // «¿Mantener?» a «¿Cambiar?» y se queda ahí
 
 const Choice: React.FC = () => {
-  const { t, ramp } = useClock();
-  const st = useEnter(CHOICE.keep - 0.1, CHOICE.to);
+  const { t, ramp, pop } = useClock();
+  // entra con un pequeño salto y al acabar la escena se va desvaneciendo poco a poco
+  const inP = pop(CHOICE.keep - 0.1, 13, 190);
+  const fade = ramp(CHOICE.to - 0.7, CHOICE.to - 0.05, easeInOut);
+  const st: React.CSSProperties = {
+    opacity: Math.min(1, inP * 2) * (1 - fade),
+    transform: `translateY(${(1 - inP) * 60}px) scale(${0.92 + 0.08 * inP})`,
+  };
   if (t < CHOICE.keep - 0.15 || t > CHOICE.to + 0.05) return null;
   const toKeep = ramp(CHOICE.keep, CHOICE.keep + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
   const toChange = ramp(CHOICE.change, CHOICE.change + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
