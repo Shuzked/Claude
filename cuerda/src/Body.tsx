@@ -387,7 +387,7 @@ const PULLEY_SIDE = { x: 334, y: 600 };
 const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
   const { ramp } = useClock();
   const p = ramp(RANGE.from, RANGE.from + 0.5);
-  const out = ramp(76.0, 76.2);
+  const out = ramp(75.3, 76.15, easeInOut);
   const e = pose.el[1];
   const w = pose.wr[1];
   const dx = w.x - PULLEY_SIDE.x;
@@ -396,65 +396,75 @@ const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
   const u = ((e.x - PULLEY_SIDE.x) * dx + (e.y - PULLEY_SIDE.y) * dy) / (l * l);
   const foot = { x: PULLEY_SIDE.x + dx * u, y: PULLEY_SIDE.y + dy * u };
   const arm = Math.hypot(e.x - foot.x, e.y - foot.y);
-  const hot = arm > 165; // demanda alta: rojo
+  // demanda: de rojo (alta) a verde (baja), mezclado con suavidad
+  const k = Math.max(0, Math.min(1, (arm - 100) / 120));
+  const mix = (a: number[], b: number[]) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(",")})`;
+  const col = mix([4, 228, 0], [255, 59, 48]);
+  const glow = `drop-shadow(0 0 8px ${col}) drop-shadow(0 0 18px ${col})`;
   return (
     <Svg opacity={p * (1 - out)}>
       <Draw a={PULLEY_SIDE} b={w} p={p} w={6} />
       <Draw a={e} b={w} p={p} color={PAPER} w={9} glow={DARK} />
-      <Draw a={e} b={foot} p={ramp(RANGE.from + 0.3, RANGE.from + 0.7)} color={hot ? RED : GREEN} w={7} dash="10 9" glow={hot ? RED_GLOW : NEON} />
-      <circle cx={e.x} cy={e.y} r={hot ? 18 : 12} fill={hot ? RED : GREEN} style={{ filter: hot ? RED_GLOW : NEON }} />
+      <Draw a={e} b={foot} p={ramp(RANGE.from + 0.3, RANGE.from + 0.7)} color={col} w={7} dash="10 9" glow={glow} />
+      <circle cx={e.x} cy={e.y} r={12 + 6 * k} fill={col} style={{ filter: glow }} />
     </Svg>
   );
 };
 
-// Frontal: cable y la prolongación imaginaria de cada antebrazo desde la muñeca
-// (dirección codo → muñeca) hasta que se cruzan. La guía se queda todo el plano.
-const FrontCross: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+// Frontal: línea imaginaria de cada muñeca a su codo, prolongada hasta la línea de
+// la cuerda; donde se cortan, una marca de ángulo recto (la cuerda tira en
+// perpendicular al antebrazo). Se queda todo el plano.
+const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
   const cab = cableAt("front", t);
   const p = ramp(FRONT.from + 0.1, FRONT.from + 0.5);
   const ext = ramp(FRONT.from + 0.4, FRONT.from + 1.0);
-  const out = ramp(FRONT.to - 0.2, FRONT.to);
-  const [eL, eR] = pose.el;
-  const [wL, wR] = pose.wr;
-  const unit = (a: P, b: P) => {
-    const l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    return { x: (b.x - a.x) / l, y: (b.y - a.y) / l };
-  };
-  const d1 = unit(eL, wL);
-  const d2 = unit(eR, wR);
-  // intersección de las dos rectas que salen de las muñecas
-  const den = d1.x * d2.y - d1.y * d2.x;
-  let s1 = 420;
-  let s2 = 420;
-  if (Math.abs(den) > 0.05) {
-    const a1 = ((wR.x - wL.x) * d2.y - (wR.y - wL.y) * d2.x) / den;
-    const a2 = ((wR.x - wL.x) * d1.y - (wR.y - wL.y) * d1.x) / den;
-    if (a1 > 20 && a1 < 1200 && a2 > 20 && a2 < 1200) {
-      s1 = a1;
-      s2 = a2;
-    }
-  }
-  const X1 = { x: wL.x + d1.x * s1, y: wL.y + d1.y * s1 };
-  const X2 = { x: wR.x + d2.x * s2, y: wR.y + d2.y * s2 };
-  const X = lerp(X1, X2, 0.5);
-  const hit = pop(FRONT.from + 0.9, 8, 260);
-  const ring = (t * 1.5) % 1;
+  const mark = pop(FRONT.from + 0.95, 9, 260);
+  const out = ramp(FRONT.to - 0.45, FRONT.to, easeInOut);
   const dot = pop(FRONT.from + 0.35, 9, 260);
+  const top = { x: cab.x(0), y: 0 };
+  const bot = { x: cab.x(cab.end), y: cab.end };
+  const cd = { x: bot.x - top.x, y: bot.y - top.y };
+  const cl = Math.hypot(cd.x, cd.y) || 1;
+  const cu = { x: cd.x / cl, y: cd.y / cl };
   return (
     <Svg opacity={1 - out}>
-      <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={p} w={6} />
-      <Draw a={wL} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} />
-      <Draw a={wR} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} />
-      {[wL, wR].map((w, i) => (
-        <circle key={i} cx={w.x} cy={w.y} r={12 * dot} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
-      ))}
-      {hit > 0.02 ? (
-        <g transform={`translate(${X.x} ${X.y}) scale(${hit})`} style={{ filter: NEON }}>
-          <circle r={16} fill={GREEN} />
-          <circle r={16 + ring * 40} fill="none" stroke={GREEN} strokeWidth={3} opacity={1 - ring} />
-        </g>
-      ) : null}
+      <Draw a={top} b={{ x: cab.x(1920), y: 1920 }} p={p} w={6} />
+      {[0, 1].map((i) => {
+        const w = pose.wr[i];
+        const e = pose.el[i];
+        // de la muñeca hacia el codo y más allá, hasta cortar la línea de la cuerda
+        const d = { x: e.x - w.x, y: e.y - w.y };
+        const den = d.x * cu.y - d.y * cu.x;
+        let X = { x: cab.x(w.y), y: w.y };
+        if (Math.abs(den) > 0.05) {
+          const s1 = ((top.x - w.x) * cu.y - (top.y - w.y) * cu.x) / den;
+          X = { x: w.x + d.x * s1, y: w.y + d.y * s1 };
+        }
+        // marca de ángulo recto en el cruce (lado de cada brazo)
+        const toW = { x: w.x - X.x, y: w.y - X.y };
+        const lw = Math.hypot(toW.x, toW.y) || 1;
+        const a1 = { x: (toW.x / lw) * 26, y: (toW.y / lw) * 26 };
+        const a2 = { x: -cu.x * 26, y: -cu.y * 26 };
+        return (
+          <g key={i}>
+            <Draw a={e} b={X} p={ext} color={PAPER} w={6} dash="16 12" glow={DARK} />
+            <circle cx={w.x} cy={w.y} r={12 * dot} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
+            <circle cx={e.x} cy={e.y} r={9 * dot} fill={PAPER} stroke={GREEN} strokeWidth={4} style={{ filter: NEON }} />
+            {mark > 0.02 ? (
+              <path
+                d={`M ${X.x + a1.x} ${X.y + a1.y} L ${X.x + a1.x + a2.x} ${X.y + a1.y + a2.y} L ${X.x + a2.x} ${X.y + a2.y}`}
+                fill="none"
+                stroke={GREEN}
+                strokeWidth={5}
+                strokeLinejoin="round"
+                transform={`translate(${X.x} ${X.y}) scale(${mark}) translate(${-X.x} ${-X.y})`}
+                style={{ filter: NEON }}
+              />
+            ) : null}
+          </g>
+        );
+      })}
     </Svg>
   );
 };
@@ -524,7 +534,7 @@ export const BodyLayer: React.FC = () => {
       {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
       {pose && t >= FORE.from - 0.05 && t < 60.16 ? <ForeOn pose={pose} t={t} /> : null}
       {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} /> : null}
-      {pose && t >= FRONT.from && t < FRONT.to ? <FrontCross pose={pose} t={t} /> : null}
+      {pose && t >= FRONT.from && t < FRONT.to ? <FrontPerp pose={pose} t={t} /> : null}
       {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}
       {t >= CTA.follow ? <Handle t={t} /> : null}
     </div>
