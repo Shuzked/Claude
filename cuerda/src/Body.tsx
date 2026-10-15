@@ -4,7 +4,7 @@ import arms from "./arms.json";
 import cables from "./cables.json";
 import faceTrack from "./faceTrack.json";
 import { FONT, GREEN, PAPER } from "./theme";
-import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS } from "./timeline";
+import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS, TRI } from "./timeline";
 
 // Gráficos pegados al cuerpo. Van dentro de la cámara virtual, en coordenadas del
 // vídeo (1080×1920): rotoscopias (public/roto/<trabajo>/r_NNNNN.png, por fotograma
@@ -178,6 +178,23 @@ const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.
 );
 
 // ---------------------------------------------------------------------------------
+/** Músculo coloreado (estilo de la referencia): se enciende con un destello y brilla. */
+const GLOW_G = "drop-shadow(0 0 10px rgba(59,255,46,0.85)) drop-shadow(0 0 28px rgba(4,228,0,0.45))";
+const GLOW_R = "drop-shadow(0 0 10px rgba(255,59,48,0.85)) drop-shadow(0 0 28px rgba(255,40,30,0.45))";
+const Muscle: React.FC<{ job: string; t: number; range: [number, number]; on: number; red?: boolean }> = ({ job, t, range, on, red }) => {
+  if (on <= 0.01) return null;
+  const pulse = 0.9 + 0.1 * Math.sin(t * 6);
+  return <Roto job={job} t={t} range={range} style={{ opacity: on * pulse, filter: red ? GLOW_R : GLOW_G }} />;
+};
+const lightUp = (d: number, len = 0.3) => (d <= 0 ? 0 : Math.min(1, d / len) * (1 + 0.25 * Math.max(0, 1 - d / 0.25)));
+
+// Hook: el tríceps se enciende al decir «tríceps» y se apaga al acabar el plano
+const TricepsOn: React.FC<{ t: number }> = ({ t }) => {
+  const { ramp } = useClock();
+  const on = Math.min(1, lightUp(t - TRI.on)) * (1 - ramp(TRI.off, HOOK.from - 0.02, easeInOut));
+  return <Muscle job="tri" t={t} range={[0, 1.8]} on={on} />;
+};
+
 // Hook: señal de prohibido sobre la cuerda colgada (rojo)
 const ROPE_HOOK = { x: 410, y: 850 };
 const RopeNo: React.FC<{ t: number }> = ({ t }) => {
@@ -210,8 +227,10 @@ const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { top, bot } = cab;
   const yGap = pose.sh[0].y + 230;
   const labelAt = { x: cab.x(560), y: 560 };
+  const red = Math.min(1, lightUp(t - OBJ1.demand + 0.05)) * (1 - out);
   return (
     <>
+      <Muscle job="shr" t={t} range={[13.12, 16.68]} on={red} red />
       <Svg>
         {pose.sh.map((s, i) => (
           <Draw key={i} a={s} b={{ x: s.x, y: s.y + 600 }} p={lines} color={PAPER} w={4} dash="14 12" glow={DARK} />
@@ -337,6 +356,8 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const shake = hold > 0.5 ? Math.sin(t * 40) * 1.6 : 0;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
+      <Muscle job="iel" t={t} range={[24.4, 30.52]} on={Math.min(1, lightUp(t - ISO.inward + 0.1))} red />
+      <Muscle job="ish" t={t} range={[24.4, 30.52]} on={Math.min(1, lightUp(t - ISO.hold + 0.15))} />
       <Svg>
         {t >= 29.1 ? <Draw a={cab.top} b={cab.bot} p={cable} w={6} /> : null}
         {pose.el.map((e, i) => {
@@ -354,13 +375,15 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
 };
 
 // «…del antebrazo»: al nombrarlo, la etiqueta señala el antebrazo de la izquierda
-const ForeOn: React.FC<{ pose: Pose }> = ({ pose }) => {
+const ForeOn: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
   const end = 1 - ramp(FORE.to - 0.3, FORE.to, easeInOut);
   const mid = lerp(pose.el[0], pose.wr[0], 0.5);
   const from = { x: 560, y: mid.y - 400 }; // centrada: con el zoom no se sale
+  const on = Math.min(1, lightUp(t - FORE.green + 0.05)) * end;
   return (
     <>
+      <Muscle job="fore" t={t} range={[57.0, 60.16]} on={on} />
       <Callout to={mid} from={from} p={ramp(FORE.green - 0.1, FORE.green + 0.2) * end} q={pop(FORE.green, 10) * end} size={34}>
         Rotación del antebrazo
       </Callout>
@@ -520,12 +543,13 @@ export const BodyLayer: React.FC = () => {
   const pose = poseAt(t);
   return (
     <div style={{ position: "absolute", inset: 0 }}>
+      {t < 1.8 ? <TricepsOn t={t} /> : null}
       {t >= HOOK.no - 0.05 && t < HOOK.to + 0.05 ? <RopeNo t={t} /> : null}
       {pose && t >= OBJ1.from && t < 16.68 ? <ObjCable pose={pose} t={t} /> : null}
       {t >= 16.68 && t < 19.84 ? <ObjOpen /> : null}
       {pose && t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
       {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
-      {pose && t >= FORE.green - 0.15 && t < 60.16 ? <ForeOn pose={pose} /> : null}
+      {pose && t >= FORE.green - 0.15 && t < 60.16 ? <ForeOn pose={pose} t={t} /> : null}
       {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} t={t} /> : null}
       {pose && t >= FRONT.from && t < FRONT.to ? <FrontPerp pose={pose} t={t} /> : null}
       {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}

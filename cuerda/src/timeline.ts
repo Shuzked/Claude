@@ -174,7 +174,7 @@ export const FRONT = { from: 76.25, to: 79.7 };
 export const TOOLS = { bar: 85.6, rope: 86.5, fade: 87.6, to: 88.6 };
 export const TIPS = { comfy: 86.64, fail: 87.56, prog: 88.68, to: 89.35 };
 // Hook: el tríceps se enciende
-export const TRI = { on: 0.25, off: 1.5 };
+export const TRI = { on: 0.7, off: 1.5 };
 // CTA
 export const CTA = { from: 89.48, follow: 91.28, rig: 93.08 };
 
