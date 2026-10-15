@@ -11,7 +11,7 @@ import {
 } from "remotion";
 import { cameraAt } from "./Camera";
 import { FONT, GREEN, PAPER } from "./theme";
-import { CTA, f, FORE, HOOK, ISO, NEITHER, OBJ1, OBJ2, TIPS, toSrc, TWO } from "./timeline";
+import { CTA, f, HOOK, ISO, NEITHER, OBJ1, OBJ2, TIPS, toSrc, TWO } from "./timeline";
 
 // Rótulos de «Utiliza la cuerda para hacer tríceps» (pantalla). Los gráficos pegados
 // al cuerpo están en Body.tsx. Todas las capas leen el tiempo del ORIGINAL (toSrc).
@@ -338,41 +338,6 @@ const Iso: React.FC = () => {
   );
 };
 
-// «rotación del antebrazo»: zoom a los antebrazos (cámara) y rótulo limpio con
-// una flecha circular que gira
-const Fore: React.FC = () => {
-  const { t, squash, ramp, idle } = useClock();
-  if (t < FORE.from - 0.05 || t > FORE.to + 0.05) return null;
-  const q = squash(FORE.from, 9, 230);
-  const out = ramp(FORE.to - 0.3, FORE.to, easeInOut);
-  const id = idle(5.1, 0.8);
-  const spin = (t - FORE.from) * 300;
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (1 - out) }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            background: GREEN,
-            padding: "10px 26px 8px 14px",
-            borderRadius: 14,
-            filter: GLOW,
-            transform: `translateY(${(1 - q.p) * -50 + id.y}px) scale(${q.sx}, ${q.sy}) rotate(${-2 + id.r}deg)`,
-          }}
-        >
-          <svg width={64} height={64} viewBox="0 0 64 64" style={{ transform: `rotate(${spin}deg)` }}>
-            <path d="M 32 8 A 24 24 0 1 1 9.5 23" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" />
-            <path d="M 2 16 L 11 30 L 20 15 Z" fill={INK} />
-          </svg>
-          <Words text="Rotación del antebrazo" at={FORE.from + 0.05} gap={0.06} style={{ ...display, fontSize: 52, color: INK, marginRight: "-0.22em" }} />
-        </div>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 // «ni la musculatura del tríceps, ni del hombro pinchan ni cortan»: medidor de quién
 // trabaja en el giro. El antebrazo se llena; tríceps y hombro intentan subir, caen a 0
 // y se apagan con «ni pinchan ni cortan»
@@ -401,25 +366,24 @@ const Neither: React.FC = () => {
           transform: `translateY(${(1 - card.p) * 80 + id.y}px) rotate(${id.r * 0.5}deg)`,
         }}
       >
-        <Glass style={{ padding: "18px 26px 20px", width: 640, transform: `scale(${card.sx}, ${card.sy})` }}>
+        <Glass style={{ padding: "18px 26px 20px", width: 700, transform: `scale(${card.sx}, ${card.sy})` }}>
           <div style={{ ...label, fontSize: 20, letterSpacing: 4, color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>¿Quién gira la cuerda?</div>
           {rows.map((r, i) => {
             const q = squash(r.at, 9, 240);
             // los «off» suben un poco y caen a cero; el «on» se llena con rebote
-            const lvl = r.on
-              ? Math.min(1.05, ramp(r.at, r.at + 0.5, Easing.bezier(0.3, 1.5, 0.5, 1)))
-              : Math.max(0, Math.sin(Math.min(1, (t - r.at) / 0.45) * Math.PI) * 0.28) * (t > r.at ? 1 : 0);
+            const fill = ramp(r.at, r.at + 0.5, Easing.bezier(0.3, 1.5, 0.5, 1));
+            const x = ramp(NEITHER.cut, NEITHER.cut + 0.35, Easing.bezier(0.5, 0, 0.2, 1));
+            const lvl = r.on ? Math.min(1.05, fill) : Math.min(1.05, fill) * (1 - x);
             const dead = !r.on && t > NEITHER.cut;
-            const x = ramp(NEITHER.cut, NEITHER.cut + 0.2);
             const shake = dead && t < NEITHER.cut + 0.3 ? Math.sin(t * 80) * 5 * (1 - (t - NEITHER.cut) / 0.3) : 0;
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, opacity: Math.min(1, q.p * 2) * (dead ? 0.5 + 0.5 * (1 - x) : 1), transform: `translateX(${(1 - q.p) * -60 + shake}px)` }}>
-                <div style={{ ...display, fontSize: 38, width: 210, color: r.on ? GREEN : PAPER }}>{r.name}</div>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, opacity: Math.min(1, q.p * 2), transform: `translateX(${(1 - q.p) * -60 + shake}px)` }}>
+                <div style={{ ...display, fontSize: 36, width: 250, flexShrink: 0, paddingRight: 12, color: r.on ? GREEN : dead ? RED : PAPER }}>{r.name}</div>
                 <div style={{ position: "relative", flex: 1, height: 26, borderRadius: 13, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                  <div style={{ width: `${Math.max(0, lvl) * 100}%`, height: "100%", borderRadius: 13, background: r.on ? `linear-gradient(90deg, rgba(4,228,0,0.6), ${GREEN})` : PAPER, boxShadow: r.on ? "0 0 18px rgba(4,228,0,0.7)" : undefined }} />
+                  <div style={{ width: `${Math.max(0, lvl) * 100}%`, height: "100%", borderRadius: 13, background: dead ? RED : r.on ? `linear-gradient(90deg, rgba(4,228,0,0.6), ${GREEN})` : PAPER, boxShadow: dead ? "0 0 18px rgba(255,59,48,0.7)" : r.on ? "0 0 18px rgba(4,228,0,0.7)" : undefined }} />
                 </div>
-                <div style={{ ...display, fontSize: 36, width: 86, textAlign: "right", color: r.on ? GREEN : dead ? RED : PAPER, transform: `scale(${dead ? 1 + 0.25 * Math.sin(x * Math.PI) : 1})` }}>
-                  {r.on ? `${Math.round(Math.min(1, lvl) * 100)}%` : dead ? "0%" : `${Math.round(lvl * 100)}%`}
+                <div style={{ ...display, fontSize: 36, width: 86, textAlign: "right", color: r.on ? GREEN : dead ? RED : PAPER, transform: `scale(${dead ? 1 + 0.25 * Math.sin(x * Math.PI) : 1})`, flexShrink: 0 }}>
+                  {`${Math.round(Math.min(1, Math.max(0, lvl)) * 100)}%`}
                 </div>
               </div>
             );
@@ -434,8 +398,8 @@ const Neither: React.FC = () => {
 // una bola verde salta de peldaño en peldaño al ritmo de la voz
 const Tips: React.FC = () => {
   const { t, squash, ramp, idle, pop } = useClock();
-  if (t < TIPS.comfy - 0.15 || t > TIPS.to + 0.05) return null;
-  const out = ramp(TIPS.to - 0.3, TIPS.to, easeInOut);
+  if (t < TIPS.comfy - 0.15 || t > TIPS.prog + 0.1) return null;
+  const out = ramp(TIPS.prog - 0.12, TIPS.prog + 0.08, easeInOut);
   const steps: [string, number][] = [
     ["Comodidad", TIPS.comfy],
     ["Al fallo", TIPS.fail],
@@ -479,6 +443,49 @@ const Tips: React.FC = () => {
   );
 };
 
+// «…y progresar»: PROGRESAR en grande detrás de Yago (recorte por delante)
+const ProgBehind: React.FC = () => {
+  const { t, frame, fps, pop, ramp } = useClock();
+  if (t < TIPS.prog - 0.15 || t >= 89.5) return null;
+  const a = pop(TIPS.prog - 0.05, 13, 260);
+  const out = ramp(TIPS.to, 89.45, easeInOut);
+  const d = t - (TIPS.prog - 0.05);
+  const light = neonOn(d);
+  const sx = d > 0 && d < 0.35 ? Math.sin(d * 90) * 12 * (1 - d / 0.35) : 0;
+  const cam = cameraAt(frame, fps);
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 38%, rgba(4,228,0,0.16) 0%, rgba(0,0,0,0.55) 60%)", opacity: Math.min(1, a) * (1 - out) }} />
+      <AbsoluteFill style={{ transform: `translate(${sx}px, ${sx * 0.4}px) scale(${1 + out * 0.1})`, opacity: 1 - out }}>
+        <div
+          style={{
+            ...display,
+            position: "absolute",
+            top: 470,
+            left: -100,
+            right: -100,
+            textAlign: "center",
+            fontSize: 138,
+            letterSpacing: -6,
+            color: GREEN,
+            WebkitTextStroke: "8px #A6FF9E",
+            paintOrder: "stroke fill",
+            textShadow: `0 0 ${30 + 50 * light}px rgba(4,228,0,${0.35 + 0.5 * light})`,
+            transform: `scale(${2 - a}) rotate(${-4 + (1 - a) * 10}deg)`,
+            opacity: Math.min(1, a * 3) * (0.6 + 0.4 * light),
+            filter: `blur(${(1 - Math.min(1, a)) * 20}px)`,
+          }}
+        >
+          Progresar
+        </div>
+      </AbsoluteFill>
+      <AbsoluteFill style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.scale}) rotate(${cam.rot}deg)`, transformOrigin: "50% 32%" }}>
+        <Img src={staticFile(`roto/prog/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%" }} />
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
 // CTA «Sígueme» (como siempre): una línea verde se traza, la palabra sube a través de
 // ella y una flecha fina sigue empujando hacia arriba. El @ va sobre su cabeza (Body).
 const Follow: React.FC = () => {
@@ -510,9 +517,9 @@ export const Graphics: React.FC = () => (
     <Point from={OBJ1.from} to={OBJ1.to} n="1" text="Demanda sobre el hombro" />
     <Point from={OBJ2.from} to={OBJ2.to} n="2" text="Giro al terminar" />
     <Iso />
-    <Fore />
     <Neither />
     <Tips />
+    <ProgBehind />
     <Follow />
   </AbsoluteFill>
 );

@@ -175,7 +175,7 @@ const TricepsOn: React.FC<{ t: number }> = ({ t }) => {
   const on = neonOn(t - TRI.on) * (1 - ramp(TRI.off, HOOK.from - 0.02, easeInOut));
   if (on <= 0.01) return null;
   const pulse = 0.85 + 0.15 * Math.sin(t * 6);
-  return <Roto job="tri" t={t} range={[0, 1.8]} style={{ opacity: on, filter: `drop-shadow(0 0 ${10 + 14 * pulse}px rgba(4,228,0,${0.8 * pulse})) drop-shadow(0 0 40px rgba(4,228,0,0.4))` }} />;
+  return <Roto job="tri" t={t} range={[0, 1.8]} style={{ opacity: on, filter: `drop-shadow(0 0 ${8 + 6 * pulse}px rgba(4,228,0,${0.55 * pulse})) drop-shadow(0 0 26px rgba(4,228,0,0.25))` }} />;
 };
 
 // Hook: señal de prohibido sobre la cuerda colgada (rojo)
@@ -215,7 +215,7 @@ const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const labelAt = { x: cab.x(560), y: 560 };
   return (
     <>
-      <Roto job="shr" t={t} range={[13.12, 16.68]} style={{ opacity: red * (0.85 + 0.15 * Math.sin(t * 8)), filter: "drop-shadow(0 0 16px rgba(255,59,48,0.75))" }} />
+      <Roto job="shr" t={t} range={[13.12, 16.68]} style={{ opacity: red * (0.88 + 0.12 * Math.sin(t * 8)), filter: "drop-shadow(0 0 10px rgba(255,59,48,0.55)) drop-shadow(0 0 26px rgba(255,59,48,0.25))" }} />
       <Svg>
         {pose.sh.map((s, i) => (
           <Draw key={i} a={s} b={{ x: s.x, y: s.y + 600 }} p={lines} color={PAPER} w={4} dash="14 12" glow={DARK} />
@@ -343,8 +343,8 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const shake = hold > 0.5 ? Math.sin(t * 40) * 1.6 : 0;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
-      <Roto job="iel" t={t} range={[24.4, 30.52]} style={{ opacity: elbows, filter: "drop-shadow(0 0 14px rgba(255,59,48,0.75))" }} />
-      <Roto job="ish" t={t} range={[24.4, 30.52]} style={{ opacity: shoulders, filter: "drop-shadow(0 0 14px rgba(4,228,0,0.75))" }} />
+      <Roto job="iel" t={t} range={[24.4, 30.52]} style={{ opacity: elbows, filter: "drop-shadow(0 0 10px rgba(255,59,48,0.55)) drop-shadow(0 0 24px rgba(255,59,48,0.25))" }} />
+      <Roto job="ish" t={t} range={[24.4, 30.52]} style={{ opacity: shoulders, filter: "drop-shadow(0 0 10px rgba(4,228,0,0.55)) drop-shadow(0 0 24px rgba(4,228,0,0.25))" }} />
       <Svg>
         <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={cable} w={6} />
         {pose.el.map((e, i) => {
@@ -361,12 +361,24 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   );
 };
 
-// «la rotación… del antebrazo»: los dos antebrazos se encienden en verde
-const ForeOn: React.FC<{ t: number }> = ({ t }) => {
-  const { ramp } = useClock();
-  const on = neonOn(t - FORE.from + 0.1) * (1 - ramp(FORE.to - 0.3, FORE.to, easeInOut));
-  if (on <= 0.01) return null;
-  return <Roto job="fore" t={t} range={[57.0, 60.16]} style={{ opacity: on * 0.95, filter: "drop-shadow(0 0 14px rgba(4,228,0,0.8)) drop-shadow(0 0 34px rgba(4,228,0,0.35))" }} />;
+// «la rotación… del antebrazo»: la etiqueta señala el antebrazo de la izquierda desde
+// «rotación»; el verde (rotoscopia) se enciende solo al decir «antebrazo»
+const ForeOn: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+  const { ramp, pop } = useClock();
+  const end = 1 - ramp(FORE.to - 0.3, FORE.to, easeInOut);
+  const on = ramp(FORE.green - 0.05, FORE.green + 0.25) * end;
+  const mid = lerp(pose.el[0], pose.wr[0], 0.5);
+  const from = { x: 560, y: mid.y - 400 }; // centrada: con el zoom no se sale
+  return (
+    <>
+      {on > 0.01 ? (
+        <Roto job="fore" t={t} range={[57.0, 60.16]} style={{ opacity: on, filter: "drop-shadow(0 0 9px rgba(4,228,0,0.55)) drop-shadow(0 0 24px rgba(4,228,0,0.25))" }} />
+      ) : null}
+      <Callout to={mid} from={from} p={ramp(FORE.from, FORE.from + 0.3) * end} q={pop(FORE.from + 0.15, 10) * end} size={34}>
+        Rotación del antebrazo
+      </Callout>
+    </>
+  );
 };
 
 // Recorrido de perfil: cable, antebrazo y la distancia del codo a la línea del cable
@@ -395,33 +407,49 @@ const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
   );
 };
 
-// Frontal: cable y la prolongación imaginaria de cada antebrazo (codo → muñeca), que
-// se cruzan
+// Frontal: cable y la prolongación imaginaria de cada antebrazo desde la muñeca
+// (dirección codo → muñeca) hasta que se cruzan. La guía se queda todo el plano.
 const FrontCross: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
   const cab = cableAt("front", t);
   const p = ramp(FRONT.from + 0.1, FRONT.from + 0.5);
   const ext = ramp(FRONT.from + 0.4, FRONT.from + 1.0);
-  const out = ramp(FRONT.to - 0.25, FRONT.to);
+  const out = ramp(FRONT.to - 0.2, FRONT.to);
   const [eL, eR] = pose.el;
   const [wL, wR] = pose.wr;
-  const d1 = { x: wL.x - eL.x, y: wL.y - eL.y };
-  const d2 = { x: wR.x - eR.x, y: wR.y - eR.y };
+  const unit = (a: P, b: P) => {
+    const l = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    return { x: (b.x - a.x) / l, y: (b.y - a.y) / l };
+  };
+  const d1 = unit(eL, wL);
+  const d2 = unit(eR, wR);
+  // intersección de las dos rectas que salen de las muñecas
   const den = d1.x * d2.y - d1.y * d2.x;
-  let X: P | null = null;
-  if (Math.abs(den) > 1e-3) {
-    const s = ((eR.x - eL.x) * d2.y - (eR.y - eL.y) * d2.x) / den;
-    X = { x: eL.x + d1.x * s, y: eL.y + d1.y * s };
-    if (s < 0.8 || X.y < 150 || X.y > 1850 || X.x < 60 || X.x > 1020) X = null;
+  let s1 = 420;
+  let s2 = 420;
+  if (Math.abs(den) > 0.05) {
+    const a1 = ((wR.x - wL.x) * d2.y - (wR.y - wL.y) * d2.x) / den;
+    const a2 = ((wR.x - wL.x) * d1.y - (wR.y - wL.y) * d1.x) / den;
+    if (a1 > 20 && a1 < 1200 && a2 > 20 && a2 < 1200) {
+      s1 = a1;
+      s2 = a2;
+    }
   }
+  const X1 = { x: wL.x + d1.x * s1, y: wL.y + d1.y * s1 };
+  const X2 = { x: wR.x + d2.x * s2, y: wR.y + d2.y * s2 };
+  const X = lerp(X1, X2, 0.5);
   const hit = pop(FRONT.from + 0.9, 8, 260);
   const ring = (t * 1.5) % 1;
+  const dot = pop(FRONT.from + 0.35, 9, 260);
   return (
     <Svg opacity={1 - out}>
       <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={p} w={6} />
-      {X ? <Draw a={eL} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} /> : null}
-      {X ? <Draw a={eR} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} /> : null}
-      {X && hit > 0.02 ? (
+      <Draw a={wL} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} />
+      <Draw a={wR} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} />
+      {[wL, wR].map((w, i) => (
+        <circle key={i} cx={w.x} cy={w.y} r={12 * dot} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
+      ))}
+      {hit > 0.02 ? (
         <g transform={`translate(${X.x} ${X.y}) scale(${hit})`} style={{ filter: NEON }}>
           <circle r={16} fill={GREEN} />
           <circle r={16 + ring * 40} fill="none" stroke={GREEN} strokeWidth={3} opacity={1 - ring} />
@@ -444,7 +472,7 @@ const ToolsGlow: React.FC<{ t: number }> = ({ t }) => {
       range={[84.6, 88.6]}
       style={{
         opacity: on,
-        filter: `brightness(${1.6 + 1.2 * pulse}) sepia(1) hue-rotate(60deg) saturate(${4 * pulse}) drop-shadow(0 0 12px rgba(4,228,0,0.95)) drop-shadow(0 0 32px rgba(4,228,0,0.5))`,
+        filter: `brightness(${1.5 + 0.8 * pulse}) sepia(1) hue-rotate(60deg) saturate(${3 * pulse}) drop-shadow(0 0 10px rgba(4,228,0,0.75)) drop-shadow(0 0 28px rgba(4,228,0,0.35))`,
       }}
     />
   );
@@ -494,7 +522,7 @@ export const BodyLayer: React.FC = () => {
       {t >= 16.68 && t < 19.84 ? <ObjOpen /> : null}
       {pose && t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
       {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
-      {t >= 57.0 && t < 60.16 ? <ForeOn t={t} /> : null}
+      {pose && t >= FORE.from - 0.05 && t < 60.16 ? <ForeOn pose={pose} t={t} /> : null}
       {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} /> : null}
       {pose && t >= FRONT.from && t < FRONT.to ? <FrontCross pose={pose} t={t} /> : null}
       {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}

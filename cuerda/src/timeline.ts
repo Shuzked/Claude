@@ -161,11 +161,11 @@ export const HOOK = { from: 1.8, no: 2.84, to: 4.7 };
 // Las dos objeciones
 export const TWO = { at: 12.12, to: 13.1 }; // «estas dos cosas»
 export const OBJ1 = { from: 13.16, cable: 13.4, inside: 15.2, demand: 16.04, to: 17.15 };
-export const OBJ2 = { from: 17.2, open: 17.52, rot: 19.96, to: 22.1 };
+export const OBJ2 = { from: 17.2, open: 17.52, rot: 20.14, to: 22.1 };
 // «Es cierto que… fuerza isométrica»
 export const ISO = { from: 24.5, inward: 26.64, hold: 29.32, to: 30.45 };
 // Rotación del antebrazo (rótulo) y «ni tríceps ni hombro pinchan ni cortan»
-export const FORE = { from: 57.52, to: 60.1 };
+export const FORE = { from: 57.52, green: 59.3, to: 60.1 };
 export const NEITHER = { from: 61.88, triceps: 62.28, shoulder: 63.76, cut: 64.6, to: 66.9 };
 // Recorrido: demanda de más a menos (perfil) y tres fotogramas Inicio / Medio / Final
 export const RANGE = { from: 71.0, more: 73.92, frames: 74.3, to: 76.15 };
@@ -287,7 +287,7 @@ export const allSfx: Sfx[] = [
   { at: ISO.inward - 0.1, src: "tic", volume: 0.28 },
   { at: ISO.hold - 0.15, src: "stamp", volume: 0.3 },
   // antebrazo
-  { at: FORE.from - 0.1, src: "shine", volume: 0.28 },
+  { at: FORE.green - 0.05, src: "shine", volume: 0.28 },
   { at: FORE.from, src: "pop", volume: 0.22 },
   { at: NEITHER.from, src: "whoosh-b", volume: 0.2 },
   { at: NEITHER.triceps, src: "tick", volume: 0.3 },
@@ -301,7 +301,8 @@ export const allSfx: Sfx[] = [
   { at: TOOLS.bar, src: "shine", volume: 0.3 },
   { at: TIPS.comfy - 0.05, src: "pop", volume: 0.22 },
   { at: TIPS.fail - 0.05, src: "pop", volume: 0.22 },
-  { at: TIPS.prog - 0.05, src: "correct", volume: 0.28 },
+  { at: TIPS.prog - 0.05, src: "hit", volume: 0.32 },
+  { at: TIPS.prog + 0.05, src: "impact-hi", volume: 0.28 },
   // CTA
   { at: CTA.follow, src: "whoosh-a", volume: 0.25 },
   { at: CTA.follow + 0.15, src: "pop", volume: 0.25 },
