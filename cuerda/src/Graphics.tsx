@@ -394,55 +394,6 @@ const Neither: React.FC = () => {
   );
 };
 
-// Conclusión: escalera de tres peldaños que sube (Comodidad → Al fallo → Progresar);
-// una bola verde salta de peldaño en peldaño al ritmo de la voz
-const Tips: React.FC = () => {
-  const { t, squash, ramp, idle, pop } = useClock();
-  if (t < TIPS.comfy - 0.15 || t > TIPS.prog + 0.1) return null;
-  const out = ramp(TIPS.prog - 0.12, TIPS.prog + 0.08, easeInOut);
-  const steps: [string, number][] = [
-    ["Comodidad", TIPS.comfy],
-    ["Al fallo", TIPS.fail],
-    ["Progresar", TIPS.prog],
-  ];
-  const SW = 300;
-  const SH = 70;
-  const id = idle(8.1, 0.6);
-  // posición de la bola: salta al peldaño que se nombra
-  let bx = 0;
-  let by = 0;
-  steps.forEach(([, at], i) => {
-    const h = pop(at - 0.05, 11, 260);
-    if (i === 0) {
-      bx = SW * 0.5;
-      by = -SH * 0 - 40 * (1 - h);
-    } else {
-      bx += SW * h;
-      by -= SH * h;
-    }
-  });
-  const hop = steps.reduce((acc, [, at]) => {
-    const d = t - (at - 0.05);
-    return d > 0 && d < 0.35 ? Math.sin((d / 0.35) * Math.PI) * 60 : acc;
-  }, 0);
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", top: 200, left: 540 - (SW * 3) / 2, width: SW * 3, height: SH * 3 + 60, opacity: 1 - out, transform: `translateY(${id.y - out * 30}px) rotate(${-3 + id.r * 0.5}deg)` }}>
-        {steps.map(([txt, at], i) => {
-          const q = squash(at - 0.12, 10, 240);
-          return (
-            <div key={i} style={{ position: "absolute", left: i * SW, top: SH * (2 - i) + 40, width: SW - 10, opacity: Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 60}px) scale(${q.sx}, ${q.sy})`, transformOrigin: "50% 100%" }}>
-              <div style={{ ...display, fontSize: 40, textAlign: "center", color: i === 2 ? GREEN : PAPER, filter: i === 2 ? GLOW : undefined, ...stroke(6) }}>{txt}</div>
-              <div style={{ height: 14, marginTop: 10, borderRadius: 7, background: i === 2 ? GREEN : "rgba(255,255,255,0.85)", boxShadow: i === 2 ? "0 0 20px rgba(4,228,0,0.8)" : "0 6px 18px rgba(0,0,0,0.5)" }} />
-            </div>
-          );
-        })}
-        <div style={{ position: "absolute", left: bx - 20, top: SH * 2 + 40 + by - 40 - hop + 54, width: 40, height: 40, borderRadius: 99, background: GREEN, boxShadow: "0 0 24px rgba(4,228,0,0.9)", opacity: Math.min(1, pop(TIPS.comfy - 0.05, 11) * 2) }} />
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 // «…y progresar»: PROGRESAR en grande detrás de Yago (recorte por delante)
 const ProgBehind: React.FC = () => {
   const { t, frame, fps, pop, ramp } = useClock();
@@ -518,7 +469,6 @@ export const Graphics: React.FC = () => (
     <Point from={OBJ2.from} to={OBJ2.to} n="2" text="Giro al terminar" />
     <Iso />
     <Neither />
-    <Tips />
     <ProgBehind />
     <Follow />
   </AbsoluteFill>
