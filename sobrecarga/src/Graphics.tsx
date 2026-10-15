@@ -395,25 +395,29 @@ const Trend: React.FC = () => {
   const tag = pop(TREND.look + 0.6, 11);
   const W = 760;
   const xs = [80, 280, 480, 680];
+  // la línea pasa justo por el centro de los puntos
+  const NUM_H = 56;
+  const DOT_GAP = 14;
+  const DOT_Y = NUM_H + DOT_GAP + 11;
   return (
     <AbsoluteFill>
       <div style={{ position: "absolute", top: 990, left: 60, right: 60, display: "flex", flexDirection: "column", alignItems: "center", ...st }}>
         <Glass style={{ padding: "22px 30px 26px", width: W + 60 }}>
           <div style={{ position: "relative", height: 210 }}>
             {/* la misma marca, semana tras semana */}
-            <div style={{ position: "absolute", left: xs[0], right: W - xs[3], top: 92, height: 4, background: "rgba(255,255,255,0.25)", transform: `scaleX(${ramp(weeks[0], weeks[3] + 0.3)})`, transformOrigin: "left" }} />
+            <div style={{ position: "absolute", left: xs[0], right: W - xs[3], top: DOT_Y - 2, height: 4, background: "rgba(255,255,255,0.25)", transform: `scaleX(${ramp(weeks[0], weeks[3] + 0.3)})`, transformOrigin: "left" }} />
             {weeks.map((at, i) => {
               const p = pop(at, 10, 240);
               return (
                 <div key={i} style={{ position: "absolute", left: xs[i] - 60, width: 120, top: 0, display: "flex", flexDirection: "column", alignItems: "center", opacity: Math.min(1, p * 2), transform: `translateY(${(1 - p) * -40}px)` }}>
-                  <div style={{ ...display, fontSize: 52, color: PAPER }}>10</div>
-                  <div style={{ width: 22, height: 22, borderRadius: 999, background: GREEN, marginTop: 14, boxShadow: "0 0 14px rgba(4,228,0,0.7)" }} />
+                  <div style={{ ...display, fontSize: 52, color: PAPER, height: NUM_H, lineHeight: `${NUM_H}px` }}>10</div>
+                  <div style={{ width: 22, height: 22, borderRadius: 999, background: GREEN, marginTop: DOT_GAP, boxShadow: "0 0 14px rgba(4,228,0,0.7)" }} />
                   <div style={{ ...label, fontSize: 18, letterSpacing: 2, color: "rgba(255,255,255,0.55)", marginTop: 16 }}>Semana {i + 1}</div>
                 </div>
               );
             })}
             {/* lupa que recorre la tendencia */}
-            <svg width={150} height={150} viewBox="0 0 150 150" style={{ position: "absolute", top: 8, left: xs[0] - 70 + (xs[3] - xs[0]) * lens, opacity: Math.min(1, lens * 6) * (lens < 1 ? 1 : 1), filter: GLOW }}>
+            <svg width={150} height={150} viewBox="0 0 150 150" style={{ position: "absolute", top: DOT_Y - 64, left: xs[0] - 64 + (xs[3] - xs[0]) * lens, opacity: Math.min(1, lens * 6) * (lens < 1 ? 1 : 1), filter: GLOW }}>
               <circle cx={64} cy={64} r={46} fill="rgba(4,228,0,0.08)" stroke={GREEN} strokeWidth={8} />
               <path d="M 98 98 L 136 136" stroke={GREEN} strokeWidth={12} strokeLinecap="round" />
             </svg>

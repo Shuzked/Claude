@@ -13,6 +13,7 @@ import {
 import faceTrack from "./faceTrack.json";
 import farTrack from "./farTrack.json";
 import wallTrack from "./wallTrack.json";
+import pullTrack from "./pullTrack.json";
 import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
@@ -78,6 +79,7 @@ const smoothTrack = (d: PT) => {
 const PERSON: Record<string, { d: PT; s: number[][] }> = {
   far: { d: farTrack as PT, s: smoothTrack(farTrack as PT) },
   wall: { d: wallTrack as PT, s: smoothTrack(wallTrack as PT) },
+  pull: { d: pullTrack as PT, s: smoothTrack(pullTrack as PT) },
 };
 const trackAt = (t: number) => {
   const tr = TRACKS.find((x) => t >= x.from && t < x.to);

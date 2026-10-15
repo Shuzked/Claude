@@ -176,11 +176,13 @@ export const FIXED: Framing[] = [
   { from: 12.2, to: 16.84, face: YAGO1, scale: 1.55 }, // «Sí, claro…»
 ];
 
-// Planos con seguimiento de persona (u2net_human_seg): el plano lejano de Yago 1
-// andando con la libreta y el plano contra la pared (entra por la izquierda).
+// Planos con seguimiento de persona: el plano lejano de Yago 1 andando con la libreta
+// y el plano contra la pared (u2net_human_seg), y el del jalón (MediaPipe Pose).
 export const TRACKS = [
   { from: 27.36, to: 30.12, file: "far", scale: 2.3 },
   { from: 30.12, to: 32.8, file: "wall", scale: 1.3 },
+  // jalón: mueve mucho la cabeza, se sigue con la pose (nariz y ojos)
+  { from: 56.76, to: 68.32, file: "pull", scale: 1.3 },
 ] as const;
 
 export const JUMPS = [
