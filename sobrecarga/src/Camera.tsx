@@ -11,7 +11,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
-import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc } from "./timeline";
+import farTrack from "./farTrack.json";
+import wallTrack from "./wallTrack.json";
+import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -57,7 +59,37 @@ const smooth: [number, number][] = (() => {
   }
   return out;
 })();
+// Seguimiento de persona: mediana de 5 + media móvil de 0,6 s (la cámara le sigue
+// con suavidad, sin temblar).
+type PT = { fps: number; t0: number; points: number[][] };
+const smoothTrack = (d: PT) => {
+  const P = d.points.map((p) => [p[0], p[1]]);
+  const med = P.map((_, i) => {
+    const w = P.slice(Math.max(0, i - 2), i + 3);
+    const m = (k: number) => w.map((p) => p[k]).sort((a, b) => a - b)[Math.floor(w.length / 2)];
+    return [m(0), m(1)];
+  });
+  const half = Math.round(0.3 * d.fps);
+  return med.map((_, i) => {
+    const w = med.slice(Math.max(0, i - half), i + half + 1);
+    return [w.reduce((a, p) => a + p[0], 0) / w.length, w.reduce((a, p) => a + p[1], 0) / w.length];
+  });
+};
+const PERSON: Record<string, { d: PT; s: number[][] }> = {
+  far: { d: farTrack as PT, s: smoothTrack(farTrack as PT) },
+  wall: { d: wallTrack as PT, s: smoothTrack(wallTrack as PT) },
+};
+const trackAt = (t: number) => {
+  const tr = TRACKS.find((x) => t >= x.from && t < x.to);
+  if (!tr) return null;
+  const p = PERSON[tr.file];
+  const i = Math.min(p.s.length - 1, Math.max(0, Math.round((t - p.d.t0) * p.d.fps)));
+  return { x: p.s[i][0], y: p.s[i][1], scale: tr.scale };
+};
+
 const faceAt = (t: number) => {
+  const tp = trackAt(t);
+  if (tp) return { x: tp.x, y: tp.y };
   const fx = FIXED.find((x) => t >= x.from && t < x.to);
   if (fx) return { x: fx.face[0], y: fx.face[1] };
   const i = Math.min(smooth.length - 1, Math.max(0, Math.round(t * track.fps)));
@@ -106,7 +138,9 @@ export const cameraAt = (frame: number, fps: number) => {
 
   // apertura compuesta: encuadres fijos (general → el que habla)
   const fixed = FIXED.find((x) => t >= x.from && t < x.to);
-  const scale = (fixed ? fixed.scale + drift * 0.6 : base + drift) + punch + slam;
+  const tracked = trackAt(t);
+  const scale =
+    (fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam;
 
   // barridos en los cortes: desenfoque de movimiento + empujón (como en los anteriores)
   let blur = 0;

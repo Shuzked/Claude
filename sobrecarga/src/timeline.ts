@@ -93,7 +93,6 @@ const SILENCES: [number, number][] = [
   [16.19, 17.01],
   [24.67, 25.0],
   [27.37, 27.77],
-  [29.52, 29.82],
   [35.42, 35.71],
   [39.42, 40.02],
   [45.49, 45.9],
@@ -161,7 +160,7 @@ export const f = (sourceSeconds: number) =>
 
 // --- Planos ----------------------------------------------------------------------
 // Cortes de plano del original
-export const SHOT_CUTS = [16.84, 30.12, 32.8, 35.6, 39.72, 42.6, 45.76, 56.76, 68.32, 76.0, 79.76];
+export const SHOT_CUTS = [16.84, 27.36, 30.12, 32.8, 35.6, 39.72, 42.6, 45.76, 56.76, 68.32, 76.0, 79.76];
 
 // Apertura compuesta (los dos Yagos, plano fijo): abre en general para ver que
 // comparten el espacio y luego se acerca al que habla, sin invertir posiciones.
@@ -176,11 +175,20 @@ export const FIXED: Framing[] = [
   { from: 12.2, to: 16.84, face: YAGO1, scale: 1.55 }, // «Sí, claro…»
 ];
 
+// Planos con seguimiento de persona (u2net_human_seg): el plano lejano de Yago 1
+// andando con la libreta y el plano contra la pared (entra por la izquierda).
+export const TRACKS = [
+  { from: 27.36, to: 30.12, file: "far", scale: 2.3 },
+  { from: 30.12, to: 32.8, file: "wall", scale: 1.3 },
+] as const;
+
 export const JUMPS = [
   ...new Set([
     ...FIXED.slice(1).map((x) => x.from),
     ...SHOT_CUTS,
-    ...SEGMENTS.slice(1).map(([a]) => a),
+    ...SEGMENTS.slice(1)
+      .map(([a]) => a)
+      .filter((a) => !SHOT_CUTS.some((c) => Math.abs(c - a) < 0.8)),
   ]),
 ].sort((a, b) => a - b);
 
@@ -190,13 +198,13 @@ export const SAYING = { from: 7.36, to: 12.0 };
 // E02 · libreta de ejemplo 10 / 10 / 10 y la undécima que no sale
 export const NOTES = { from: 18.9, rows: [19.3, 20.4, 21.12], eleven: 23.2, fail: 24.24, to: 24.75 };
 // E03 · pensamiento de Yago 1 (voz interior)
-export const THOUGHT = { from: THOUGHT_AT[0], to: THOUGHT_AT[1] };
+export const THOUGHT = { from: THOUGHT_AT[0], to: THOUGHT_AT[1], wake: 31.36, out: 32.4 }; // se retira poco a poco desde «A ver, tranquilo»
 // E04 · «Tranquilo»: repetir marca ≠ demostrar que no creces / registro de rendimiento
-export const CALM = { at: 31.68, label: 32.16, labelTo: 35.5, record: 35.76, recordTo: 39.5 };
+export const CALM = { at: 31.68, label: 32.16, no: 33.08, grow: 34.72, labelTo: 35.5 };
 // E05 · fatiga y ritmo
-export const FATIGUE = { from: 42.84, to: 45.7, pace: 46.48, paceTo: 50.9 };
+export const FATIGUE = { from: 42.84, to: 45.7 };
 // E06 · una sesión frente a una tendencia
-export const TREND = { session: 53.12, sessionTo: 56.6, review: 63.56, reviewTo: 68.2 };
+export const TREND = { review: 63.56, look: 64.92, reviewTo: 68.2 };
 // E07 · la idea que queda
 export const IDEA = { from: 70.8, to: 75.95 };
 // E08 · «¿Mantener?» / «¿Cambiar?»
@@ -205,7 +213,7 @@ export const CHOICE = { keep: 77.2, change: 78.96, to: 79.8 };
 export const CTA = { from: 80.0, master: 83.44, keyword: 84.88 };
 
 // Sin subtítulos encima de la libreta (lo dice el rótulo)
-export const MUTE: [number, number][] = [];
+export const MUTE: [number, number][] = [[CALM.label - 0.05, CALM.labelTo]];
 export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 
 // --- Encuadre ----------------------------------------------------------------------
@@ -215,6 +223,15 @@ export const punches: Punch[] = [
   { at: 16.88, amount: 0.05, hold: 1.2 }, // «Déjame adivinar»
   { at: 31.68, amount: 0.05, hold: 0.8 }, // «tranquilo»
   { at: 70.8, amount: 0.05, hold: 2.0 }, // «no es una medición directa…»
+  { at: 21.12, amount: 0.04, hold: 0.6 }, // «diez repeticiones»
+  { at: 24.24, amount: 0.06, hold: 0.6 }, // «no sale»
+  { at: 33.08, amount: 0.06, hold: 1.2 }, // «no significa»
+  { at: 42.84, amount: 0.04, hold: 1.4 }, // «la fatiga»
+  { at: 46.48, amount: 0.05, hold: 1.0 }, // «no esperes progresar al mismo ritmo»
+  { at: 51.04, amount: 0.04, hold: 1.0 }, // «Por eso»
+  { at: 56.72, amount: 0.07, hold: 1.0 }, // «Pero tampoco…»
+  { at: 63.56, amount: 0.05, hold: 1.4 }, // «semana tras semana»
+  { at: 80.44, amount: 0.05, hold: 1.0 }, // «estás de suerte»
   { at: 84.88, amount: 0.06, hold: 1.4 }, // «SOBRECARGA»
 ];
 
@@ -292,20 +309,22 @@ export const allSfx: Sfx[] = [
   // libreta
   { at: NOTES.from, src: "paper", volume: 0.3 },
   ...NOTES.rows.map((at) => ({ at, src: "marker" as const, volume: 0.22 })),
-  { at: NOTES.eleven, src: "marker", volume: 0.22 },
+  { at: NOTES.eleven, src: "riser", volume: 0.15 },
   { at: NOTES.fail, src: "buzzer", volume: 0.18 },
   // pensamiento: entra y lo corta el «tranquilo»
   { at: THOUGHT.from - 0.1, src: "riser", volume: 0.12 },
   { at: CALM.at - 0.05, src: "snap", volume: 0.35 },
-  { at: CALM.label, src: "pop", volume: 0.25 },
-  { at: CALM.record, src: "paper", volume: 0.25 },
+  { at: CALM.label, src: "whoosh-b", volume: 0.25 },
+  { at: CALM.no, src: "hit", volume: 0.3 },
+  { at: CALM.grow, src: "whoosh-a", volume: 0.2 },
   { at: FATIGUE.from, src: "pop", volume: 0.22 },
-  { at: FATIGUE.pace, src: "pop", volume: 0.22 },
-  { at: TREND.session, src: "pop", volume: 0.22 },
-  { at: TREND.review, src: "pop", volume: 0.22 },
+  ...[0, 1, 2, 3].map((i) => ({ at: TREND.review + i * 0.32, src: "tic" as const, volume: 0.25 })),
+  { at: TREND.look, src: "whoosh-b", volume: 0.2 },
+  { at: TREND.look + 0.6, src: "pop", volume: 0.25 },
   { at: IDEA.from, src: "whoosh-b", volume: 0.22 },
   { at: CHOICE.keep, src: "pop", volume: 0.25 },
   { at: CHOICE.change, src: "pop", volume: 0.25 },
+  { at: CHOICE.change + 0.6, src: "boing", volume: 0.12 },
   { at: CTA.master, src: "whoosh-a", volume: 0.25 },
   { at: CTA.keyword, src: "stamp", volume: 0.35 },
   // barridos en los cortes
