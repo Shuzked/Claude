@@ -391,14 +391,37 @@ const Trend: React.FC = () => {
   const st = useEnter(TREND.review, TREND.reviewTo);
   if (t < TREND.review - 0.05 || t > TREND.reviewTo + 0.05) return null;
   const weeks = [0, 1, 2, 3].map((i) => TREND.review + i * 0.32);
-  const lens = ramp(TREND.look, TREND.look + 1.2, easeInOut);
-  const tag = pop(TREND.look + 0.6, 11);
-  const W = 760;
   const xs = [80, 280, 480, 680];
   // la línea pasa justo por el centro de los puntos
   const NUM_H = 56;
   const DOT_GAP = 14;
   const DOT_Y = NUM_H + DOT_GAP + 11;
+  // lupa: cae con un rebote sobre la semana 1 y salta de punto en punto (muelle),
+  // se inclina en cada salto y «lee» cada marca con un pequeño latido
+  const HOP = 0.32;
+  const hops = [0, 1, 2, 3].map((i) => TREND.look + 0.15 + i * HOP);
+  const drop = pop(TREND.look, 9, 200);
+  let lx = xs[0];
+  let tilt = 0;
+  let beat = 0;
+  let onDot = -1;
+  for (let i = 1; i < 4; i++) {
+    const h = pop(hops[i], 12, 260); // muelle: se pasa un poco y vuelve
+    lx += (xs[i] - xs[i - 1]) * h;
+    const v = Math.max(0, Math.min(1, (t - hops[i]) / 0.25));
+    tilt += Math.sin(v * Math.PI) * 14 * (1 - v * 0.4);
+  }
+  for (let i = 0; i < 4; i++) {
+    const d = t - (hops[i] + 0.12);
+    if (d >= 0 && d < HOP) {
+      onDot = i;
+      beat = Math.sin(Math.min(1, d / 0.18) * Math.PI) * 0.12;
+    }
+  }
+  if (t >= hops[3] + 0.12) onDot = 3;
+  const lensScale = (0.3 + 0.7 * drop) * (1 + beat);
+  const tag = pop(TREND.look + 0.6, 11);
+  const W = 760;
   return (
     <AbsoluteFill>
       <div style={{ position: "absolute", top: 990, left: 60, right: 60, display: "flex", flexDirection: "column", alignItems: "center", ...st }}>
@@ -411,13 +434,27 @@ const Trend: React.FC = () => {
               return (
                 <div key={i} style={{ position: "absolute", left: xs[i] - 60, width: 120, top: 0, display: "flex", flexDirection: "column", alignItems: "center", opacity: Math.min(1, p * 2), transform: `translateY(${(1 - p) * -40}px)` }}>
                   <div style={{ ...display, fontSize: 52, color: PAPER, height: NUM_H, lineHeight: `${NUM_H}px` }}>10</div>
-                  <div style={{ width: 22, height: 22, borderRadius: 999, background: GREEN, marginTop: DOT_GAP, boxShadow: "0 0 14px rgba(4,228,0,0.7)" }} />
+                  <div style={{ width: 22, height: 22, borderRadius: 999, background: GREEN, marginTop: DOT_GAP, boxShadow: onDot === i ? "0 0 26px rgba(4,228,0,1)" : "0 0 14px rgba(4,228,0,0.7)", transform: `scale(${onDot === i ? 1.35 : 1})` }} />
                   <div style={{ ...label, fontSize: 18, letterSpacing: 2, color: "rgba(255,255,255,0.55)", marginTop: 16 }}>Semana {i + 1}</div>
                 </div>
               );
             })}
             {/* lupa que recorre la tendencia */}
-            <svg width={150} height={150} viewBox="0 0 150 150" style={{ position: "absolute", top: DOT_Y - 64, left: xs[0] - 64 + (xs[3] - xs[0]) * lens, opacity: Math.min(1, lens * 6) * (lens < 1 ? 1 : 1), filter: GLOW }}>
+            <svg
+              width={150}
+              height={150}
+              viewBox="0 0 150 150"
+              style={{
+                position: "absolute",
+                top: DOT_Y - 64 - (1 - drop) * 120,
+                left: lx - 64,
+                opacity: t < TREND.look ? 0 : Math.min(1, drop * 3),
+                transform: `scale(${lensScale}) rotate(${tilt - (1 - drop) * 30}deg)`,
+                transformOrigin: "64px 64px",
+                filter: GLOW,
+                overflow: "visible",
+              }}
+            >
               <circle cx={64} cy={64} r={46} fill="rgba(4,228,0,0.08)" stroke={GREEN} strokeWidth={8} />
               <path d="M 98 98 L 136 136" stroke={GREEN} strokeWidth={12} strokeLinecap="round" />
             </svg>
