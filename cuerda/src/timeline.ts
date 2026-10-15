@@ -298,7 +298,6 @@ export const allSfx: Sfx[] = [
   { at: FRONT.from + 0.1, src: "marker", volume: 0.2 },
   { at: FRONT.from + 0.9, src: "ding", volume: 0.3 },
   // conclusión
-  { at: TOOLS.bar, src: "shine", volume: 0.3 },
   { at: TIPS.prog - 0.05, src: "hit", volume: 0.32 },
   { at: TIPS.prog + 0.05, src: "impact-hi", volume: 0.28 },
   // CTA

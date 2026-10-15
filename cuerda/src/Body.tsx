@@ -4,7 +4,7 @@ import arms from "./arms.json";
 import cables from "./cables.json";
 import faceTrack from "./faceTrack.json";
 import { FONT, GREEN, PAPER } from "./theme";
-import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS } from "./timeline";
+import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc } from "./timeline";
 
 // Gráficos pegados al cuerpo. Van dentro de la cámara virtual, en coordenadas del
 // vídeo (1080×1920): rotoscopias (public/roto/<trabajo>/r_NNNNN.png, por fotograma
@@ -102,13 +102,6 @@ const Roto: React.FC<{ job: string; t: number; range: [number, number]; style?: 
       style={{ position: "absolute", inset: 0, width: 1080, height: 1920, ...style }}
     />
   );
-};
-
-/** Encendido de neón: titila un par de veces y queda vibrando un poco. */
-const neonOn = (d: number) => {
-  if (d < 0) return 0;
-  if ((d > 0.06 && d < 0.1) || (d > 0.17 && d < 0.2)) return 0.25;
-  return Math.min(1, d / 0.05) * (0.9 + 0.1 * Math.sin(d * 31) * Math.sin(d * 11));
 };
 
 /** Línea que se dibuja de a → b. */
@@ -463,25 +456,6 @@ const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   );
 };
 
-// Conclusión: saca la barra y la cuerda; brillan al salir y se apagan poco a poco
-const ToolsGlow: React.FC<{ t: number }> = ({ t }) => {
-  const { ramp } = useClock();
-  const on = neonOn(t - TOOLS.bar) * (1 - ramp(TOOLS.fade, TOOLS.to, easeInOut));
-  if (on <= 0.01) return null;
-  const pulse = 0.8 + 0.2 * Math.sin(t * 7);
-  return (
-    <Roto
-      job="tool"
-      t={t}
-      range={[84.6, 88.6]}
-      style={{
-        opacity: on,
-        filter: `brightness(${1.5 + 0.8 * pulse}) sepia(1) hue-rotate(60deg) saturate(${3 * pulse}) drop-shadow(0 0 10px rgba(4,228,0,0.75)) drop-shadow(0 0 28px rgba(4,228,0,0.35))`,
-      }}
-    />
-  );
-};
-
 // CTA: «@heracles_fit» encima de la cabeza, siguiendo la cara
 const Handle: React.FC<{ t: number }> = ({ t }) => {
   const { pop } = useClock();
@@ -528,7 +502,6 @@ export const BodyLayer: React.FC = () => {
       {pose && t >= FORE.green - 0.15 && t < 60.16 ? <ForeOn pose={pose} /> : null}
       {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} t={t} /> : null}
       {pose && t >= FRONT.from && t < FRONT.to ? <FrontPerp pose={pose} t={t} /> : null}
-      {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}
       {t >= CTA.follow ? <Handle t={t} /> : null}
     </div>
   );
