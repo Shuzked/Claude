@@ -161,7 +161,7 @@ export const HOOK = { from: 1.8, no: 2.84, to: 4.7 };
 // Las dos objeciones
 export const TWO = { at: 12.12, to: 13.1 }; // «estas dos cosas»
 export const OBJ1 = { from: 13.16, cable: 13.4, inside: 15.2, demand: 16.04, to: 17.15 };
-export const OBJ2 = { from: 17.2, open: 17.52, rot: 20.14, to: 22.1 };
+export const OBJ2 = { from: 17.2, open: 17.52, rot: 20.5, to: 22.1 };
 // «Es cierto que… fuerza isométrica»
 export const ISO = { from: 24.5, inward: 26.64, hold: 29.32, to: 30.45 };
 // Rotación del antebrazo (rótulo) y «ni tríceps ni hombro pinchan ni cortan»

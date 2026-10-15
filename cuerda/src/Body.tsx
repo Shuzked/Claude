@@ -4,7 +4,7 @@ import arms from "./arms.json";
 import cables from "./cables.json";
 import faceTrack from "./faceTrack.json";
 import { FONT, GREEN, PAPER } from "./theme";
-import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS, TRI } from "./timeline";
+import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS } from "./timeline";
 
 // Gráficos pegados al cuerpo. Van dentro de la cámara virtual, en coordenadas del
 // vídeo (1080×1920): rotoscopias (public/roto/<trabajo>/r_NNNNN.png, por fotograma
@@ -169,15 +169,6 @@ const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.
 );
 
 // ---------------------------------------------------------------------------------
-// Hook: el tríceps se enciende en verde (rotoscopia), se mantiene y se apaga
-const TricepsOn: React.FC<{ t: number }> = ({ t }) => {
-  const { ramp } = useClock();
-  const on = neonOn(t - TRI.on) * (1 - ramp(TRI.off, HOOK.from - 0.02, easeInOut));
-  if (on <= 0.01) return null;
-  const pulse = 0.85 + 0.15 * Math.sin(t * 6);
-  return <Roto job="tri" t={t} range={[0, 1.8]} style={{ opacity: on, filter: `drop-shadow(0 0 ${8 + 6 * pulse}px rgba(4,228,0,${0.55 * pulse})) drop-shadow(0 0 26px rgba(4,228,0,0.25))` }} />;
-};
-
 // Hook: señal de prohibido sobre la cuerda colgada (rojo)
 const ROPE_HOOK = { x: 410, y: 850 };
 const RopeNo: React.FC<{ t: number }> = ({ t }) => {
@@ -207,7 +198,6 @@ const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const lines = ramp(14.44, 14.75) * (1 - out); // «al hombro»
   const gap = ramp(OBJ1.inside, OBJ1.inside + 0.25) * (1 - out); // «por dentro»
   const pull = pop(OBJ1.inside + 0.1, 10, 300) * (1 - out);
-  const red = neonOn(t - OBJ1.demand + 0.25) * (1 - out); // «le genera demandas»
   const yEnd = cab.end;
   const top = { x: cab.x(0), y: 0 };
   const bot = { x: cab.x(yEnd), y: yEnd };
@@ -215,7 +205,6 @@ const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const labelAt = { x: cab.x(560), y: 560 };
   return (
     <>
-      <Roto job="shr" t={t} range={[13.12, 16.68]} style={{ opacity: red * (0.88 + 0.12 * Math.sin(t * 8)), filter: "drop-shadow(0 0 10px rgba(255,59,48,0.55)) drop-shadow(0 0 26px rgba(255,59,48,0.25))" }} />
       <Svg>
         {pose.sh.map((s, i) => (
           <Draw key={i} a={s} b={{ x: s.x, y: s.y + 600 }} p={lines} color={PAPER} w={4} dash="14 12" glow={DARK} />
@@ -336,15 +325,11 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const cab = cableAt("iso", t);
   const cable = ramp(ISO.from, ISO.from + 0.45);
   const pull = pop(ISO.inward - 0.1, 10, 300);
-  const elbows = neonOn(t - ISO.inward + 0.1);
   const hold = pop(ISO.hold - 0.15, 9, 260);
-  const shoulders = neonOn(t - ISO.hold + 0.15);
   const out = ramp(ISO.to - 0.25, ISO.to);
   const shake = hold > 0.5 ? Math.sin(t * 40) * 1.6 : 0;
   return (
     <div style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
-      <Roto job="iel" t={t} range={[24.4, 30.52]} style={{ opacity: elbows, filter: "drop-shadow(0 0 10px rgba(255,59,48,0.55)) drop-shadow(0 0 24px rgba(255,59,48,0.25))" }} />
-      <Roto job="ish" t={t} range={[24.4, 30.52]} style={{ opacity: shoulders, filter: "drop-shadow(0 0 10px rgba(4,228,0,0.55)) drop-shadow(0 0 24px rgba(4,228,0,0.25))" }} />
       <Svg>
         <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={cable} w={6} />
         {pose.el.map((e, i) => {
@@ -361,20 +346,15 @@ const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   );
 };
 
-// «la rotación… del antebrazo»: la etiqueta señala el antebrazo de la izquierda desde
-// «rotación»; el verde (rotoscopia) se enciende solo al decir «antebrazo»
-const ForeOn: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+// «…del antebrazo»: al nombrarlo, la etiqueta señala el antebrazo de la izquierda
+const ForeOn: React.FC<{ pose: Pose }> = ({ pose }) => {
   const { ramp, pop } = useClock();
   const end = 1 - ramp(FORE.to - 0.3, FORE.to, easeInOut);
-  const on = ramp(FORE.green - 0.05, FORE.green + 0.25) * end;
   const mid = lerp(pose.el[0], pose.wr[0], 0.5);
   const from = { x: 560, y: mid.y - 400 }; // centrada: con el zoom no se sale
   return (
     <>
-      {on > 0.01 ? (
-        <Roto job="fore" t={t} range={[57.0, 60.16]} style={{ opacity: on, filter: "drop-shadow(0 0 9px rgba(4,228,0,0.55)) drop-shadow(0 0 24px rgba(4,228,0,0.25))" }} />
-      ) : null}
-      <Callout to={mid} from={from} p={ramp(FORE.from, FORE.from + 0.3) * end} q={pop(FORE.from + 0.15, 10) * end} size={34}>
+      <Callout to={mid} from={from} p={ramp(FORE.green - 0.1, FORE.green + 0.2) * end} q={pop(FORE.green, 10) * end} size={34}>
         Rotación del antebrazo
       </Callout>
     </>
@@ -422,24 +402,27 @@ const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const mark = pop(FRONT.from + 0.95, 9, 260);
   const out = ramp(FRONT.to - 0.45, FRONT.to, easeInOut);
   const dot = pop(FRONT.from + 0.35, 9, 260);
-  const top = { x: cab.x(0), y: 0 };
-  const bot = { x: cab.x(cab.end), y: cab.end };
-  const cd = { x: bot.x - top.x, y: bot.y - top.y };
-  const cl = Math.hypot(cd.x, cd.y) || 1;
-  const cu = { x: cd.x / cl, y: cd.y / cl };
+  // el cable cuelga recto de la polea: vertical en su x real a media altura
+  const cx = cab.x(Math.min(cab.end, 900));
+  const top = { x: cx, y: 0 };
+  const cu = { x: 0, y: 1 };
   return (
     <Svg opacity={1 - out}>
-      <Draw a={top} b={{ x: cab.x(1920), y: 1920 }} p={p} w={6} />
+      <Draw a={top} b={{ x: cx, y: cab.end }} p={p} w={6} />
       {[0, 1].map((i) => {
         const w = pose.wr[i];
         const e = pose.el[i];
         // de la muñeca hacia el codo y más allá, hasta cortar la línea de la cuerda
         const d = { x: e.x - w.x, y: e.y - w.y };
-        const den = d.x * cu.y - d.y * cu.x;
-        let X = { x: cab.x(w.y), y: w.y };
-        if (Math.abs(den) > 0.05) {
-          const s1 = ((top.x - w.x) * cu.y - (top.y - w.y) * cu.x) / den;
-          X = { x: w.x + d.x * s1, y: w.y + d.y * s1 };
+        const dl = Math.hypot(d.x, d.y) || 1;
+        // cuánto de perpendicular está el antebrazo respecto al cable (vertical)
+        const perp = Math.abs(d.x) / dl;
+        const k = Math.max(0, Math.min(1, (perp - 0.55) / 0.3));
+        let X = w;
+        if (Math.abs(d.x) > 1) {
+          const s1 = (cx - w.x) / d.x;
+          const cand = { x: cx, y: w.y + d.y * s1 };
+          if (s1 < 0 && Math.abs(cand.y - w.y) < 500) X = lerp(w, cand, k);
         }
         // marca de ángulo recto en el cruce (lado de cada brazo)
         const toW = { x: w.x - X.x, y: w.y - X.y };
@@ -451,14 +434,14 @@ const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
             <Draw a={e} b={X} p={ext} color={PAPER} w={6} dash="16 12" glow={DARK} />
             <circle cx={w.x} cy={w.y} r={12 * dot} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
             <circle cx={e.x} cy={e.y} r={9 * dot} fill={PAPER} stroke={GREEN} strokeWidth={4} style={{ filter: NEON }} />
-            {mark > 0.02 ? (
+            {mark * k > 0.02 ? (
               <path
                 d={`M ${X.x + a1.x} ${X.y + a1.y} L ${X.x + a1.x + a2.x} ${X.y + a1.y + a2.y} L ${X.x + a2.x} ${X.y + a2.y}`}
                 fill="none"
                 stroke={GREEN}
                 strokeWidth={5}
                 strokeLinejoin="round"
-                transform={`translate(${X.x} ${X.y}) scale(${mark}) translate(${-X.x} ${-X.y})`}
+                transform={`translate(${X.x} ${X.y}) scale(${mark * k}) translate(${-X.x} ${-X.y})`}
                 style={{ filter: NEON }}
               />
             ) : null}
@@ -526,13 +509,12 @@ export const BodyLayer: React.FC = () => {
   const pose = poseAt(t);
   return (
     <div style={{ position: "absolute", inset: 0 }}>
-      {t < 1.8 ? <TricepsOn t={t} /> : null}
       {t >= HOOK.no - 0.05 && t < HOOK.to + 0.05 ? <RopeNo t={t} /> : null}
       {pose && t >= OBJ1.from && t < 16.68 ? <ObjCable pose={pose} t={t} /> : null}
       {t >= 16.68 && t < 19.84 ? <ObjOpen /> : null}
       {pose && t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
       {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
-      {pose && t >= FORE.from - 0.05 && t < 60.16 ? <ForeOn pose={pose} t={t} /> : null}
+      {pose && t >= FORE.green - 0.15 && t < 60.16 ? <ForeOn pose={pose} /> : null}
       {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} /> : null}
       {pose && t >= FRONT.from && t < FRONT.to ? <FrontPerp pose={pose} t={t} /> : null}
       {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}

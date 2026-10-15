@@ -378,11 +378,11 @@ const Neither: React.FC = () => {
             const shake = dead && t < NEITHER.cut + 0.3 ? Math.sin(t * 80) * 5 * (1 - (t - NEITHER.cut) / 0.3) : 0;
             return (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, opacity: Math.min(1, q.p * 2), transform: `translateX(${(1 - q.p) * -60 + shake}px)` }}>
-                <div style={{ ...display, fontSize: 36, width: 250, flexShrink: 0, paddingRight: 12, color: r.on ? GREEN : dead ? RED : PAPER }}>{r.name}</div>
+                <div style={{ ...display, fontSize: 36, width: 250, flexShrink: 0, paddingRight: 12, color: dead ? RED : GREEN }}>{r.name}</div>
                 <div style={{ position: "relative", flex: 1, height: 26, borderRadius: 13, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                  <div style={{ width: `${Math.max(0, lvl) * 100}%`, height: "100%", borderRadius: 13, background: dead ? RED : r.on ? `linear-gradient(90deg, rgba(4,228,0,0.6), ${GREEN})` : PAPER, boxShadow: dead ? "0 0 18px rgba(255,59,48,0.7)" : r.on ? "0 0 18px rgba(4,228,0,0.7)" : undefined }} />
+                  <div style={{ width: `${Math.max(0, lvl) * 100}%`, height: "100%", borderRadius: 13, background: dead ? RED : `linear-gradient(90deg, rgba(4,228,0,0.6), ${GREEN})`, boxShadow: dead ? "0 0 18px rgba(255,59,48,0.7)" : "0 0 18px rgba(4,228,0,0.7)" }} />
                 </div>
-                <div style={{ ...display, fontSize: 36, width: 86, textAlign: "right", color: r.on ? GREEN : dead ? RED : PAPER, transform: `scale(${dead ? 1 + 0.25 * Math.sin(x * Math.PI) : 1})`, flexShrink: 0 }}>
+                <div style={{ ...display, fontSize: 36, width: 86, textAlign: "right", color: dead ? RED : GREEN, transform: `scale(${dead ? 1 + 0.25 * Math.sin(x * Math.PI) : 1})`, flexShrink: 0 }}>
                   {`${Math.round(Math.min(1, Math.max(0, lvl)) * 100)}%`}
                 </div>
               </div>
