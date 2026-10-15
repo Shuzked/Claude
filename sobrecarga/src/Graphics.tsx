@@ -253,13 +253,16 @@ const Notes: React.FC = () => {
             filter: red ? "drop-shadow(0 0 10px rgba(255,59,48,0.6))" : GLOW,
           }}
         >
-          {n}
-          {red ? (
-            <svg width={96} height={70} viewBox="0 0 96 70" style={{ position: "absolute", right: -8, top: -6, overflow: "visible" }}>
-              <path d="M 10 8 L 86 62" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - fail)} />
-              <path d="M 86 8 L 10 62" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - ramp(NOTES.fail + 0.1, NOTES.fail + 0.22))} />
-            </svg>
-          ) : null}
+          <span style={{ position: "relative", display: "inline-block" }}>
+            {n}
+            {red ? (
+              // X centrada sobre el 11
+              <svg width={90} height={70} viewBox="0 0 90 70" style={{ position: "absolute", left: "50%", top: "46%", transform: "translate(-50%, -50%)", overflow: "visible" }}>
+                <path d="M 8 6 L 82 64" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - fail)} />
+                <path d="M 82 6 L 8 64" stroke={RED} strokeWidth={9} strokeLinecap="round" strokeDasharray={95} strokeDashoffset={95 * (1 - ramp(NOTES.fail + 0.1, NOTES.fail + 0.22))} />
+              </svg>
+            ) : null}
+          </span>
         </div>
       </div>
     );
