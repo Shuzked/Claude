@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { cameraAt } from "./Camera";
+import { gradeFilter } from "./Grade";
 import { FONT, GREEN, PAPER } from "./theme";
 import { CTA, f, HOOK, ISO, NEITHER, OBJ1, OBJ2, TIPS, toSrc, TWO } from "./timeline";
 
@@ -346,7 +347,7 @@ const TwoBehind: React.FC = () => {
       </AbsoluteFill>
       {/* Yago por delante */}
       <AbsoluteFill style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.scale}) rotate(${cam.rot}deg)`, transformOrigin: "50% 32%" }}>
-        <Img src={staticFile(`roto/two/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%" }} />
+        <Img src={staticFile(`roto/two/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%", filter: gradeFilter(t) }} />
       </AbsoluteFill>
     </AbsoluteFill>
   );
@@ -471,7 +472,7 @@ const ProgBehind: React.FC = () => {
         </div>
       </AbsoluteFill>
       <AbsoluteFill style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.scale}) rotate(${cam.rot}deg)`, transformOrigin: "50% 32%" }}>
-        <Img src={staticFile(`roto/prog/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%" }} />
+        <Img src={staticFile(`roto/prog/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%", filter: gradeFilter(t) }} />
       </AbsoluteFill>
     </AbsoluteFill>
   );

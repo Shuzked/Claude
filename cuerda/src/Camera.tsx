@@ -11,6 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
+import { GradeDefs, gradeFilter } from "./Grade";
 import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
@@ -72,6 +73,10 @@ const faceAt = (t: number) => {
 };
 
 const FRAMING = [1.32, 1.6]; // medio, cerrado
+// planos donde el corte de pausa no cambia de encuadre (se ve continuo)
+const STEADY: [number, number][] = [[52.6, 60.16]];
+// zoom al antebrazo de la izquierda cuando dice «antebrazo»
+const FORE_ZOOM = { at: 59.25, out: 60.1, target: { x: 300, y: 1250 }, amount: 0.38 };
 
 export const cameraAt = (frame: number, fps: number) => {
   const outT = frame / fps;
@@ -81,7 +86,8 @@ export const cameraAt = (frame: number, fps: number) => {
   const segEnd = index < JUMPS.length ? JUMPS[index] : segStart + 12;
   const progress = Math.min(1, (t - segStart) / Math.max(1, segEnd - segStart));
 
-  const base = FRAMING[index % 2];
+  const steady = STEADY.find(([a, b]) => t >= a && t < b);
+  const base = steady ? FRAMING[0] : FRAMING[index % 2];
   const drift = 0.05 * progress;
 
   let punch = 0;
@@ -114,8 +120,11 @@ export const cameraAt = (frame: number, fps: number) => {
   // apertura compuesta: encuadres fijos (general → el que habla)
   const fixed = FIXED.find((x) => t >= x.from && t < x.to);
   const tracked = trackAt(t);
+  // zoom suave al antebrazo (muelle de entrada, salida al cortar)
+  const zin = spring({ frame: frame - f(FORE_ZOOM.at), fps, config: { damping: 18, stiffness: 120, mass: 0.8 } });
+  const zk = t >= FORE_ZOOM.at - 0.05 && t < 60.16 ? zin : 0;
   const scale =
-    (fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam;
+    (fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
 
   // barridos en los cortes: desenfoque de movimiento + empujón (como en los anteriores)
   let blur = 0;
@@ -127,7 +136,8 @@ export const cameraAt = (frame: number, fps: number) => {
     blur = Math.max(blur, 12 * a);
     whipY += (k < 0 ? -1 : 1) * 36 * a;
   }
-  const face = faceAt(t);
+  const f0 = faceAt(t);
+  const face = zk > 0 ? { x: f0.x + (FORE_ZOOM.target.x - f0.x) * zk * 0.55, y: f0.y + (FORE_ZOOM.target.y - f0.y) * zk * 0.55 } : f0;
   const clampAxis = (tr: number, o: number, size: number) =>
     Math.max(
       -(scale - 1) * (size - o) + EDGE_MARGIN,
@@ -152,7 +162,7 @@ export const cameraAt = (frame: number, fps: number) => {
 export const Camera: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { scale, x, y, rot, blur } = cameraAt(frame, fps);
+  const { scale, x, y, rot, blur, t } = cameraAt(frame, fps);
   const transform: React.CSSProperties = {
     transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`,
     transformOrigin: "50% 32%",
@@ -160,7 +170,9 @@ export const Camera: React.FC<{ children?: React.ReactNode }> = ({ children }) =
   };
   return (
     <AbsoluteFill style={{ overflow: "hidden", backgroundColor: "black" }}>
+      <GradeDefs />
       <AbsoluteFill style={transform}>
+        <AbsoluteFill style={{ filter: gradeFilter(t) }}>
         {segmentsOut.map((s) => (
           <Sequence
             key={s.src}
@@ -178,6 +190,7 @@ export const Camera: React.FC<{ children?: React.ReactNode }> = ({ children }) =
             />
           </Sequence>
         ))}
+        </AbsoluteFill>
         {children}
       </AbsoluteFill>
     </AbsoluteFill>

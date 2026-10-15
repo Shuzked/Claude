@@ -141,7 +141,6 @@ export const FIXED: Framing[] = [
   { from: 70.84, to: 76.2, face: [560, 860], scale: 1.0 }, // perfil: recorrido
   { from: 76.2, to: 80.0, face: [540, 860], scale: 1.0 }, // frontal: cables
   { from: 37.96, to: 49.68, face: [520, 1130], scale: 1.1, ty: 1010 }, // tríceps y postura enteros
-  { from: 56.81, to: 60.16, face: [540, 1090], scale: 1.7, ty: 980 }, // zoom a los antebrazos
   { from: 80.0, to: 94.2, face: [540, 1060], scale: 1.1, ty: 1000 }, // conclusión: herramientas a la vista
 ];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
@@ -151,7 +150,8 @@ export const JUMPS = [
     ...SHOT_CUTS,
     ...SEGMENTS.slice(1)
       .map(([a]) => a)
-      .filter((a) => !SHOT_CUTS.some((c) => Math.abs(c - a) < 0.8)),
+      .filter((a) => !SHOT_CUTS.some((c) => Math.abs(c - a) < 0.8))
+      .filter((a) => !(a > 52.6 && a < 60.16)), // 0:54: sin salto de encuadre
   ]),
 ].sort((a, b) => a - b);
 

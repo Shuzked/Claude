@@ -1,6 +1,7 @@
 import React from "react";
 import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import arms from "./arms.json";
+import { gradeFilter } from "./Grade";
 import cables from "./cables.json";
 import faceTrack from "./faceTrack.json";
 import { FONT, GREEN, PAPER } from "./theme";
@@ -344,7 +345,7 @@ const ObjRot: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => (
       <Ring pose={pose} t={t} i={0} layer="back" />
       <Ring pose={pose} t={t} i={1} layer="back" />
     </Svg>
-    <Roto job="arm" t={t} range={[19.84, 22.16]} />
+    <Roto job="arm" t={t} range={[19.84, 22.16]} style={{ filter: gradeFilter(t) }} />
     <Svg>
       <Ring pose={pose} t={t} i={0} layer="front" />
       <Ring pose={pose} t={t} i={1} layer="front" />
@@ -385,7 +386,7 @@ const ForeOn: React.FC<{ pose: Pose }> = ({ pose }) => {
   const { ramp, pop } = useClock();
   const end = 1 - ramp(FORE.to - 0.3, FORE.to, easeInOut);
   const mid = lerp(pose.el[0], pose.wr[0], 0.5);
-  const from = { x: 560, y: mid.y - 400 }; // centrada: con el zoom no se sale
+  const from = { x: 400, y: mid.y - 330 }; // con el zoom al antebrazo queda dentro de plano
   return (
     <>
       <Callout to={mid} from={from} p={ramp(FORE.green - 0.1, FORE.green + 0.2) * end} q={pop(FORE.green, 10) * end} size={34}>
