@@ -87,6 +87,26 @@ const useClock = () => {
   return { t, frame, fps, pop, ramp, squash, idle };
 };
 
+/** Salida estilo Lottie: se infla un poco (anticipación) y se encoge hasta desaparecer. */
+const popOut = (o: number) => (o < 0.3 ? 1 + 0.08 * (o / 0.3) : 1.08 * (1 - (o - 0.3) / 0.7));
+
+/** Estallido de rayitas alrededor de un punto de la pantalla (d = segundos desde el golpe). */
+const Burst: React.FC<{ x: number; y: number; d: number; r?: number; color?: string; n?: number }> = ({ x, y, d, r = 60, color = GREEN, n = 10 }) => {
+  if (d < 0 || d > 0.5) return null;
+  const k = d / 0.5;
+  const e = 1 - Math.pow(1 - k, 3);
+  return (
+    <svg width={4 * r} height={4 * r} viewBox={`${-2 * r} ${-2 * r} ${4 * r} ${4 * r}`} style={{ position: "absolute", left: x - 2 * r, top: y - 2 * r, overflow: "visible", opacity: 1 - k, filter: `drop-shadow(0 0 8px ${color})`, pointerEvents: "none" }}>
+      {Array.from({ length: n }, (_, i) => {
+        const a = (i / n) * Math.PI * 2 + 0.2;
+        const r0 = r * (0.6 + 0.6 * e);
+        const r1 = r * (0.75 + 1.0 * e);
+        return <line key={i} x1={Math.cos(a) * r0} y1={Math.sin(a) * r0} x2={Math.cos(a) * r1} y2={Math.sin(a) * r1} stroke={color} strokeWidth={6 * (1 - k) + 1.5} strokeLinecap="round" />;
+      })}
+    </svg>
+  );
+};
+
 /** Texto que entra palabra a palabra con muelle, giro y squash (estilo Lottie). */
 const Words: React.FC<{ text: string; at: number; gap?: number; style?: React.CSSProperties; color?: (i: number) => string | undefined }> = ({
   text,
@@ -149,10 +169,11 @@ const RED = "#FF3B30";
 const Point: React.FC<{ from: number; to: number; n?: string; text: string; top?: number }> = ({ from, to, n, text, top = 290 }) => {
   const { t, squash, ramp, idle } = useClock();
   if (t < from - 0.05 || t > to + 0.05) return null;
-  const q = squash(from, 10, 220);
-  const out = ramp(to - 0.25, to, easeInOut);
+  const num = squash(from, 7, 280);
+  const pill = squash(from + 0.1, 11, 200);
+  const out = ramp(to - 0.3, to, easeInOut);
   const id = idle(from, 0.7);
-  const num = squash(from + 0.08, 8, 260);
+  const po = popOut(out);
   return (
     <AbsoluteFill>
       <div
@@ -163,11 +184,11 @@ const Point: React.FC<{ from: number; to: number; n?: string; text: string; top?
           right: 0,
           display: "flex",
           justifyContent: "center",
-          opacity: Math.min(1, q.p * 2) * (1 - out),
-          transform: `translateY(${(1 - q.p) * -60 + id.y - out * 30}px) rotate(${-2 + id.r * 0.6}deg)`,
+          opacity: out > 0.85 ? (1 - out) / 0.15 : 1,
+          transform: `translateY(${id.y}px) rotate(${-2 + id.r * 0.6}deg) scale(${po})`,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 14, transform: `scale(${q.sx}, ${q.sy})` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {n ? (
             <div
               style={{
@@ -183,14 +204,30 @@ const Point: React.FC<{ from: number; to: number; n?: string; text: string; top?
                 alignItems: "center",
                 justifyContent: "center",
                 filter: GLOW,
-                transform: `scale(${num.p * num.sx}, ${num.p * num.sy}) rotate(${(1 - num.p) * -90}deg)`,
+                position: "relative",
+                zIndex: 2,
+                transform: `scale(${num.p * num.sx}, ${num.p * num.sy}) rotate(${(1 - num.p) * -180}deg)`,
               }}
             >
               {n}
+              <Burst x={39} y={39} d={t - from - 0.05} r={52} />
             </div>
           ) : null}
-          <div style={{ ...display, fontSize: 50, color: INK, background: PAPER, padding: "12px 22px 7px", borderRadius: 10 }}>
-            <Words text={text} at={from + 0.06} gap={0.05} style={{ marginRight: "-0.22em" }} />
+          {/* la pastilla sale de detrás del número, se estira y se asienta */}
+          <div
+            style={{
+              ...display,
+              fontSize: 50,
+              color: INK,
+              background: PAPER,
+              padding: "12px 22px 7px",
+              borderRadius: 10,
+              transformOrigin: "0% 50%",
+              transform: `translateX(${(1 - pill.p) * -60}px) scale(${Math.max(0, pill.p) * pill.sx}, ${pill.sy})`,
+              clipPath: `inset(-10px ${Math.max(0, 1 - pill.p * 1.1) * 100}% -10px -10px round 10px)`,
+            }}
+          >
+            <Words text={text} at={from + 0.2} gap={0.05} style={{ marginRight: "-0.22em" }} />
           </div>
         </div>
       </div>
@@ -323,15 +360,18 @@ const Iso: React.FC = () => {
   const lock = ramp(ISO.hold + 0.15, ISO.hold + 0.35);
   const out = ramp(ISO.to - 0.25, ISO.to, easeInOut);
   const id = idle(4.4, 0.8);
+  const click = squash(ISO.hold + 0.33, 6, 320);
+  const kick = (1 - click.p) * (t > ISO.hold + 0.33 ? 1 : 0);
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (1 - out) }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, background: GREEN, padding: "10px 24px 8px 16px", borderRadius: 12, filter: GLOW, transform: `translateY(${id.y}px) scale(${q.p * q.sx}, ${q.p * q.sy}) rotate(${-2 + id.r}deg)` }}>
-          <svg width={52} height={60} viewBox="0 0 52 60">
+      <Burst x={540 - 200} y={340} d={t - ISO.hold - 0.33} r={56} />
+      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (out > 0.85 ? (1 - out) / 0.15 : 1) }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, background: GREEN, padding: "10px 24px 8px 16px", borderRadius: 12, filter: GLOW, transform: `translateY(${id.y}px) scale(${q.p * q.sx * popOut(out)}, ${q.p * q.sy * popOut(out)}) rotate(${-2 + id.r}deg)` }}>
+          <svg width={52} height={60} viewBox="0 0 52 60" style={{ transform: `scale(${1 + 0.25 * Math.abs(kick)}) rotate(${kick * -14}deg)`, overflow: "visible" }}>
             <path d={`M 12 ${28 - 10 * (1 - lock)} V 18 a 14 14 0 0 1 28 0 V 28`} fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" transform={`translate(${(1 - lock) * 8} ${-(1 - lock) * 6})`} />
             <rect x={4} y={26} width={44} height={32} rx={7} fill={INK} />
           </svg>
-          <div style={{ ...display, fontSize: 52, color: INK }}>Fuerza isométrica</div>
+          <Words text="Fuerza isométrica" at={ISO.hold - 0.05} gap={0.08} style={{ ...display, fontSize: 52, color: INK, marginRight: "-0.22em" }} />
         </div>
       </div>
     </AbsoluteFill>
@@ -362,8 +402,8 @@ const Neither: React.FC = () => {
           right: 0,
           display: "flex",
           justifyContent: "center",
-          opacity: Math.min(1, card.p * 2) * (1 - out),
-          transform: `translateY(${(1 - card.p) * 80 + id.y}px) rotate(${id.r * 0.5}deg)`,
+          opacity: Math.min(1, card.p * 2) * (out > 0.85 ? (1 - out) / 0.15 : 1),
+          transform: `translateY(${(1 - card.p) * 80 + id.y}px) rotate(${id.r * 0.5}deg) scale(${popOut(out)})`,
         }}
       >
         <Glass style={{ padding: "18px 26px 20px", width: 700, transform: `scale(${card.sx}, ${card.sy})` }}>
@@ -449,6 +489,8 @@ const Follow: React.FC = () => {
   const bob = Math.sin(Math.max(0, t - at - 1.0) * 5) * 8 * arrow;
   const W = 560;
   return (
+    <>
+    <Burst x={540} y={1300} d={t - at - 0.55} r={90} n={12} />
     <div style={{ position: "absolute", top: 1080, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
       <svg width={120} height={70} viewBox="0 0 120 70" style={{ opacity: Math.min(1, arrow * 3), transform: `translateY(${(1 - arrow) * 190 - bob}px) scaleX(${0.4 + 0.6 * arrow})`, filter: GLOW }}>
         <path d="M 14 56 L 60 14 L 106 56" fill="none" stroke={GREEN} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
@@ -458,6 +500,7 @@ const Follow: React.FC = () => {
       </div>
       <div style={{ width: W * line, height: 5, borderRadius: 3, background: GREEN, boxShadow: "0 0 18px rgba(4,228,0,0.8)", marginTop: 6 }} />
     </div>
+    </>
   );
 };
 

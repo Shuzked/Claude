@@ -116,16 +116,47 @@ const Draw: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; dash?:
   opacity = 1,
 }) => {
   if (p <= 0.001) return null;
-  const e = lerp(a, b, Math.max(0, Math.min(1, p)));
-  return <line x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke={color} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} style={{ filter: glow }} opacity={opacity} />;
+  const pp = Math.max(0, Math.min(1, p));
+  const e = lerp(a, b, pp);
+  const head = pp > 0.02 && pp < 0.98 ? Math.sin(pp * Math.PI) : 0;
+  return (
+    <g opacity={opacity}>
+      <line x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke={color} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} style={{ filter: glow }} />
+      {head > 0.05 ? <circle cx={e.x} cy={e.y} r={w * (0.9 + 0.8 * head)} fill="#EFFFF0" style={{ filter: NEON }} opacity={head} /> : null}
+    </g>
+  );
+};
+
+/** Estallido de rayitas (clásico de Lottie) al aparecer algo; d = segundos desde el golpe. */
+const Burst: React.FC<{ c: P; d: number; r?: number; color?: string; n?: number }> = ({ c, d, r = 40, color = GREEN, n = 8 }) => {
+  if (d < 0 || d > 0.45) return null;
+  const k = d / 0.45;
+  const e = 1 - Math.pow(1 - k, 3);
+  return (
+    <g style={{ filter: color === RED ? RED_GLOW : NEON }} opacity={1 - k}>
+      {Array.from({ length: n }, (_, i) => {
+        const ang = (i / n) * Math.PI * 2 + 0.3;
+        const r0 = r * (0.55 + 0.75 * e);
+        const r1 = r * (0.7 + 1.1 * e);
+        return <line key={i} x1={c.x + Math.cos(ang) * r0} y1={c.y + Math.sin(ang) * r0} x2={c.x + Math.cos(ang) * r1} y2={c.y + Math.sin(ang) * r1} stroke={color} strokeWidth={5 * (1 - k) + 1} strokeLinecap="round" />;
+      })}
+      <circle cx={c.x} cy={c.y} r={r * (0.3 + 1.2 * e)} fill="none" stroke={color} strokeWidth={3 * (1 - k)} />
+    </g>
+  );
+};
+/** Rebote al llegar (ease-out-back). */
+const backOut = (p: number) => {
+  const c1 = 1.9;
+  const x = Math.max(0, Math.min(1, p)) - 1;
+  return 1 + (c1 + 1) * x * x * x + c1 * x * x;
 };
 
 /** Flecha de a → b que crece con `p`; la punta rebota un poco al llegar. */
 const Arrow: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; glow?: string }> = ({ a, b, p, color = GREEN, w = 9, glow = NEON }) => {
   if (p <= 0.01) return null;
-  const e = lerp(a, b, p);
+  const e = lerp(a, b, backOut(p));
   const ang = Math.atan2(b.y - a.y, b.x - a.x);
-  const hs = 30 * Math.min(1.15, p * 1.4);
+  const hs = 30 * (p < 0.6 ? p / 0.6 : 1 + 0.35 * Math.sin(((p - 0.6) / 0.4) * Math.PI));
   const h1 = { x: e.x - Math.cos(ang - 0.5) * hs, y: e.y - Math.sin(ang - 0.5) * hs };
   const h2 = { x: e.x - Math.cos(ang + 0.5) * hs, y: e.y - Math.sin(ang + 0.5) * hs };
   return (
@@ -141,7 +172,8 @@ const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.
   <>
     <Svg>
       <Draw a={to} b={from} p={p} w={4} />
-      {p > 0.02 ? <circle cx={to.x} cy={to.y} r={8 * Math.min(1, p * 2)} fill={GREEN} style={{ filter: NEON }} /> : null}
+      {p > 0.02 ? <circle cx={to.x} cy={to.y} r={8 * backOut(Math.min(1, p * 2))} fill={GREEN} style={{ filter: NEON }} /> : null}
+      {p > 0.02 && p < 1 ? <circle cx={to.x} cy={to.y} r={10 + 46 * p} fill="none" stroke={GREEN} strokeWidth={3} opacity={1 - p} /> : null}
     </Svg>
     {q > 0.01 ? (
       <div
@@ -149,8 +181,9 @@ const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.
           position: "absolute",
           left: from.x,
           top: from.y,
-          transform: `translate(-50%, -50%) scale(${q}) rotate(${(1 - q) * -12 - 3}deg)`,
+          transform: `translate(-50%, -50%) scale(${0.6 + 0.4 * q}, ${q}) rotate(${(1 - q) * -12 - 3}deg)`,
           opacity: Math.min(1, q * 2),
+          clipPath: `inset(-20px ${Math.max(0, 1 - q * 1.15) * 100}% -20px -20px round 10px)`,
           background: GREEN,
           color: "#0A0A0A",
           fontFamily: FONT,
@@ -164,7 +197,7 @@ const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.
           boxShadow: "0 0 26px rgba(4,228,0,0.55)",
         }}
       >
-        {children}
+        <span style={{ display: "inline-block", opacity: Math.min(1, Math.max(0, q * 2.5 - 1.2)), transform: `translateX(${(1 - Math.min(1, q)) * -16}px)` }}>{children}</span>
       </div>
     ) : null}
   </>
@@ -185,6 +218,7 @@ const RopeNo: React.FC<{ t: number }> = ({ t }) => {
     <Svg opacity={1 - out}>
       <g transform={`translate(${ROPE_HOOK.x} ${ROPE_HOOK.y}) scale(${p}) rotate(${wob})`} style={{ filter: RED_GLOW }}>
         <circle r={r} fill="rgba(255,59,48,0.12)" stroke={RED} strokeWidth={18} />
+        <Burst c={{ x: 0, y: 0 }} d={t - HOOK.no} r={r * 1.15} color={RED} n={10} />
         <line x1={-r * 0.7} y1={-r * 0.7} x2={-r * 0.7 + r * 1.4 * slash} y2={-r * 0.7 + r * 1.4 * slash} stroke={RED} strokeWidth={18} strokeLinecap="round" />
       </g>
     </Svg>
@@ -436,6 +470,8 @@ const FrontPerp: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
         return (
           <g key={i}>
             <Draw a={e} b={X} p={ext} color={PAPER} w={6} dash="16 12" glow={DARK} />
+            <Burst c={w} d={t - (FRONT.from + 0.45 + i * 0.12)} r={26} />
+            <Burst c={e} d={t - (FRONT.from + 0.7 + i * 0.12)} r={22} n={6} />
             <circle cx={w.x} cy={w.y} r={12 * dotW(i)} fill={PAPER} stroke={GREEN} strokeWidth={5} style={{ filter: NEON }} />
             <circle cx={e.x} cy={e.y} r={9 * dotE(i)} fill={PAPER} stroke={GREEN} strokeWidth={4} style={{ filter: NEON }} />
             {mark * k > 0.02 ? (
