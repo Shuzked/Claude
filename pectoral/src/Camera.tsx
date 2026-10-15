@@ -12,7 +12,7 @@ import {
 } from "remotion";
 import faceTrack from "./faceTrack.json";
 import { GradeDefs, gradeFilter } from "./Grade";
-import { f, FIXED, HOOK, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
+import { f, FIXED, HOOK, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS, ZOOMS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -58,6 +58,29 @@ const smooth: [number, number][] = (() => {
   }
   return out;
 })();
+// en los acercamientos la persona camina: mediana ±0,5 s (quita saltos del detector)
+// y media ±0,6 s, sin el límite alrededor de la mediana del plano
+const zoomSmooth: [number, number][] = (() => {
+  const P = track.points;
+  const out: [number, number][] = P.map((p) => [p[0], p[1]]);
+  for (const z of ZOOMS) {
+    const a = Math.round(z.from * track.fps);
+    const b = Math.min(P.length, Math.round(z.to * track.fps));
+    const med: [number, number][] = [];
+    for (let i = a; i < b; i++) {
+      const w = P.slice(Math.max(a, i - 12), Math.min(b, i + 13));
+      const m = (k: 0 | 1) => w.map((p) => p[k]).sort((x, y) => x - y)[Math.floor(w.length / 2)];
+      med.push([m(0), m(1)]);
+    }
+    for (let i = a; i < b; i++) {
+      const w = med.slice(Math.max(0, i - a - 15), Math.min(med.length, i - a + 16));
+      out[i] = [w.reduce((s, p) => s + p[0], 0) / w.length, w.reduce((s, p) => s + p[1], 0) / w.length];
+    }
+  }
+  return out;
+})();
+const zoomAt = (t: number) => ZOOMS.find((z) => t >= z.from && t < z.to);
+
 const trackAt = (t: number) => {
   const tr = TRACKS.find((x) => t >= x.from && t < x.to);
   return tr ? { x: 540, y: 640, scale: tr.scale } : null;
@@ -68,6 +91,10 @@ const faceAt = (t: number) => {
   if (tp) return { x: tp.x, y: tp.y };
   const fx = FIXED.find((x) => t >= x.from && t < x.to);
   if (fx) return { x: fx.face[0], y: fx.face[1] };
+  if (zoomAt(t)) {
+    const i = Math.min(zoomSmooth.length - 1, Math.max(0, Math.round(t * track.fps)));
+    return { x: zoomSmooth[i][0], y: zoomSmooth[i][1] };
+  }
   const i = Math.min(smooth.length - 1, Math.max(0, Math.round(t * track.fps)));
   return { x: smooth[i][0], y: smooth[i][1] };
 };
@@ -116,10 +143,10 @@ export const cameraAt = (frame: number, fps: number) => {
   // hook exagerado: con 200 kg la cámara tiembla por el esfuerzo y recibe el golpe del
   // peso; con 10 kg flota ligera
   const strain = t < HOOK.light ? interpolate(t, [HOOK.press, HOOK.heavy, HOOK.light - 0.15, HOOK.light], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
-  const jolt = t >= HOOK.heavy && t < HOOK.light ? Math.exp(-(t - HOOK.heavy) * 7) : 0;
-  const shakeX = strain * (Math.sin(frame * 2.9) * 5 + Math.sin(frame * 5.3) * 3) + jolt * Math.sin(frame * 3.7) * 26;
-  const shakeY = strain * (Math.cos(frame * 3.4) * 4 + Math.sin(frame * 6.1) * 2) + jolt * 34 * Math.cos((t - HOOK.heavy) * 30);
-  const float = t >= HOOK.light && t < HOOK.to + 0.2 ? Math.sin((t - HOOK.light) * 4) * 12 : 0;
+  const jolt = 0;
+  const shakeX = 0.6 * strain * (Math.sin(frame * 2.9) * 5 + Math.sin(frame * 5.3) * 3) + jolt * Math.sin(frame * 3.7) * 26;
+  const shakeY = 0.6 * strain * (Math.cos(frame * 3.4) * 4 + Math.sin(frame * 6.1) * 2) + jolt * 34 * Math.cos((t - HOOK.heavy) * 30);
+  const float = 0;
   const x = Math.sin(frame / 41) * 6 + Math.sin(frame / 17) * 2 + shakeX;
   const y = Math.cos(frame / 53) * 5 + Math.sin(frame / 23) * 1.5 + shakeY + float;
   const rot = Math.sin(frame / 67) * 0.25 + strain * Math.sin(frame * 2.3) * 0.5 + jolt * 1.2 * Math.sin(frame * 2.1);
@@ -130,8 +157,10 @@ export const cameraAt = (frame: number, fps: number) => {
   // zoom suave al antebrazo (muelle de entrada, salida al cortar)
   const zin = spring({ frame: frame - f(FORE_ZOOM.at), fps, config: { damping: 18, stiffness: 120, mass: 0.8 } });
   const zk = t >= FORE_ZOOM.at - 0.05 ? zin : 0;
+  const zm = zoomAt(t);
+  const zu = zm ? interpolate(t, [zm.from, zm.to], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) }) : 0;
   const scale =
-    (fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
+    (zm ? zm.s0 + (zm.s1 - zm.s0) * zu : fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
 
   // barridos en los cortes: desenfoque de movimiento + empujón (como en los anteriores)
   let blur = 0;

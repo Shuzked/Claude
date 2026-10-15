@@ -134,10 +134,12 @@ export const FIXED: Framing[] = [
   { from: 26.72, to: 27.72, face: [540, 1100], scale: 1.08, ty: 1000 },
   { from: 27.72, to: 34.48, face: [540, 960], scale: 1.0 },
   { from: 38.48, to: 44.08, face: [540, 960], scale: 1.0 }, // los dos Yagos
-  { from: 53.04, to: 67.4, face: [520, 1000], scale: 1.45, ty: 900 },
+  { from: 53.04, to: 58.95, face: [380, 900], scale: 1.2, ty: 1000 }, // palo: él a la izquierda, «pizarra» a la derecha
   { from: 67.4, to: 75.36, face: [540, 1233], scale: 1.6, ty: 960 }, // banco desde atrás
   { from: 88.48, to: 94.2, face: [540, 980], scale: 1.5, ty: 900 },
 ];
+// acercamiento progresivo siguiendo la cara (tras la «pizarra», hasta el siguiente plano)
+export const ZOOMS = [{ from: 58.95, to: 67.4, s0: 1.25, s1: 1.9 }];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
 
 export const JUMPS = [
@@ -152,7 +154,7 @@ export const JUMPS = [
 
 // --- Escenas (segundos del original) ----------------------------------------------
 export const HOOK = { from: 0.16, press: 2.72, heavy: 3.24, light: 4.4, ten: 5.52, to: 5.85 };
-export const HUMERUS = { from: 6.52, line: 7.76, to: 8.95 }; // se apaga antes de que abra los brazos
+export const HUMERUS = { from: 6.05, line: 6.4, to: 8.95 }; // se apaga antes de que abra los brazos
 export const ADD = { from: 15.76, to: 18.2 };
 // Press y aperturas en el orden del metraje: primero press (codo que se mueve), luego
 // aperturas (codo casi fijo); en «palanca» se congela el press y después la apertura
@@ -160,7 +162,7 @@ export const SPLIT = { from: 18.24, elbow: 20.36, flyFrom: 21.76, fixed: 22.96, 
 export const KG = { from: 28.56, to: 34.15 };
 export const SIMILAR = { from: 36.16, word: 39.56, to: 40.85 };
 export const REHOOK = { at: 41.08 };
-export const STUDY_BG = { from: 44.08, to: 58.95 };
+export const STUDY_BG = { from: 44.08, to: 53.04 };
 export const STUDY = { from: 44.12, n: 44.92, weeks: 48.16, days: 51.48, fig: 53.1, both: 53.8, none: 55.08, to: 58.9 };
 export const INTEREST = { at: 64.16, to: 67.1 };
 export const ELBOW = { press: 68.32, fly: 71.08, to: 75.05 };
@@ -174,7 +176,7 @@ export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 // --- Encuadre ----------------------------------------------------------------------
 export type Punch = { at: number; amount: number; hold: number };
 export const punches: Punch[] = [
-  { at: 3.24, amount: 0.12, hold: 1.0 }, // «200 kilos»: golpe pesado
+  { at: 3.24, amount: 0.07, hold: 1.0 }, // «200 kilos»: golpe pesado
   { at: 5.52, amount: 0.04, hold: 0.3 }, // «diez»
   { at: 30.36, amount: 0.05, hold: 1.0 }, // «no lo convierte»
   { at: 39.12, amount: 0.05, hold: 1.4 }, // «crezca similar»
@@ -256,10 +258,6 @@ export const allSfx: Sfx[] = [
   { at: HOOK.from, src: "hit", volume: 0.3 },
   { at: HOOK.from + 0.25, src: "whoosh-b", volume: 0.2 },
   { at: HOOK.press, src: "riser", volume: 0.14 },
-  { at: HOOK.heavy, src: "impact", volume: 0.45 },
-  { at: HOOK.heavy, src: "hit", volume: 0.35 },
-  { at: HOOK.light + 0.1, src: "boing", volume: 0.2 },
-  { at: HOOK.ten, src: "pop", volume: 0.24 },
   { at: HUMERUS.line, src: "marker", volume: 0.25 },
   { at: ADD.from, src: "pop", volume: 0.24 },
   { at: SPLIT.from, src: "pop", volume: 0.22 },

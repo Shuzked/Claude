@@ -1,8 +1,10 @@
 import React from "react";
-import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import arms from "./arms.json";
+import head from "./head.json";
+import { gradeFilter } from "./Grade";
 import { GREEN, PAPER } from "./theme";
-import { ADD, COMBINE, f, HUMERUS, toSrc } from "./timeline";
+import { ADD, COMBINE, f, HOOK, HUMERUS, toSrc } from "./timeline";
 
 // Gráficos pegados al cuerpo (dentro de la cámara virtual, coordenadas 1080×1920):
 // el húmero (hombro → codo) resaltado y la aducción horizontal del hombro.
@@ -45,6 +47,7 @@ const Svg: React.FC<{ children: React.ReactNode; opacity?: number }> = ({ childr
 // húmero queda marcado con una línea que se dibuja con cabeza luminosa
 const Humerus: React.FC<{ t: number }> = ({ t }) => {
   const { ramp, pop } = useClock();
+  // antes de 7,0 s la pose se confunde con la otra mano: se usa la de 7,0 s
   const h = humerusAt(Math.min(Math.max(t, 7.0), HUMERUS.to));
   if (!h) return null;
   // el foco se apaga poco a poco y termina antes de que abra los brazos (nada cruza el cambio)
@@ -184,7 +187,9 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
     const e = ease(u);
     return { x: home.x + (C.x - home.x) * e, y: home.y + (C.y - home.y) * e - Math.sin(e * Math.PI) * 120, r: side * -18 * Math.sin(e * Math.PI) };
   };
+  const popOutB = (o: number) => (o < 0.3 ? 1 + 0.08 * (o / 0.3) : 1.08 * (1 - (o - 0.3) / 0.7));
   return (
+  <>
     <Svg>
       {/* hilo de energía entre las manos justo antes de juntarlas */}
       {t < hit ? (
@@ -201,37 +206,15 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
         />
       ) : null}
       {t < hit + 0.04
-        ? chips.map(([txt, at, h, side], i) => {
+        ? chips.map(([, at, h], i) => {
             const q = sq(at);
             if (q.p < 0.01) return null;
-            const ghosts = m > 0 && m < 1 ? [0.18, 0.12, 0.06] : [];
-            const w = txt.length * 24 + 64;
-            const chip = (u: number, alpha: number, key: string) => {
-              const pp = posAt(h, side, u);
-              const sc = q.p * (1 - 0.25 * ease(u));
-              return (
-                <g key={key} transform={`translate(${pp.x} ${pp.y}) rotate(${pp.r + side * 4 * (1 - q.p)}) scale(${sc * q.sx} ${sc * q.sy})`} opacity={alpha}>
-                  <rect x={-w / 2} y={-34} width={w} height={68} rx={16} fill={i ? GREEN : PAPER} style={{ filter: i ? NEON : "drop-shadow(0 10px 20px rgba(0,0,0,0.6))" }} />
-                  <Dumbbell color="#0A0A0A" x={-w / 2 + 38} y={0} s={0.85} rot={i ? 0 : -25 + Math.sin(t * 9) * 25} />
-                  <text x={-w / 2 + 70} y={14} fill="#0A0A0A" fontFamily="Montserrat" fontWeight={900} fontStyle="italic" fontSize={36} style={{ textTransform: "uppercase" }}>
-                    {txt}
-                  </text>
-                </g>
-              );
-            };
-            return (
-              <g key={i}>
-                {/* destello en la palma al aparecer */}
-                <circle cx={h.x} cy={h.y - 20} r={20 + 70 * q.p} fill="none" stroke={i ? GREEN : PAPER} strokeWidth={4 * (1 - q.p) + 0.5} opacity={1 - q.p} />
-                {ghosts.map((g, j) => chip(Math.max(0, m - g), 0.25 - j * 0.07, `g${j}`))}
-                {chip(m, 1, "c")}
-              </g>
-            );
+            return <circle key={i} cx={h.x} cy={h.y - 20} r={20 + 70 * q.p} fill="none" stroke={i ? GREEN : PAPER} strokeWidth={4 * (1 - q.p) + 0.5} opacity={1 - q.p} />;
           })
         : null}
-      {/* fusión: anillo expansivo, rayos y la ficha grande */}
-      {s > -0.02 ? (
-        <g opacity={1 - out}>
+      {/* fusión: anillo expansivo y rayos */}
+      {s > -0.02 && s < 0.5 ? (
+        <g>
           <circle cx={C.x} cy={C.y} r={40 + 380 * ease(s / 0.45)} fill="none" stroke={GREEN} strokeWidth={14 * Math.max(0, 1 - s / 0.45)} opacity={Math.max(0, 1 - s / 0.45)} style={{ filter: NEON }} />
           {Array.from({ length: 14 }, (_, k) => {
             const a = (k / 14) * Math.PI * 2;
@@ -239,28 +222,115 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
             if (s > 0.4) return null;
             return <line key={k} x1={C.x + Math.cos(a) * (60 + 140 * u)} y1={C.y + Math.sin(a) * (60 + 140 * u)} x2={C.x + Math.cos(a) * (90 + 260 * u)} y2={C.y + Math.sin(a) * (90 + 260 * u)} stroke={k % 2 ? PAPER : GREEN} strokeWidth={7 * (1 - u) + 1} strokeLinecap="round" />;
           })}
-          <g transform={`translate(${C.x} ${C.y + Math.sin(t * 4) * 6}) rotate(${-3 + Math.sin(t * 3) * 1.2}) scale(${big.p * big.sx * (1 - 0.15 * out) * (out > 0.3 ? 1.08 * (1 - (out - 0.3) / 0.7) / 0.85 : 1)} ${big.p * big.sy * (1 - 0.15 * out) * (out > 0.3 ? 1.08 * (1 - (out - 0.3) / 0.7) / 0.85 : 1)})`}>
-            <rect x={-280} y={-62} width={560} height={124} rx={22} fill={GREEN} style={{ filter: NEON }} />
-            <text x={0} y={22} textAnchor="middle" fill="#0A0A0A" fontFamily="Montserrat" fontWeight={900} fontStyle="italic" fontSize={66}>
-              COMBINACIÓN
-            </text>
-            <g transform="translate(0 100)" opacity={Math.min(1, Math.max(0, (s - 0.15) * 4))}>
-              <rect x={-230} y={-26} width={460} height={52} rx={12} fill="rgba(10,10,10,0.85)" stroke={PAPER} strokeWidth={2} />
-              <text x={0} y={11} textAnchor="middle" fill={PAPER} fontFamily="Montserrat" fontWeight={800} fontSize={30} letterSpacing={2}>
-                PRESS + APERTURAS
-              </text>
-            </g>
-            {/* brillo que barre la ficha */}
-            <clipPath id="comb-clip">
-              <rect x={-280} y={-62} width={560} height={124} rx={22} />
-            </clipPath>
-            <g clipPath="url(#comb-clip)">
-              <rect x={-340 + 700 * ease((s - 0.25) / 0.5)} y={-80} width={60} height={160} fill="white" opacity={0.45} transform="skewX(-20)" />
-            </g>
-          </g>
         </g>
       ) : null}
     </Svg>
+    {/* fichas en HTML: el texto define el ancho de la pastilla (nada se desborda) */}
+    {t < hit + 0.04
+      ? chips.map(([txt, at, h, side], i) => {
+          const q = sq(at);
+          if (q.p < 0.01) return null;
+          const ghosts = m > 0 && m < 1 ? [0.18, 0.12, 0.06] : [];
+          const chip = (u: number, alpha: number, key: string) => {
+            const pp = posAt(h, side, u);
+            const sc = q.p * (1 - 0.25 * ease(u));
+            return (
+              <div key={key} style={{ position: "absolute", left: pp.x, top: pp.y, opacity: alpha, transform: `translate(-50%, -50%) rotate(${pp.r + side * 4 * (1 - q.p)}deg) scale(${sc * q.sx}, ${sc * q.sy})` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap", background: i ? GREEN : PAPER, borderRadius: 14, padding: "10px 20px 8px 14px", fontFamily: "Montserrat", fontWeight: 900, fontStyle: "italic", fontSize: 36, lineHeight: 1, textTransform: "uppercase", color: "#0A0A0A", filter: i ? NEON : "drop-shadow(0 10px 20px rgba(0,0,0,0.6))" }}>
+                  <svg width={58} height={30} viewBox="-29 -15 58 30" style={{ overflow: "visible" }}>
+                    <Dumbbell color="#0A0A0A" x={0} y={0} s={0.85} rot={i ? 0 : -25 + Math.sin(t * 9) * 25} />
+                  </svg>
+                  {txt}
+                </div>
+              </div>
+            );
+          };
+          return (
+            <React.Fragment key={i}>
+              {ghosts.map((g, j) => chip(Math.max(0, m - g), 0.25 - j * 0.07, `g${j}`))}
+              {chip(m, 1, "c")}
+            </React.Fragment>
+          );
+        })
+      : null}
+    {s > -0.02 ? (
+      <div style={{ position: "absolute", left: C.x, top: C.y + Math.sin(t * 4) * 6, opacity: 1 - out, transform: `translate(-50%, -50%) rotate(${-3 + Math.sin(t * 3) * 1.2}deg) scale(${big.p * big.sx * popOutB(out)}, ${big.p * big.sy * popOutB(out)})` }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <div style={{ position: "relative", overflow: "hidden", whiteSpace: "nowrap", background: GREEN, borderRadius: 20, padding: "16px 34px 12px", fontFamily: "Montserrat", fontWeight: 900, fontStyle: "italic", fontSize: 64, lineHeight: 1, color: "#0A0A0A", filter: NEON }}>
+            COMBINACIÓN
+            <div style={{ position: "absolute", top: -20, bottom: -20, width: 60, left: `${-20 + 140 * ease((s - 0.25) / 0.5)}%`, background: "rgba(255,255,255,0.45)", transform: "skewX(-20deg)" }} />
+          </div>
+          <div style={{ whiteSpace: "nowrap", background: "rgba(10,10,10,0.85)", border: `2px solid ${PAPER}`, borderRadius: 12, padding: "10px 20px 8px", fontFamily: "Montserrat", fontWeight: 800, fontSize: 28, lineHeight: 1, letterSpacing: 2, color: PAPER, opacity: Math.min(1, Math.max(0, (s - 0.15) * 4)) }}>
+            PRESS + APERTURAS
+          </div>
+        </div>
+      </div>
+    ) : null}
+  </>
+  );
+};
+
+// Hook, «200 kilos»: la cabeza (rotoscopiada) se va hinchando, se pone roja del
+// esfuerzo y suda. Recortes RGBA de 220 px (coordenadas de vídeo) en public/roto/head.
+const HEAD = head as { t0: number; fps: number; size: number; tl: number[][]; center: number[][] };
+const DROPS = [
+  { a: -2.3, at: 0.15, dur: 0.9, s: 1.0 },
+  { a: -1.2, at: 0.35, dur: 0.8, s: 0.8 },
+  { a: -2.8, at: 0.55, dur: 0.85, s: 0.9 },
+  { a: -0.6, at: 0.7, dur: 0.75, s: 0.7 },
+  { a: -1.8, at: 0.85, dur: 0.8, s: 1.1 },
+  { a: -2.5, at: 1.05, dur: 0.7, s: 0.8 },
+  { a: -0.9, at: 1.15, dur: 0.7, s: 1.0 },
+  { a: -1.5, at: 1.3, dur: 0.6, s: 0.9 },
+];
+const Drop: React.FC<{ x: number; y: number; s: number; o: number }> = ({ x, y, s, o }) => (
+  <g transform={`translate(${x} ${y}) scale(${s})`} opacity={o}>
+    <path d="M 0 -16 C 6 -6 11 0 11 6 A 11 11 0 0 1 -11 6 C -11 0 -6 -6 0 -16 Z" fill="rgba(200,235,255,0.92)" stroke="rgba(60,140,200,0.9)" strokeWidth={2} />
+    <ellipse cx={-4} cy={4} rx={2.5} ry={4} fill="white" opacity={0.9} />
+  </g>
+);
+const HeadInflate: React.FC<{ t: number }> = ({ t }) => {
+  const i = Math.round((t - HEAD.t0) * HEAD.fps);
+  if (i < 0 || i >= HEAD.tl.length - 1) return null;
+  const k = interpolate(t, [HOOK.press, HOOK.light - 0.06], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+  const appear = interpolate(t, [HOOK.press - 0.05, HOOK.press + 0.05], [0, 1], clamp);
+  const wob = Math.sin(t * 16) * 0.025 * k;
+  const sx = 1 + 0.55 * k + wob;
+  const sy = 1 + 0.55 * k - wob;
+  const [tx, ty] = HEAD.tl[i];
+  const [cx, cy] = HEAD.center[i];
+  const n = String(i).padStart(3, "0");
+  const red = `sepia(${0.35 * k}) saturate(${1 + 1.8 * k}) hue-rotate(${-14 * k}deg) brightness(${1 - 0.06 * k}) contrast(${1 + 0.1 * k})`;
+  const R = 95 * sx; // radio aprox. de la cabeza hinchada
+  const rel = t - HOOK.press;
+  return (
+    <>
+      <div style={{ position: "absolute", left: tx, top: ty, width: HEAD.size, height: HEAD.size, opacity: appear, transformOrigin: `${cx - tx}px ${cy - ty}px`, transform: `scale(${sx}, ${sy})`, filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.45))" }}>
+        <div style={{ position: "absolute", inset: 0, filter: gradeFilter(1) }}>
+          <Img src={staticFile(`roto/head/h_${n}.png`)} style={{ width: "100%", height: "100%", filter: red }} />
+        </div>
+      </div>
+      <Svg>
+        {DROPS.map((d, j) => {
+          const u = (rel - d.at) / d.dur;
+          if (u < 0 || u > 1) return null;
+          // nace en el borde de la cabeza y resbala hacia abajo, acelerando
+          const x0 = cx + Math.cos(d.a) * R * 0.95;
+          const y0 = cy + Math.sin(d.a) * R * 0.95;
+          const y = y0 + u * u * 140;
+          const x = x0 + Math.cos(d.a) * u * 12;
+          return <Drop key={j} x={x} y={y} s={d.s * (0.6 + 0.4 * Math.min(1, u * 4)) * (1 + 0.3 * k)} o={u < 0.8 ? 1 : (1 - u) / 0.2} />;
+        })}
+        {/* rayitas de agobio alrededor de la cabeza */}
+        {k > 0.3
+          ? [-2.6, -2.0, -0.7].map((a, j) => {
+              const p = 0.5 + 0.5 * Math.sin(t * 12 + j * 2);
+              const r0 = R * 1.12 + p * 6;
+              return <path key={j} d={`M ${cx + Math.cos(a) * r0} ${cy + Math.sin(a) * r0} q ${Math.cos(a + 0.6) * 14} ${Math.sin(a + 0.6) * 14} ${Math.cos(a) * 26} ${Math.sin(a) * 26}`} fill="none" stroke="rgba(200,235,255,0.95)" strokeWidth={4} strokeLinecap="round" opacity={Math.min(1, (k - 0.3) * 3)} />;
+            })
+          : null}
+      </Svg>
+    </>
   );
 };
 
@@ -268,6 +338,7 @@ export const BodyLayer: React.FC = () => {
   const { t } = useClock();
   return (
     <div style={{ position: "absolute", inset: 0 }}>
+      {t >= HOOK.press - 0.1 && t < HOOK.light ? <HeadInflate t={t} /> : null}
       {t >= HUMERUS.from - 0.05 && t < HUMERUS.to + 0.05 ? <Humerus t={t} /> : null}
       {t >= ADD.from - 0.05 && t < ADD.to + 0.05 ? <AddArrows t={t} /> : null}
       {t >= COMBINE.press - 0.05 && t < COMBINE.to + 0.05 ? <Combine t={t} /> : null}

@@ -188,78 +188,23 @@ const Pill: React.FC<{ from: number; to: number; top: number; children: React.Re
   );
 };
 
-// Hook exagerado: «PRESS vs APERTURAS» y, en «200 kilos», un disco enorme que cae a
-// plomo (la cámara tiembla, viñeta roja y medidor de esfuerzo al máximo); en «con
-// diez», un disquito de 10 kg que baja flotando como una pluma y el medidor se vacía.
-const Plate: React.FC<{ kg: string; size: number; color: string; text: string; rim?: string }> = ({ kg, size, color, text, rim = "rgba(255,255,255,0.18)" }) => (
-  <svg width={size} height={size} viewBox="-100 -100 200 200" style={{ overflow: "visible", display: "block" }}>
-    <circle r={98} fill={color} stroke={rim} strokeWidth={4} />
-    <circle r={80} fill="none" stroke={rim} strokeWidth={2.5} />
-    <circle r={58} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth={10} />
-    <circle r={16} fill="#050505" stroke={rim} strokeWidth={3} />
-    {/* brillo especular */}
-    <path d="M -70 -55 A 90 90 0 0 1 20 -92" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={6} strokeLinecap="round" />
-    <text x={0} y={-24} textAnchor="middle" fill={text} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={kg.length > 2 ? 44 : 50}>
-      {kg}
-    </text>
-    <text x={0} y={52} textAnchor="middle" fill={text} fontFamily={FONT} fontWeight={800} fontSize={22} letterSpacing={4}>
-      KG
-    </text>
-  </svg>
-);
-
-const Meter: React.FC<{ level: number; heavy: number; frame: number; inP: number; outP: number }> = ({ level, heavy, frame, inP, outP }) => {
-  const H = 520;
-  const jitter = heavy * (Math.sin(frame * 3.1) * 0.03 + Math.sin(frame * 7.3) * 0.02);
-  const lv = Math.max(0, Math.min(1, level + jitter));
-  const col = heavy > 0.5 ? RED : GREEN;
-  return (
-    <div style={{ position: "absolute", right: 46, top: 560, width: 70, height: H + 90, opacity: inP * (1 - outP), transform: `translateX(${(1 - inP) * 160}px) scale(${popOut(outP)})` }}>
-      <div style={{ ...label, fontSize: 18, letterSpacing: 3, color: PAPER, textAlign: "center", marginLeft: -30, width: 130, marginBottom: 10 }}>Esfuerzo</div>
-      <div style={{ position: "relative", width: 52, height: H, margin: "0 auto", borderRadius: 26, background: "rgba(10,10,10,0.75)", border: "3px solid rgba(255,255,255,0.7)", overflow: "hidden", boxShadow: "0 18px 40px rgba(0,0,0,0.5)" }}>
-        <div style={{ position: "absolute", left: 4, right: 4, bottom: 4, height: (H - 8) * lv, borderRadius: 22, background: heavy > 0.5 ? `linear-gradient(0deg, #FFB020, ${RED})` : GREEN, filter: `drop-shadow(0 0 12px ${col})` }} />
-        {[0.25, 0.5, 0.75].map((k) => (
-          <div key={k} style={{ position: "absolute", left: 0, right: 0, bottom: H * k, height: 2, background: "rgba(255,255,255,0.25)" }} />
-        ))}
-      </div>
-      <div style={{ ...display, fontSize: 30, textAlign: "center", marginTop: 10, marginLeft: -40, width: 150, color: col, opacity: heavy > 0.5 ? 0.6 + 0.4 * Math.abs(Math.sin(frame * 0.5)) : 1, ...stroke(5) }}>{heavy > 0.5 ? "Máx" : "Fácil"}</div>
-    </div>
-  );
-};
-
+// Hook: «PRESS vs APERTURAS» y, sin más animación, el color alrededor: rojo de esfuerzo
+// con los 200 kilos (la cabeza que se hincha está en Body.tsx) y verde suave con los 10.
 const Hook: React.FC = () => {
-  const { t, frame, fps, squash, ramp, idle } = useClock();
+  const { t, frame, squash, ramp, idle } = useClock();
   if (t < HOOK.from - 0.05 || t > HOOK.to + 0.05) return null;
   const a = squash(HOOK.from, 9, 240);
   const vs = squash(HOOK.from + 0.25, 6, 320);
   const b = squash(HOOK.from + 0.45, 9, 240);
   const titleOut = ramp(HOOK.press - 0.2, HOOK.press + 0.1, easeInOut);
   const id = idle(0.4, 0.8);
-  const heavy = t < HOOK.light ? ramp(HOOK.press, HOOK.heavy) : 0;
   const light = t >= HOOK.light;
-  // caída del disco de 200: aceleración de gravedad y aterrizaje justo en «200»
-  const fallU = interpolate(t, [HOOK.heavy - 0.32, HOOK.heavy], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
-  const sinceHit = t - HOOK.heavy;
-  const land = sinceHit > 0 ? Math.exp(-sinceHit * 9) : 0;
-  const plateY = -620 + (560 + 620) * fallU;
-  const plateSq = sinceHit > 0 ? { sx: 1 + 0.32 * land * Math.cos(sinceHit * 40), sy: 1 - 0.3 * land * Math.cos(sinceHit * 40) } : { sx: 0.92, sy: 1.12 };
-  const tremble = sinceHit > 0 ? Math.sin(frame * 4.1) * 3 + Math.sin(frame * 7.7) * 2 : 0;
-  const heavyOut = ramp(HOOK.light - 0.18, HOOK.light, easeInOut);
-  // 10 kg: baja balanceándose como una pluma y se posa en «diez»
-  const fU = interpolate(t, [HOOK.light, HOOK.ten], [0, 1], { ...clamp, easing: Easing.out(Easing.quad) });
-  const featherX = Math.sin(fU * Math.PI * 3) * 140 * (1 - fU);
-  const featherR = Math.sin(fU * Math.PI * 3 + 0.6) * 28 * (1 - fU) + Math.sin(t * 3) * 4;
-  const featherY = -260 + (330 + 260) * fU + Math.sin(t * 4) * 8;
-  const ten = squash(HOOK.ten, 8, 260);
-  const end = ramp(HOOK.to - 0.25, HOOK.to + 0.05, easeInOut);
-  const level = light ? interpolate(t, [HOOK.light, HOOK.light + 0.5], [1, 0.12], { ...clamp, easing: easeOut }) : heavy;
-  const meterIn = ramp(HOOK.press, HOOK.press + 0.3);
+  const heavy = light ? 0 : ramp(HOOK.press - 0.1, HOOK.heavy + 0.3, easeInOut);
+  const calm = light ? ramp(HOOK.light, HOOK.light + 0.35) * (1 - ramp(HOOK.to - 0.25, HOOK.to + 0.05, easeInOut)) : 0;
   return (
     <AbsoluteFill>
-      {/* viñeta roja que late con el esfuerzo */}
-      {!light ? <AbsoluteFill style={{ background: "radial-gradient(ellipse 75% 60% at 50% 50%, transparent 45%, rgba(255,30,20,0.55) 100%)", opacity: heavy * (0.65 + 0.35 * Math.abs(Math.sin(frame * 0.45))) * (1 - heavyOut) }} /> : null}
-      {sinceHit > 0 && sinceHit < 0.12 && !light ? <AbsoluteFill style={{ background: "white", opacity: 0.35 * (1 - sinceHit / 0.12) }} /> : null}
-      {/* título */}
+      {!light ? <AbsoluteFill style={{ background: "radial-gradient(ellipse 75% 60% at 50% 50%, transparent 40%, rgba(255,30,20,0.6) 100%)", opacity: heavy * (0.7 + 0.3 * Math.abs(Math.sin(frame * 0.45))) }} /> : null}
+      {light ? <AbsoluteFill style={{ background: "radial-gradient(ellipse 75% 60% at 50% 50%, transparent 45%, rgba(4,228,0,0.35) 100%)", opacity: calm }} /> : null}
       {titleOut < 1 ? (
         <div style={{ position: "absolute", top: 260, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px) rotate(${-3 + id.r}deg) scale(${popOut(titleOut)})`, opacity: titleOut > 0.85 ? (1 - titleOut) / 0.15 : 1 }}>
           <div style={{ ...display, ...stroke(10), fontSize: 120, transform: `translateX(${(1 - a.p) * -400}px) scale(${a.sx}, ${a.sy})`, opacity: Math.min(1, a.p * 3) }}>Press</div>
@@ -270,29 +215,6 @@ const Hook: React.FC = () => {
           <div style={{ ...display, ...stroke(10), fontSize: 120, color: GREEN, transform: `translateX(${(1 - b.p) * 400}px) scale(${b.sx}, ${b.sy})`, opacity: Math.min(1, b.p * 3) }}>Aperturas</div>
         </div>
       ) : null}
-      {/* 200 kg */}
-      {!light && t > HOOK.heavy - 0.34 ? (
-        <div style={{ position: "absolute", left: 0, right: 0, top: plateY - 170, display: "flex", flexDirection: "column", alignItems: "center", opacity: 1 - heavyOut, transform: `scale(${popOut(heavyOut)})` }}>
-          <div style={{ transform: `translateX(${tremble}px) rotate(${-8 + tremble * 0.6}deg) scale(${plateSq.sx}, ${plateSq.sy})`, transformOrigin: "50% 100%", filter: "drop-shadow(0 30px 40px rgba(0,0,0,0.75))" }}>
-            <Plate kg="200" size={340} color="#161616" text={PAPER} />
-          </div>
-          {/* polvo / grietas del aterrizaje */}
-          <Burst x={540} y={340} d={sinceHit} r={210} n={16} color={RED} />
-          <div style={{ ...display, ...stroke(9), fontSize: 92, color: RED, marginTop: 14, transform: `translateX(${tremble * 1.5}px) scale(${1 + land * 0.25})`, opacity: sinceHit > 0 ? 1 : 0, filter: "drop-shadow(0 0 16px rgba(255,59,48,0.7))" }}>¡200 kilos!</div>
-        </div>
-      ) : null}
-      {/* 10 kg */}
-      {light ? (
-        <div style={{ position: "absolute", left: 0, right: 0, top: featherY - 110, display: "flex", flexDirection: "column", alignItems: "center", opacity: 1 - end, transform: `scale(${popOut(end)})` }}>
-          <div style={{ transform: `translateX(${featherX}px) rotate(${featherR}deg) scale(${1 + 0.12 * ten.p * (ten.sx - 1) * 4})`, filter: `drop-shadow(0 0 22px rgba(4,228,0,0.55))` }}>
-            <Plate kg="10" size={190} color={GREEN} text={INK} rim="rgba(0,0,0,0.25)" />
-          </div>
-          <div style={{ ...display, ...stroke(8), fontSize: 76, color: GREEN, marginTop: 12, opacity: Math.min(1, ten.p * 2), transform: `translateY(${(1 - ten.p) * 30}px) scale(${ten.sx}, ${ten.sy})` }}>Solo 10 kg</div>
-          <Burst x={540} y={110} d={t - HOOK.ten} r={130} n={12} />
-        </div>
-      ) : null}
-      {t >= HOOK.press ? <Meter level={level} heavy={light ? 0 : 1} frame={frame} inP={meterIn} outP={end} /> : null}
-      <div style={{ display: "none" }}>{fps}</div>
     </AbsoluteFill>
   );
 };
@@ -382,6 +304,72 @@ const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
   );
 };
 
+/** Diagrama claro del brazo (de lado): hombro, brazo, codo con su ángulo y mancuerna.
+ *  Press: el codo se flexiona y se extiende. Aperturas: el codo queda fijo y todo el
+ *  brazo gira desde el hombro como una sola pieza. `t` = segundos desde que aparece. */
+const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
+  const cyc = 0.5 - 0.5 * Math.cos(Math.max(0, t) * 4.2);
+  const sh = { x: 80, y: 290 };
+  const upper = 140;
+  const fore = 130;
+  // ángulos (grados, 0 = derecha, negativo = arriba)
+  const upA = bend ? -45 * cyc : -60 + 55 * cyc;
+  const elbow = bend ? 75 + 100 * cyc : 158; // ángulo interior del codo
+  const a1 = (upA * Math.PI) / 180;
+  const el = { x: sh.x + Math.cos(a1) * upper, y: sh.y + Math.sin(a1) * upper };
+  const a2 = a1 + ((180 - elbow) * Math.PI) / 180 * -1;
+  const hd = { x: el.x + Math.cos(a2) * fore, y: el.y + Math.sin(a2) * fore };
+  const draw = Math.min(1, Math.max(0, t / 0.35));
+  const col = bend ? GREEN : "#FFB020";
+  // arco del ángulo del codo (entre la dirección al hombro y a la mano)
+  const toSh = Math.atan2(sh.y - el.y, sh.x - el.x);
+  const toHd = Math.atan2(hd.y - el.y, hd.x - el.x);
+  let d = toHd - toSh;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  const r = 44;
+  const p0 = { x: el.x + Math.cos(toSh) * r, y: el.y + Math.sin(toSh) * r };
+  const p1 = { x: el.x + Math.cos(toSh + d) * r, y: el.y + Math.sin(toSh + d) * r };
+  const mid = toSh + d / 2;
+  return (
+    <div style={{ background: "rgba(10,10,10,0.82)", border: `3px solid ${col}`, borderRadius: 22, padding: "14px 18px 16px", boxShadow: `0 24px 60px rgba(0,0,0,0.6), 0 0 26px ${bend ? "rgba(4,228,0,0.35)" : "rgba(255,176,32,0.35)"}` }}>
+      <svg width={460} height={330} viewBox="0 0 460 330" style={{ display: "block", overflow: "visible" }}>
+        {/* torso */}
+        <rect x={20} y={262} width={420} height={56} rx={24} fill="rgba(255,255,255,0.12)" />
+        <line x1={sh.x} y1={sh.y} x2={sh.x + (el.x - sh.x) * draw} y2={sh.y + (el.y - sh.y) * draw} stroke={PAPER} strokeWidth={22} strokeLinecap="round" />
+        {draw >= 1 ? <line x1={el.x} y1={el.y} x2={hd.x} y2={hd.y} stroke={PAPER} strokeWidth={18} strokeLinecap="round" /> : null}
+        {draw >= 1 ? (
+          <g transform={`translate(${hd.x} ${hd.y}) rotate(${(a2 * 180) / Math.PI + 90})`}>
+            <rect x={-30} y={-6} width={60} height={12} rx={4} fill="#9a9a9a" />
+            <rect x={-42} y={-20} width={16} height={40} rx={4} fill="#d8d8d8" />
+            <rect x={26} y={-20} width={16} height={40} rx={4} fill="#d8d8d8" />
+          </g>
+        ) : null}
+        {draw >= 1 ? <path d={`M ${p0.x} ${p0.y} A ${r} ${r} 0 0 ${d > 0 ? 1 : 0} ${p1.x} ${p1.y}`} fill="none" stroke={col} strokeWidth={7} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 6px ${col})` }} /> : null}
+        <circle cx={sh.x} cy={sh.y} r={14} fill={INK} stroke={PAPER} strokeWidth={4} />
+        <circle cx={el.x} cy={el.y} r={15} fill={col} stroke={INK} strokeWidth={4} style={{ filter: `drop-shadow(0 0 8px ${col})` }} />
+        {draw >= 1 ? (
+          <text x={el.x + Math.cos(mid) * (r + 34)} y={el.y + Math.sin(mid) * (r + 34) + 10} textAnchor="middle" fill={col} fontFamily={FONT} fontWeight={900} fontSize={30}>
+            {Math.round(elbow)}°
+          </text>
+        ) : null}
+        {!bend && draw >= 1 ? (
+          // candado sobre el codo
+          <g transform={`translate(${el.x + 34} ${el.y - 52})`}>
+            <rect x={-14} y={-2} width={28} height={22} rx={4} fill="#FFB020" />
+            <path d="M -8 -2 V -10 A 8 8 0 0 1 8 -10 V -2" fill="none" stroke="#FFB020" strokeWidth={4} />
+          </g>
+        ) : null}
+        <text x={sh.x - 4} y={sh.y + 44} textAnchor="middle" fill="rgba(255,255,255,0.7)" fontFamily={FONT} fontWeight={800} fontSize={16} letterSpacing={2}>
+          HOMBRO
+        </text>
+      </svg>
+      <div style={{ ...display, fontSize: 40, color: col, textAlign: "center", marginTop: 4 }}>{bend ? "El codo se mueve" : "Codo casi fijo"}</div>
+      <div style={{ ...label, fontSize: 20, letterSpacing: 3, color: PAPER, textAlign: "center", marginTop: 6 }}>{bend ? "Flexión ↔ extensión" : "Gira solo el hombro"}</div>
+    </div>
+  );
+};
+
 /** Rótulo del ejercicio que se está viendo en el metraje (con subrayado que se dibuja). */
 const ExTag: React.FC<{ from: number; to: number; text: string; green?: boolean; icon: "bend" | "fixed"; iconAt: number }> = ({ from, to, text, green, icon, iconAt }) => {
   const { t, squash, ramp, idle } = useClock();
@@ -395,17 +383,14 @@ const ExTag: React.FC<{ from: number; to: number; text: string; green?: boolean;
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
       <Burst x={540} y={350} d={t - from - 0.05} r={130} n={12} color={green ? GREEN : PAPER} />
       <div style={{ position: "absolute", top: 290, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px) rotate(${-2 + id.r * 0.5}deg) scale(${popOut(out)})` }}>
-        <div style={{ ...label, fontSize: 24, letterSpacing: 6, color: PAPER, opacity: ul, marginBottom: 6 }}>Así es el</div>
         <div style={{ position: "relative", transform: `scale(${q.p * q.sx}, ${q.p * q.sy})` }}>
           <Words text={text} at={from + 0.05} gap={0.06} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER, marginRight: "-0.22em" }} />
           <div style={{ position: "absolute", left: 0, bottom: -10, height: 10, width: `${ul * 100}%`, background: green ? GREEN : PAPER, borderRadius: 6, filter: green ? GLOW : undefined }} />
         </div>
       </div>
       {ic.p > 0.01 ? (
-        <div style={{ position: "absolute", left: 0, right: 0, top: 1160, display: "flex", justifyContent: "center", opacity: Math.min(1, ic.p * 2) }}>
-          <div style={{ transform: `translateY(${(1 - ic.p) * 60}px) scale(${ic.p * ic.sx * 1.3}, ${ic.p * ic.sy * 1.3})` }}>
-            <ElbowIcon t={t} bend={icon === "bend"} />
-          </div>
+        <div style={{ position: "absolute", left: 555, top: 560, width: 500, opacity: Math.min(1, ic.p * 2), transform: `translateX(${(1 - ic.p) * 300}px) scale(${0.95 * ic.sx}, ${0.95 * ic.sy}) rotate(${(1 - ic.p) * 6 + 1.5}deg)`, transformOrigin: "0% 50%" }}>
+          <ArmDiagram t={t - iconAt} bend={icon === "bend"} />
         </div>
       ) : null}
     </AbsoluteFill>
@@ -438,26 +423,6 @@ const Split: React.FC = () => {
         </div>
       ) : null}
     </AbsoluteFill>
-  );
-};
-
-/** Mini brazo animado: codo que se dobla (press) o candado de codo fijo (aperturas). */
-const ElbowIcon: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
-  const ang = bend ? 40 + 50 * (0.5 + 0.5 * Math.sin(t * 4.5)) : 8;
-  const a = (ang * Math.PI) / 180;
-  const ex = 50;
-  const ey = 30;
-  const hx = ex + Math.cos(-a) * 40;
-  const hy = ey + Math.sin(-a) * 40;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(10,10,10,0.85)", border: `2px solid ${GREEN}`, borderRadius: 12, padding: "6px 14px" }}>
-      <svg width={100} height={50} viewBox="0 0 100 50" style={{ overflow: "visible" }}>
-        <line x1={8} y1={30} x2={ex} y2={ey} stroke={PAPER} strokeWidth={8} strokeLinecap="round" />
-        <line x1={ex} y1={ey} x2={hx} y2={hy} stroke={GREEN} strokeWidth={8} strokeLinecap="round" />
-        <circle cx={ex} cy={ey} r={7} fill={bend ? GREEN : "#FFB020"} />
-      </svg>
-      <div style={{ ...display, fontSize: 26, color: bend ? GREEN : PAPER }}>{bend ? "Codo se mueve" : "Codo casi fijo"}</div>
-    </div>
   );
 };
 
@@ -542,62 +507,68 @@ const Backdrop: React.FC<{ from: number; to: number; title: string; id: string }
 // Estudio (pantalla completa sobre el plano en negro y el siguiente): portada del paper,
 // datos del diseño y la Figura 4 con su leyenda
 const Study: React.FC = () => {
-  const { t, squash, ramp, pop, idle } = useClock();
-  if (t < STUDY_BG.from - 0.3 || t > STUDY_BG.to + 0.05) return null;
-  const bg = ramp(STUDY.from - 0.05, STUDY.from + 0.2) * (1 - ramp(STUDY.to - 0.35, STUDY.to - 0.05, easeInOut));
+  const { t, squash, ramp, idle } = useClock();
+  if (t < STUDY_BG.from - 0.3 || t > STUDY.to + 0.1) return null;
+  // parte 1 (fondo de escena): portada y datos del diseño
+  const bg = ramp(STUDY.from - 0.05, STUDY.from + 0.2) * (1 - ramp(STUDY_BG.to - 0.45, STUDY_BG.to - 0.1, easeInOut));
   const card = squash(STUDY.from, 11, 200);
-  const toFig = ramp(STUDY.fig - 0.1, STUDY.fig + 0.4, easeInOut);
-  const fig = squash(STUDY.fig, 12, 190);
   const id = idle(9.1, 0.6);
   const chips: [string, number][] = [
     ["26 completadores", STUDY.n],
     ["10 semanas", STUDY.weeks],
     ["2 días/semana", STUDY.days],
   ];
-  const both = pop(STUDY.both, 9, 230);
+  // parte 2 («pizarra imaginaria» a la que apunta con el palo): Figura 4 y conclusiones
+  const fig = squash(STUDY.fig, 12, 190);
+  const wipe = ramp(STUDY.fig + 0.05, STUDY.fig + 0.6, easeInOut);
+  const figOut = ramp(STUDY.to - 0.35, STUDY.to, easeInOut);
+  const both = squash(STUDY.both, 8, 240);
   const none = squash(STUDY.none, 7, 280);
+  const bid = idle(3.3, 0.6);
   return (
     <AbsoluteFill>
       <Backdrop from={STUDY_BG.from} to={STUDY_BG.to} title="Estudio" id="study" />
-      <AbsoluteFill style={{ opacity: bg }}>
-      {/* portada + datos del diseño */}
-      <div style={{ position: "absolute", top: 330, left: 70, right: 70, opacity: 1 - toFig, transform: `translateY(${(1 - card.p) * 120 - toFig * 80 + id.y}px) scale(${card.sx * (1 - toFig * 0.1)}, ${card.sy * (1 - toFig * 0.1)}) rotate(${-1.5 + id.r * 0.5}deg)` }}>
-        <div style={{ background: "white", borderRadius: 18, padding: "26px 26px 22px", boxShadow: "0 40px 90px rgba(0,0,0,0.6)" }}>
-          <div style={{ ...label, fontSize: 20, letterSpacing: 3, color: "rgba(0,0,0,0.5)", marginBottom: 12 }}>Estudio · Dell&apos;Avanzi, Enes et al. (2026)</div>
-          <Img src={staticFile("paper/title.png")} style={{ width: "100%", display: "block" }} />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 50 }}>
-          {chips.map(([txt, at], i) => {
-            const q = squash(at, 9, 240);
-            return (
-              <div key={i} style={{ position: "relative", ...display, fontSize: 62, color: i === 0 ? INK : PAPER, background: i === 0 ? GREEN : "rgba(255,255,255,0.08)", border: i === 0 ? "none" : "2px solid rgba(255,255,255,0.25)", padding: "12px 28px 6px", borderRadius: 14, filter: i === 0 ? GLOW : undefined, opacity: Math.min(1, q.p * 2), transform: `translateX(${(1 - q.p) * (i % 2 ? 200 : -200)}px) scale(${q.sx}, ${q.sy}) rotate(${(i - 1) * 1.5}deg)` }}>
-                {txt}
-                <Burst x={40} y={40} d={t - at} r={50} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {/* Figura 4 del PDF (p. 13) con su leyenda */}
-      {t >= STUDY.fig - 0.15 ? (
-        <div style={{ position: "absolute", top: 250, left: 40, right: 40, opacity: Math.min(1, fig.p * 2), transform: `translateY(${(1 - fig.p) * 160}px) scale(${0.9 + 0.1 * fig.p})` }}>
-          <div style={{ background: "white", borderRadius: 18, padding: "18px 18px 12px", boxShadow: "0 40px 90px rgba(0,0,0,0.6)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", ...label, fontSize: 18, letterSpacing: 2, color: "rgba(0,0,0,0.6)", marginBottom: 6 }}>
-              <span>Figura 4 · grosor muscular del pectoral (cm)</span>
-              <span>DBP = press · DFLY = aperturas</span>
+      {t < STUDY_BG.to ? (
+        <AbsoluteFill style={{ opacity: bg }}>
+          <div style={{ position: "absolute", top: 330, left: 70, right: 70, transform: `translateY(${(1 - card.p) * 120 + id.y}px) scale(${card.sx}, ${card.sy}) rotate(${-1.5 + id.r * 0.5}deg)` }}>
+            <div style={{ background: "white", borderRadius: 18, padding: "26px 26px 22px", boxShadow: "0 40px 90px rgba(0,0,0,0.6)" }}>
+              <div style={{ ...label, fontSize: 20, letterSpacing: 3, color: "rgba(0,0,0,0.5)", marginBottom: 12 }}>Estudio · Dell&apos;Avanzi, Enes et al. (2026)</div>
+              <Img src={staticFile("paper/title.png")} style={{ width: "100%", display: "block" }} />
             </div>
-            <Img src={staticFile("paper/fig4.png")} style={{ width: "100%", display: "block" }} />
-            <div style={{ ...label, fontSize: 16, letterSpacing: 1.5, color: "rgba(0,0,0,0.55)", marginTop: 6, textTransform: "none" }}>
-              A medial · B intermedio · C lateral · D suma. * = cambio respecto al inicio. Dell&apos;Avanzi, Enes et al. (2026), manuscrito.
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, marginTop: 50 }}>
+              {chips.map(([txt, at], i) => {
+                const q = squash(at, 9, 240);
+                return (
+                  <div key={i} style={{ position: "relative", ...display, fontSize: 62, color: i === 0 ? INK : PAPER, background: i === 0 ? GREEN : "rgba(255,255,255,0.08)", border: i === 0 ? "none" : "2px solid rgba(255,255,255,0.25)", padding: "12px 28px 6px", borderRadius: 14, filter: i === 0 ? GLOW : undefined, opacity: Math.min(1, q.p * 2), transform: `translateX(${(1 - q.p) * (i % 2 ? 200 : -200)}px) scale(${q.sx}, ${q.sy}) rotate(${(i - 1) * 1.5}deg)` }}>
+                    {txt}
+                    <Burst x={40} y={40} d={t - at} r={50} />
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 26, flexWrap: "wrap" }}>
-            <div style={{ ...display, fontSize: 50, color: INK, background: GREEN, padding: "10px 22px 5px", borderRadius: 12, filter: GLOW, opacity: Math.min(1, both * 2), transform: `scale(${both}) rotate(-2deg)` }}>Ambos crecieron</div>
-            <div style={{ ...display, fontSize: 50, color: INK, background: PAPER, padding: "10px 22px 5px", borderRadius: 12, opacity: Math.min(1, none.p * 2), transform: `scale(${none.p * none.sx}, ${none.p * none.sy}) rotate(1.5deg)` }}>Sin ventaja clara detectada</div>
-          </div>
-        </div>
+        </AbsoluteFill>
       ) : null}
-      </AbsoluteFill>
+      {t >= STUDY.fig - 0.05 ? (
+        <AbsoluteFill style={{ opacity: figOut > 0.85 ? (1 - figOut) / 0.15 : 1 }}>
+          <div style={{ position: "absolute", left: 470, top: 250, width: 570, transformOrigin: "0% 100%", transform: `perspective(1400px) rotateY(${-9 + (1 - fig.p) * -30}deg) translate(${(1 - fig.p) * -160}px, ${(1 - fig.p) * 120 + bid.y}px) scale(${fig.p * fig.sx * popOut(figOut)}, ${fig.p * fig.sy * popOut(figOut)})` }}>
+            <div style={{ position: "relative", background: "rgba(255,255,255,0.95)", borderRadius: 16, padding: "14px 14px 10px", boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 3px rgba(4,228,0,0.9), 0 0 30px rgba(4,228,0,0.35)", clipPath: `inset(-40px ${(1 - wipe) * 100}% -40px -40px round 16px)` }}>
+              <div style={{ ...label, fontSize: 17, letterSpacing: 2, color: "rgba(0,0,0,0.65)", marginBottom: 4 }}>Figura 4 · grosor del pectoral</div>
+              <div style={{ ...label, fontSize: 15, letterSpacing: 1.5, color: "rgba(0,0,0,0.5)", marginBottom: 6 }}>DBP = press · DFLY = aperturas</div>
+              <Img src={staticFile("paper/fig4.png")} style={{ width: "100%", display: "block" }} />
+              {/* brillo del rotulador al dibujarse */}
+              {wipe > 0 && wipe < 1 ? <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 6, background: GREEN, boxShadow: "0 0 18px 6px rgba(4,228,0,0.7)" }} /> : null}
+            </div>
+          </div>
+          <div style={{ position: "absolute", left: 470, width: 570, top: 900, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "relative", ...display, fontSize: 46, color: INK, background: GREEN, padding: "10px 22px 5px", borderRadius: 12, filter: GLOW, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * 40}px) scale(${both.sx * popOut(figOut)}, ${both.sy * popOut(figOut)}) rotate(-2deg)` }}>
+              Ambos crecieron
+              <Burst x={40} y={30} d={t - STUDY.both} r={60} />
+            </div>
+            <div style={{ ...display, fontSize: 46, color: INK, background: PAPER, padding: "10px 22px 5px", borderRadius: 12, opacity: Math.min(1, none.p * 2), transform: `translateY(${(1 - none.p) * 40}px) scale(${none.sx * popOut(figOut)}, ${none.sy * popOut(figOut)}) rotate(1.5deg)` }}>Sin ventaja clara</div>
+          </div>
+        </AbsoluteFill>
+      ) : null}
     </AbsoluteFill>
   );
 };
@@ -634,7 +605,7 @@ const Decide: React.FC = () => {
 
 // CTA: «COMENTA PECTORAL» (bocadillo) + «Asesoramiento personalizado»
 const Cta: React.FC = () => {
-  const { t, pop, squash, idle } = useClock();
+  const { t, pop, squash, idle, ramp } = useClock();
   if (t < CTA.from - 0.1) return null;
   const c = squash(CTA.from, 10, 220);
   const key = squash(CTA.key, 7, 280);
@@ -643,7 +614,7 @@ const Cta: React.FC = () => {
   const breathe = 1 + Math.sin(t * 5.5) * 0.012 * key.p;
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.8) 100%)", opacity: Math.min(1, c.p * 1.5) }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.8) 100%)", opacity: ramp(CTA.from - 0.2, CTA.from + 1.0, easeInOut) }} />
       <div style={{ position: "absolute", top: 1010, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px)` }}>
         <div style={{ ...display, ...stroke(8), fontSize: 84, transform: `translateY(${(1 - c.p) * 40}px) scale(${0.4 + 0.6 * c.p}) rotate(${(1 - c.p) * -8}deg)`, opacity: Math.min(1, c.p * 2.5) }}>Comenta</div>
         <div style={{ position: "relative", marginTop: 12, width: 800, height: 220, transform: `scale(${(0.3 + 0.7 * key.p) * breathe * key.sx}, ${(0.3 + 0.7 * key.p) * breathe * key.sy}) rotate(${-3 + id.r}deg)`, opacity: Math.min(1, key.p * 2.5), filter: "drop-shadow(0 0 18px rgba(4,228,0,0.45))" }}>
