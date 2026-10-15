@@ -9,7 +9,9 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { CameraSpace, toScreen } from "./Camera";
 import { gradeFilter } from "./Grade";
+import stick from "./stick.json";
 import { FONT, GREEN, PAPER } from "./theme";
 import { CTA, DECIDE, ELBOW, f, HOOK, INTEREST, KG, SIMILAR, SPLIT, STUDY, STUDY_BG, toSrc } from "./timeline";
 
@@ -120,14 +122,14 @@ const Words: React.FC<{ text: string; at: number; gap?: number; style?: React.CS
   const { squash } = useClock();
   return (
     <div style={style}>
-      {text.split(" ").map((w, i) => {
+      {text.split(" ").map((w, i, all) => {
         const q = squash(at + i * gap, 10, 240);
         return (
           <span
             key={i}
             style={{
               display: "inline-block",
-              marginRight: "0.22em",
+              marginRight: i < all.length - 1 ? "0.22em" : 0,
               color: color?.(i),
               opacity: Math.min(1, q.p * 3),
               transform: `translateY(${(1 - q.p) * 50}px) rotate(${(1 - q.p) * -14}deg) scale(${q.sx}, ${q.sy})`,
@@ -179,7 +181,7 @@ const Pill: React.FC<{ from: number; to: number; top: number; children: React.Re
             clipPath: `inset(-20px ${Math.max(0, 1 - q.p * 1.15) * 50}% -20px ${Math.max(0, 1 - q.p * 1.15) * 50}% round 12px)`,
           }}
         >
-          {typeof children === "string" ? <Words text={children} at={from + 0.12} gap={0.05} style={{ marginRight: "-0.22em" }} /> : children}
+          {typeof children === "string" ? <Words text={children} at={from + 0.12} gap={0.05} /> : children}
           {/* brillo que barre la pastilla tras entrar */}
           <div style={{ position: "absolute", top: -20, bottom: -20, width: 50, left: `${-20 + 140 * Math.min(1, Math.max(0, (t - from - 0.35) / 0.45))}%`, background: "rgba(255,255,255,0.5)", transform: "skewX(-20deg)", opacity: t - from > 0.35 && t - from < 0.8 ? 1 : 0 }} />
         </div>
@@ -384,7 +386,7 @@ const ExTag: React.FC<{ from: number; to: number; text: string; green?: boolean;
       <Burst x={540} y={350} d={t - from - 0.05} r={130} n={12} color={green ? GREEN : PAPER} />
       <div style={{ position: "absolute", top: 290, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px) rotate(${-2 + id.r * 0.5}deg) scale(${popOut(out)})` }}>
         <div style={{ position: "relative", transform: `scale(${q.p * q.sx}, ${q.p * q.sy})` }}>
-          <Words text={text} at={from + 0.05} gap={0.06} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER, marginRight: "-0.22em" }} />
+          <Words text={text} at={from + 0.05} gap={0.06} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER }} />
           <div style={{ position: "absolute", left: 0, bottom: -10, height: 10, width: `${ul * 100}%`, background: green ? GREEN : PAPER, borderRadius: 6, filter: green ? GLOW : undefined }} />
         </div>
       </div>
@@ -506,6 +508,90 @@ const Backdrop: React.FC<{ from: number; to: number; title: string; id: string }
 
 // Estudio (pantalla completa sobre el plano en negro y el siguiente): portada del paper,
 // datos del diseño y la Figura 4 con su leyenda
+// «Pizarra imaginaria» (53–59 s): la Figura 4 centrada detrás de Yago, que va delante
+// (rotoscopiado con el palo). La punta del palo señala cada punto de la figura mientras
+// lo explica: primero la suma (D, «creció con ambos») y luego A, B y C («los tres puntos»).
+const STICK = stick as { t0: number; fps: number; x: number; y: number; w: number; h: number; tips: ([number, number] | null)[] };
+const tipAt = (t: number) => {
+  const i = Math.round((t - STICK.t0) * STICK.fps);
+  const win: [number, number][] = [];
+  for (let k = i - 4; k <= i + 4; k++) {
+    const p = STICK.tips[Math.max(0, Math.min(STICK.tips.length - 1, k))];
+    if (p) win.push(p);
+  }
+  if (!win.length) return null;
+  const med = (j: 0 | 1) => win.map((p) => p[j]).sort((a, b) => a - b)[Math.floor(win.length / 2)];
+  return { x: med(0), y: med(1) };
+};
+const BOARD = { left: 160, top: 330, w: 760 };
+const IMG = { x: BOARD.left + 14, y: BOARD.top + 62, w: BOARD.w - 28 };
+// centros de los paneles A–D de la figura (fracciones de la imagen) y cuándo se señalan
+const POINTS: { k: string; fx: number; fy: number; at: number; to: number; label: string }[] = [
+  { k: "D", fx: 0.76, fy: 0.78, at: 53.8, to: 55.0, label: "Suma: ambos crecen" },
+  { k: "A", fx: 0.26, fy: 0.3, at: 56.0, to: 56.75, label: "A · medial" },
+  { k: "B", fx: 0.76, fy: 0.3, at: 56.75, to: 57.5, label: "B · intermedio" },
+  { k: "C", fx: 0.26, fy: 0.78, at: 57.5, to: 58.6, label: "C · lateral" },
+];
+const Board: React.FC = () => {
+  const { t, frame, fps, squash, ramp, idle } = useClock();
+  const fig = squash(STUDY.fig, 12, 190);
+  const wipe = ramp(STUDY.fig + 0.05, STUDY.fig + 0.6, easeInOut);
+  const out = ramp(STUDY.to - 0.35, STUDY.to, easeInOut);
+  const both = squash(STUDY.both, 8, 240);
+  const none = squash(STUDY.none, 7, 280);
+  const bid = idle(3.3, 0.5);
+  const i = Math.round((t - STICK.t0) * STICK.fps);
+  const n = String(Math.max(0, Math.min(STICK.tips.length - 1, i))).padStart(3, "0");
+  const tip0 = tipAt(t);
+  const tip = tip0 ? toScreen(frame, fps, tip0) : null;
+  const pt = POINTS.find((p) => t >= p.at && t < p.to);
+  const ptQ = pt ? squash(pt.at, 9, 260) : null;
+  const imgH = IMG.w * (1309 / 1320);
+  const target = pt ? { x: IMG.x + pt.fx * IMG.w, y: IMG.y + pt.fy * imgH } : null;
+  return (
+    <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
+      <div style={{ position: "absolute", left: BOARD.left, top: BOARD.top, width: BOARD.w, transformOrigin: "50% 100%", transform: `translateY(${(1 - fig.p) * 120 + bid.y}px) scale(${fig.p * fig.sx * popOut(out)}, ${fig.p * fig.sy * popOut(out)})` }}>
+        <div style={{ position: "relative", background: "rgba(255,255,255,0.96)", borderRadius: 16, padding: "14px 14px 10px", boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 3px rgba(4,228,0,0.9), 0 0 30px rgba(4,228,0,0.35)", clipPath: `inset(-40px ${(1 - wipe) * 100}% -40px -40px round 16px)` }}>
+          <div style={{ ...label, fontSize: 17, letterSpacing: 2, color: "rgba(0,0,0,0.65)", marginBottom: 4, textAlign: "center" }}>Figura 4 · grosor del pectoral</div>
+          <div style={{ ...label, fontSize: 15, letterSpacing: 1.5, color: "rgba(0,0,0,0.5)", marginBottom: 6, textAlign: "center" }}>DBP = press · DFLY = aperturas</div>
+          <Img src={staticFile("paper/fig4.png")} style={{ width: "100%", display: "block" }} />
+          {wipe > 0 && wipe < 1 ? <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 6, background: GREEN, boxShadow: "0 0 18px 6px rgba(4,228,0,0.7)" }} /> : null}
+        </div>
+      </div>
+      {/* el punto que está explicando: marco que late y etiqueta */}
+      {pt && target && ptQ ? (
+        <div style={{ position: "absolute", left: target.x, top: target.y, transform: `translate(-50%, -50%) scale(${ptQ.p * ptQ.sx}, ${ptQ.p * ptQ.sy})` }}>
+          <div style={{ width: 330, height: 310, borderRadius: 18, border: `5px solid ${GREEN}`, boxShadow: `0 0 ${18 + 8 * Math.sin(t * 9)}px rgba(4,228,0,0.8), inset 0 0 20px rgba(4,228,0,0.25)` }} />
+          <div style={{ position: "absolute", left: "50%", top: -26, transform: "translate(-50%, -50%)", ...display, fontSize: 30, color: INK, background: GREEN, padding: "6px 14px 3px", borderRadius: 8, filter: GLOW }}>{pt.label}</div>
+        </div>
+      ) : null}
+      {/* Yago delante de la pizarra */}
+      <CameraSpace>
+        <div style={{ position: "absolute", left: STICK.x, top: STICK.y, width: STICK.w, height: STICK.h, filter: gradeFilter(STICK.t0 + 0.1) }}>
+          <Img src={staticFile(`roto/stick/s_${n}.png`)} style={{ width: "100%", height: "100%" }} />
+        </div>
+      </CameraSpace>
+      {/* destello en la punta del palo y haz hasta el punto señalado */}
+      {tip && wipe > 0.9 ? (
+        <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+          {target && ptQ ? <line x1={tip.x} y1={tip.y} x2={tip.x + (target.x - tip.x) * ptQ.p} y2={tip.y + (target.y - tip.y) * ptQ.p} stroke={GREEN} strokeWidth={4} strokeDasharray="3 12" strokeDashoffset={-frame * 4} strokeLinecap="round" style={{ filter: NEON }} /> : null}
+          <circle cx={tip.x} cy={tip.y} r={10 + 3 * Math.sin(t * 12)} fill="#EFFFF0" style={{ filter: NEON }} />
+        </svg>
+      ) : null}
+      {/* conclusiones como pegatinas sobre las esquinas de la pizarra */}
+      <div style={{ position: "absolute", right: 60, top: 255, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * -30}px) scale(${both.sx * popOut(out)}, ${both.sy * popOut(out)}) rotate(3deg)` }}>
+        <div style={{ position: "relative", ...display, fontSize: 42, color: INK, background: GREEN, padding: "10px 20px 5px", borderRadius: 12, filter: GLOW }}>
+          Ambos crecieron
+          <Burst x={40} y={30} d={t - STUDY.both} r={60} />
+        </div>
+      </div>
+      <div style={{ position: "absolute", right: 60, top: 1175, opacity: Math.min(1, none.p * 2), transform: `translateY(${(1 - none.p) * 30}px) scale(${none.sx * popOut(out)}, ${none.sy * popOut(out)}) rotate(-2deg)` }}>
+        <div style={{ ...display, fontSize: 42, color: INK, background: PAPER, padding: "10px 20px 5px", borderRadius: 12, boxShadow: "0 14px 30px rgba(0,0,0,0.5)" }}>Sin ventaja clara</div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const Study: React.FC = () => {
   const { t, squash, ramp, idle } = useClock();
   if (t < STUDY_BG.from - 0.3 || t > STUDY.to + 0.1) return null;
@@ -518,13 +604,6 @@ const Study: React.FC = () => {
     ["10 semanas", STUDY.weeks],
     ["2 días/semana", STUDY.days],
   ];
-  // parte 2 («pizarra imaginaria» a la que apunta con el palo): Figura 4 y conclusiones
-  const fig = squash(STUDY.fig, 12, 190);
-  const wipe = ramp(STUDY.fig + 0.05, STUDY.fig + 0.6, easeInOut);
-  const figOut = ramp(STUDY.to - 0.35, STUDY.to, easeInOut);
-  const both = squash(STUDY.both, 8, 240);
-  const none = squash(STUDY.none, 7, 280);
-  const bid = idle(3.3, 0.6);
   return (
     <AbsoluteFill>
       <Backdrop from={STUDY_BG.from} to={STUDY_BG.to} title="Estudio" id="study" />
@@ -549,26 +628,7 @@ const Study: React.FC = () => {
           </div>
         </AbsoluteFill>
       ) : null}
-      {t >= STUDY.fig - 0.05 ? (
-        <AbsoluteFill style={{ opacity: figOut > 0.85 ? (1 - figOut) / 0.15 : 1 }}>
-          <div style={{ position: "absolute", left: 470, top: 250, width: 570, transformOrigin: "0% 100%", transform: `perspective(1400px) rotateY(${-9 + (1 - fig.p) * -30}deg) translate(${(1 - fig.p) * -160}px, ${(1 - fig.p) * 120 + bid.y}px) scale(${fig.p * fig.sx * popOut(figOut)}, ${fig.p * fig.sy * popOut(figOut)})` }}>
-            <div style={{ position: "relative", background: "rgba(255,255,255,0.95)", borderRadius: 16, padding: "14px 14px 10px", boxShadow: "0 30px 70px rgba(0,0,0,0.6), 0 0 0 3px rgba(4,228,0,0.9), 0 0 30px rgba(4,228,0,0.35)", clipPath: `inset(-40px ${(1 - wipe) * 100}% -40px -40px round 16px)` }}>
-              <div style={{ ...label, fontSize: 17, letterSpacing: 2, color: "rgba(0,0,0,0.65)", marginBottom: 4 }}>Figura 4 · grosor del pectoral</div>
-              <div style={{ ...label, fontSize: 15, letterSpacing: 1.5, color: "rgba(0,0,0,0.5)", marginBottom: 6 }}>DBP = press · DFLY = aperturas</div>
-              <Img src={staticFile("paper/fig4.png")} style={{ width: "100%", display: "block" }} />
-              {/* brillo del rotulador al dibujarse */}
-              {wipe > 0 && wipe < 1 ? <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 6, background: GREEN, boxShadow: "0 0 18px 6px rgba(4,228,0,0.7)" }} /> : null}
-            </div>
-          </div>
-          <div style={{ position: "absolute", left: 470, width: 570, top: 900, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            <div style={{ position: "relative", ...display, fontSize: 46, color: INK, background: GREEN, padding: "10px 22px 5px", borderRadius: 12, filter: GLOW, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * 40}px) scale(${both.sx * popOut(figOut)}, ${both.sy * popOut(figOut)}) rotate(-2deg)` }}>
-              Ambos crecieron
-              <Burst x={40} y={30} d={t - STUDY.both} r={60} />
-            </div>
-            <div style={{ ...display, fontSize: 46, color: INK, background: PAPER, padding: "10px 22px 5px", borderRadius: 12, opacity: Math.min(1, none.p * 2), transform: `translateY(${(1 - none.p) * 40}px) scale(${none.sx * popOut(figOut)}, ${none.sy * popOut(figOut)}) rotate(1.5deg)` }}>Sin ventaja clara</div>
-          </div>
-        </AbsoluteFill>
-      ) : null}
+      {t >= STUDY.fig - 0.05 ? <Board /> : null}
     </AbsoluteFill>
   );
 };
@@ -585,16 +645,16 @@ const Decide: React.FC = () => {
   ];
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 280, left: 60, right: 60, display: "flex", flexDirection: "column", gap: 16, alignItems: "center", transform: `scale(${popOut(out)})`, opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
+      <div style={{ position: "absolute", top: 210, left: 40, right: 40, display: "flex", flexDirection: "column", gap: 22, alignItems: "center", transform: `scale(${popOut(out)})`, opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
         {rows.map(([a, b, at], i) => {
           const q = squash(at, 9, 230);
           const id = idle(i * 2.3, 0.6);
           return (
-            <div key={i} style={{ position: "relative", display: "flex", alignItems: "center", gap: 14, opacity: Math.min(1, q.p * 2), transform: `translate(${(1 - q.p) * (i ? 300 : -300)}px, ${id.y}px) scale(${q.sx}, ${q.sy}) rotate(${id.r * 0.5 + (i ? 1.5 : -1.5)}deg)` }}>
-              <div style={{ ...display, fontSize: 46, color: INK, background: i ? GREEN : PAPER, padding: "10px 20px 5px", borderRadius: 12, filter: i ? GLOW : undefined }}>{a}</div>
-              <div style={{ ...display, fontSize: 40, color: GREEN, ...stroke(6) }}>→</div>
-              <div style={{ ...display, fontSize: 40, ...stroke(7), whiteSpace: "normal", maxWidth: 560 }}>{b}</div>
-              <Burst x={60} y={34} d={t - at} r={50} />
+            // cada fila centrada: la etiqueta arriba y su efecto debajo, en una sola línea
+            <div key={i} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: Math.min(1, q.p * 2), transform: `translate(${(1 - q.p) * (i ? 300 : -300)}px, ${id.y}px) scale(${q.sx}, ${q.sy}) rotate(${id.r * 0.5 + (i ? 1 : -1)}deg)` }}>
+              <div style={{ ...display, fontSize: 46, color: INK, background: i ? GREEN : PAPER, padding: "10px 22px 5px", borderRadius: 12, filter: i ? GLOW : undefined }}>{a}</div>
+              <div style={{ ...display, fontSize: 38, ...stroke(7), textAlign: "center" }}>{b}</div>
+              <div style={{ position: "absolute", left: "50%", top: 0 }}><Burst x={0} y={30} d={t - at} r={60} /></div>
             </div>
           );
         })}
@@ -644,10 +704,10 @@ export const Graphics: React.FC = () => {
       <Pill from={INTEREST.at} to={INTEREST.to} top={290}>
         Crecer igual ≠ usarlos igual
       </Pill>
-      <Pill from={ELBOW.press} to={ELBOW.fly - 0.1} top={290}>
+      <Pill from={ELBOW.press} to={ELBOW.fly - 0.1} top={290} size={44} rot={-1.5}>
         Press: también extensión de codo
       </Pill>
-      <Pill from={ELBOW.fly} to={ELBOW.to} top={290} green>
+      <Pill from={ELBOW.fly} to={ELBOW.to} top={290} green size={48} rot={-1.5}>
         Aperturas: codo casi fijo
       </Pill>
       <Decide />

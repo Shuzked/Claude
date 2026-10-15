@@ -232,3 +232,23 @@ export const Camera: React.FC<{ children?: React.ReactNode }> = ({ children }) =
     </AbsoluteFill>
   );
 };
+
+/** Capa en coordenadas del vídeo que se mueve exactamente como la cámara (para poner
+ *  recortes por encima de los rótulos, p. ej. la persona delante de la «pizarra»). */
+export const CameraSpace: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const { scale, x, y, rot } = cameraAt(frame, fps);
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <AbsoluteFill style={{ transform: `translate(${x}px, ${y}px) scale(${scale}) rotate(${rot}deg)`, transformOrigin: "50% 32%" }}>{children}</AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+/** Punto del vídeo (1080×1920) → punto de la pantalla con la cámara de este fotograma. */
+export const toScreen = (frame: number, fps: number, p: { x: number; y: number }) => {
+  const { scale, x, y } = cameraAt(frame, fps);
+  const o = { x: 540, y: 1920 * 0.32 };
+  return { x: o.x + x + scale * (p.x - o.x), y: o.y + y + scale * (p.y - o.y) };
+};

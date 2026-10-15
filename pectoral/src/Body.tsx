@@ -271,24 +271,8 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
 };
 
 // Hook, «200 kilos»: la cabeza (rotoscopiada) se va hinchando, se pone roja del
-// esfuerzo y suda. Recortes RGBA de 220 px (coordenadas de vídeo) en public/roto/head.
+// esfuerzo (sin gotas, solo la cabeza: el corte va bajo la mandíbula). Recortes RGBA de 220 px (coordenadas de vídeo) en public/roto/head.
 const HEAD = head as { t0: number; fps: number; size: number; tl: number[][]; center: number[][] };
-const DROPS = [
-  { a: -2.3, at: 0.15, dur: 0.9, s: 1.0 },
-  { a: -1.2, at: 0.35, dur: 0.8, s: 0.8 },
-  { a: -2.8, at: 0.55, dur: 0.85, s: 0.9 },
-  { a: -0.6, at: 0.7, dur: 0.75, s: 0.7 },
-  { a: -1.8, at: 0.85, dur: 0.8, s: 1.1 },
-  { a: -2.5, at: 1.05, dur: 0.7, s: 0.8 },
-  { a: -0.9, at: 1.15, dur: 0.7, s: 1.0 },
-  { a: -1.5, at: 1.3, dur: 0.6, s: 0.9 },
-];
-const Drop: React.FC<{ x: number; y: number; s: number; o: number }> = ({ x, y, s, o }) => (
-  <g transform={`translate(${x} ${y}) scale(${s})`} opacity={o}>
-    <path d="M 0 -16 C 6 -6 11 0 11 6 A 11 11 0 0 1 -11 6 C -11 0 -6 -6 0 -16 Z" fill="rgba(200,235,255,0.92)" stroke="rgba(60,140,200,0.9)" strokeWidth={2} />
-    <ellipse cx={-4} cy={4} rx={2.5} ry={4} fill="white" opacity={0.9} />
-  </g>
-);
 const HeadInflate: React.FC<{ t: number }> = ({ t }) => {
   const i = Math.round((t - HEAD.t0) * HEAD.fps);
   if (i < 0 || i >= HEAD.tl.length - 1) return null;
@@ -302,7 +286,6 @@ const HeadInflate: React.FC<{ t: number }> = ({ t }) => {
   const n = String(i).padStart(3, "0");
   const red = `sepia(${0.35 * k}) saturate(${1 + 1.8 * k}) hue-rotate(${-14 * k}deg) brightness(${1 - 0.06 * k}) contrast(${1 + 0.1 * k})`;
   const R = 95 * sx; // radio aprox. de la cabeza hinchada
-  const rel = t - HOOK.press;
   return (
     <>
       <div style={{ position: "absolute", left: tx, top: ty, width: HEAD.size, height: HEAD.size, opacity: appear, transformOrigin: `${cx - tx}px ${cy - ty}px`, transform: `scale(${sx}, ${sy})`, filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.45))" }}>
@@ -311,16 +294,6 @@ const HeadInflate: React.FC<{ t: number }> = ({ t }) => {
         </div>
       </div>
       <Svg>
-        {DROPS.map((d, j) => {
-          const u = (rel - d.at) / d.dur;
-          if (u < 0 || u > 1) return null;
-          // nace en el borde de la cabeza y resbala hacia abajo, acelerando
-          const x0 = cx + Math.cos(d.a) * R * 0.95;
-          const y0 = cy + Math.sin(d.a) * R * 0.95;
-          const y = y0 + u * u * 140;
-          const x = x0 + Math.cos(d.a) * u * 12;
-          return <Drop key={j} x={x} y={y} s={d.s * (0.6 + 0.4 * Math.min(1, u * 4)) * (1 + 0.3 * k)} o={u < 0.8 ? 1 : (1 - u) / 0.2} />;
-        })}
         {/* rayitas de agobio alrededor de la cabeza */}
         {k > 0.3
           ? [-2.6, -2.0, -0.7].map((a, j) => {
