@@ -300,6 +300,12 @@ export const T = {
   keyword: 72.4,
 };
 
+// Foto de Yago en el escenario con el recto femoral señalado («…de tu recto femoral»)
+export const PHOTO_RF = { from: 7.6, to: 10.3 };
+// El paper real (Pedrosa et al., 2021) en la escena del estudio: entra en
+// «…formas de hacer» y resalta «knee extension exercise» en «extensión de rodilla»
+export const PAPER_AT = { at: 13.6, mark: 14.84, out: 16.4 };
+
 // --- Tarjeta anatómica (como en las referencias) --------------------------------
 // Mientras brilla el músculo, abajo sale una tarjeta con la pierna y el músculo en
 // verde. No tapa los subtítulos.
@@ -389,6 +395,10 @@ export const LIST_END = 65.12;
 const graphicsSfx: Sfx[] = [
   ...headline(...headlineWordTimes),
   ...marker(...headlineMarkers),
+  { at: PHOTO_RF.from + 0.05, src: "paper", volume: 0.25 },
+  { at: PHOTO_RF.from + 0.4, src: "pop", volume: 0.18 },
+  { at: PAPER_AT.at, src: "paper", volume: 0.25 },
+  { at: PAPER_AT.mark, src: "marker", volume: 0.35 },
   // estudio y las tres formas
   ...pop(T.context, ...T.forms),
   { at: T.forms[2] + 0.5, src: "paper", volume: 0.2 },

@@ -2,9 +2,11 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  Img,
   interpolate,
   Sequence,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -21,6 +23,8 @@ import {
   scenes,
   SOURCE_END,
   anatomyCards,
+  PHOTO_RF,
+  PAPER_AT,
   LIST_END,
   listItems,
   T,
@@ -487,6 +491,48 @@ const Rise: React.FC<{
   );
 };
 
+
+// ---------------------------------------------------------------------------
+// E02 · «…de tu recto femoral»: foto de Yago en el escenario con el recto femoral
+// señalado en su muslo (tiempos relativos a la secuencia)
+
+const PHOTO_W = 600; // la foto original es 360×480
+const PhotoRF: React.FC = () => {
+  const t = useT();
+  const { durationInFrames, fps } = useVideoConfig();
+  const dur = durationInFrames / fps;
+  const card = useSpringAt(0, 13);
+  const hl = useReveal(0.4, 0.7);
+  const out = interpolate(t, [dur - 0.3, dur], [0, 1], { ...clamp, easing: easeInOut });
+  const glow = 0.85 + 0.15 * Math.sin(t * 5);
+  return (
+    <AbsoluteFill style={{ opacity: 1 - out }}>
+      <AbsoluteFill style={{ background: "rgba(8,8,8,0.55)", opacity: Math.min(1, card * 2) }} />
+      <div
+        style={{
+          position: "absolute",
+          top: 230,
+          left: (1080 - PHOTO_W) / 2,
+          width: PHOTO_W,
+          height: PHOTO_W * (480 / 360),
+          transform: `translateY(${(1 - card) * 140}px) rotate(${-2.5 + (1 - card) * 6}deg) scale(${0.9 + 0.1 * card})`,
+          opacity: Math.min(1, card * 2),
+          borderRadius: 18,
+          overflow: "hidden",
+          border: "6px solid rgba(255,255,255,0.92)",
+          boxShadow: "0 40px 90px rgba(0,0,0,0.6)",
+        }}
+      >
+        <Img src={staticFile("photos/yago-escenario.jpg")} style={{ width: "100%", height: "100%", display: "block" }} />
+        {/* recto femoral: tinte verde con bordes difuminados que conserva la piel + brillo */}
+        <Img src={staticFile("photos/rf-glow.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", mixBlendMode: "screen", opacity: hl * glow }} />
+        <Img src={staticFile("photos/rf-tint.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: hl }} />
+        <Img src={staticFile("photos/rf-tint.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", mixBlendMode: "screen", opacity: 0.45 * hl * glow }} />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 // ---------------------------------------------------------------------------
 // E03 · el estudio (pantalla completa)
 
@@ -577,6 +623,56 @@ const RomCarousel: React.FC<{
 
 const FORMS_AT = 16.32; // el estudio deja paso a las tres formas
 
+
+/** El paper real: título y abstract, con «in the knee extension exercise» resaltado
+ *  cuando dice «extensión de rodilla». Tiempos relativos a la escena. */
+const PAPER_W = 940;
+const PaperCard: React.FC<{ at: number; mark: number; outAt: number }> = ({ at, mark, outAt }) => {
+  const t = useT();
+  const p = useSpringAt(at, 13);
+  const m = useReveal(mark, 0.45);
+  const out = interpolate(t, [outAt - 0.3, outAt], [0, 1], { ...clamp, easing: easeInOut });
+  if (t < at - 0.05 || t > outAt + 0.05) return null;
+  const kT = PAPER_W / 2100; // recorte del título: 2100×185
+  const kA = PAPER_W / 1045; // frase del abstract: 1045×42
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 330,
+        left: (1080 - PAPER_W - 40) / 2,
+        width: PAPER_W + 40,
+        padding: "22px 20px 26px",
+        background: "white",
+        borderRadius: 14,
+        boxShadow: "0 40px 90px rgba(0,0,0,0.6)",
+        transform: `translateY(${(1 - p) * 120 - out * 60}px) rotate(${-1.5 + (1 - p) * 4}deg)`,
+        opacity: Math.min(1, p * 2) * (1 - out),
+      }}
+    >
+      <Img src={staticFile("papers/pedrosa_title.png")} style={{ width: PAPER_W, height: 185 * kT, display: "block" }} />
+      <div style={{ position: "relative", marginTop: 26, width: PAPER_W, height: 42 * kA }}>
+        {/* subrayador verde detrás del texto */}
+        <div
+          style={{
+            position: "absolute",
+            left: 378 * kA - 6,
+            top: 2 * kA,
+            width: (1034 - 378) * kA * m + 10,
+            height: 38 * kA,
+            background: "rgba(4,228,0,0.55)",
+            borderRadius: 4,
+          }}
+        />
+        <Img src={staticFile("papers/pedrosa_abs.png")} style={{ position: "absolute", inset: 0, width: PAPER_W, height: 42 * kA, mixBlendMode: "multiply" }} />
+      </div>
+      <div style={{ ...body(22, "rgba(0,0,0,0.55)"), fontWeight: 800, marginTop: 14, letterSpacing: 2, textTransform: "uppercase" }}>
+        Pedrosa et al. · 2021 · Eur J Sport Sci
+      </div>
+    </div>
+  );
+};
+
 const StudyScene: React.FC = () => {
   const t = useT();
   const exit = interpolate(
@@ -585,6 +681,7 @@ const StudyScene: React.FC = () => {
     [0, 1],
     { ...clamp, easing: easeInOut },
   );
+  const paperIn = interpolate(t, [rel("study", PAPER_AT.at) - 0.1, rel("study", PAPER_AT.at) + 0.2], [0, 1], { ...clamp, easing: easeInOut });
   return (
     <>
       <div
@@ -595,14 +692,16 @@ const StudyScene: React.FC = () => {
           transform: `translateY(${-exit * 120}px) scale(${1 - 0.1 * exit})`,
         }}
       >
-        <Headline
-          lines={headlines.study}
-          origin={sceneFrom("study")}
-          top={520}
-        />
+        <div style={{ opacity: 1 - paperIn }}>
+          <Headline
+            lines={headlines.study}
+            origin={sceneFrom("study")}
+            top={520}
+          />
+        </div>
         <Rise
           at={rel("study", T.context)}
-          style={{ position: "absolute", top: 680, left: 0, right: 0 }}
+          style={{ position: "absolute", top: 680, left: 0, right: 0, opacity: 1 - paperIn }}
         >
           <div
             style={{ ...body(40, "rgba(255,255,255,0.75)"), fontWeight: 800 }}
@@ -617,6 +716,11 @@ const StudyScene: React.FC = () => {
           top={940}
         />
       </div>
+      <PaperCard
+        at={rel("study", PAPER_AT.at)}
+        mark={rel("study", PAPER_AT.mark)}
+        outAt={rel("study", PAPER_AT.out)}
+      />
       <RomCarousel
         bigTop={250}
         smallTop={1150}
@@ -1086,6 +1190,13 @@ export const Graphics: React.FC = () => (
         />
       </Sequence>
     ))}
+    <Sequence
+      from={f(PHOTO_RF.from)}
+      durationInFrames={f(PHOTO_RF.to) - f(PHOTO_RF.from)}
+      name="Foto · recto femoral"
+    >
+      <PhotoRF />
+    </Sequence>
     <Sequence
       from={f(LIST_FROM)}
       durationInFrames={f(LIST_END) - f(LIST_FROM)}
