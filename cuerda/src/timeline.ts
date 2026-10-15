@@ -69,7 +69,6 @@ const SILENCES: [number, number][] = [
   [64.45, 64.72],
   [66.81, 67.22],
   [79.67, 80.05],
-  [84.01, 84.37],
   [89.3, 89.62],
 ];
 const PAD_IN = 0.1;
@@ -132,7 +131,7 @@ export const SHOT_CUTS = [1.8, 4.84, 9.92, 13.12, 16.68, 19.84, 22.16, 24.4, 30.
 
 // Planos de cuerda: encuadre abierto y fijo (sin seguir la cara) para que se vean
 // hombros, codos, manos y la unión de la cuerda; los gráficos van pegados al cuerpo.
-export type Framing = { from: number; to: number; face: [number, number]; scale: number };
+export type Framing = { from: number; to: number; face: [number, number]; scale: number; ty?: number };
 export const FIXED: Framing[] = [
   { from: 0, to: 1.8, face: [540, 760], scale: 1.12 }, // voz en off: señala el tríceps
   { from: 13.12, to: 16.68, face: [540, 900], scale: 1.0 }, // frontal: hombros, codos, manos y unión
@@ -141,6 +140,9 @@ export const FIXED: Framing[] = [
   { from: 24.4, to: 30.52, face: [560, 820], scale: 1.08 }, // colocación del brazo
   { from: 70.84, to: 76.2, face: [560, 860], scale: 1.0 }, // perfil: recorrido
   { from: 76.2, to: 80.0, face: [540, 860], scale: 1.0 }, // frontal: cables
+  { from: 37.96, to: 49.68, face: [520, 1130], scale: 1.1, ty: 1010 }, // tríceps y postura enteros
+  { from: 56.81, to: 60.16, face: [540, 1090], scale: 1.7, ty: 980 }, // zoom a los antebrazos
+  { from: 80.0, to: 94.2, face: [540, 1060], scale: 1.1, ty: 1000 }, // conclusión: herramientas a la vista
 ];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
 
@@ -168,10 +170,13 @@ export const NEITHER = { from: 61.88, triceps: 62.28, shoulder: 63.76, cut: 64.6
 // Recorrido: demanda de más a menos (perfil) y tres fotogramas Inicio / Medio / Final
 export const RANGE = { from: 71.0, more: 73.92, frames: 74.3, to: 76.15 };
 export const FRONT = { from: 76.25, to: 79.7 };
-// Conclusión práctica
+// Conclusión práctica: saca la barra y la cuerda (brillan y se apagan)
+export const TOOLS = { bar: 85.6, rope: 86.5, fade: 87.6, to: 88.6 };
 export const TIPS = { comfy: 86.64, fail: 87.56, prog: 88.68, to: 89.35 };
+// Hook: el tríceps se enciende
+export const TRI = { on: 0.25, off: 1.5 };
 // CTA
-export const CTA = { from: 89.48, follow: 91.4, rig: 93.08 };
+export const CTA = { from: 89.48, follow: 91.28, rig: 93.08 };
 
 export const MUTE: [number, number][] = [];
 export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
@@ -179,7 +184,6 @@ export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 // --- Encuadre ----------------------------------------------------------------------
 export type Punch = { at: number; amount: number; hold: number };
 export const punches: Punch[] = [
-  { at: 4.8, amount: 0.05, hold: 1.2 }, // «Seguro que a ti también…»
   { at: 8.76, amount: 0.05, hold: 0.9 }, // «no van a crecer»
   { at: 22.36, amount: 0.06, hold: 1.4 }, // «vamos a ver si es tan malo como dicen»
   { at: 30.56, amount: 0.05, hold: 7.0 }, // «¿Pero de verdad…?» acercamiento suave
@@ -259,30 +263,48 @@ export const FX_DIR: Record<FxName, "fx" | "ui"> = {
 export type Sfx = { at: number; src: FxName; volume: number };
 
 export const allSfx: Sfx[] = [
-  { at: HOOK.from, src: "pop", volume: 0.25 },
-  { at: HOOK.no, src: "stamp", volume: 0.3 },
-  { at: TWO.at, src: "pop", volume: 0.22 },
+  // hook: el tríceps se enciende; la imagen se tiñe de rojo y golpea el rótulo
+  { at: TRI.on, src: "shine", volume: 0.3 },
+  { at: HOOK.from, src: "pop", volume: 0.22 },
+  { at: HOOK.no, src: "impact", volume: 0.45 },
+  { at: HOOK.no, src: "buzzer", volume: 0.16 },
+  // «2» y «COSAS» detrás de Yago
+  { at: TWO.at - 0.22, src: "riser", volume: 0.1 },
+  { at: TWO.at - 0.2, src: "hit", volume: 0.32 },
+  { at: TWO.at + 0.12, src: "impact-hi", volume: 0.3 },
+  // 1 · demanda sobre el hombro
   { at: OBJ1.from, src: "whoosh-b", volume: 0.2 },
-  { at: OBJ1.cable, src: "marker", volume: 0.25 },
-  { at: OBJ1.demand, src: "tic", volume: 0.3 },
+  { at: OBJ1.cable - 0.1, src: "marker", volume: 0.25 },
+  { at: OBJ1.cable + 0.35, src: "pop", volume: 0.22 },
+  { at: OBJ1.inside + 0.1, src: "tic", volume: 0.3 },
+  { at: OBJ1.demand - 0.25, src: "buzzer", volume: 0.1 },
+  // 2 · giro al terminar
   { at: OBJ2.from, src: "whoosh-b", volume: 0.2 },
-  { at: OBJ2.open, src: "marker", volume: 0.22 },
-  { at: OBJ2.rot, src: "whoosh-a", volume: 0.2 },
-  { at: ISO.inward, src: "marker", volume: 0.22 },
-  { at: ISO.hold, src: "impact-hi", volume: 0.22 },
-  { at: FORE.from, src: "pop", volume: 0.25 },
-  { at: NEITHER.triceps, src: "tic", volume: 0.25 },
-  { at: NEITHER.shoulder, src: "tic", volume: 0.25 },
+  { at: OBJ2.open, src: "whoosh-a", volume: 0.18 },
+  { at: OBJ2.rot, src: "whoosh-b", volume: 0.22 },
+  // isométrico
+  { at: ISO.from, src: "marker", volume: 0.2 },
+  { at: ISO.inward - 0.1, src: "tic", volume: 0.28 },
+  { at: ISO.hold - 0.15, src: "stamp", volume: 0.3 },
+  // antebrazo
+  { at: FORE.from - 0.1, src: "shine", volume: 0.28 },
+  { at: FORE.from, src: "pop", volume: 0.22 },
+  { at: NEITHER.from, src: "whoosh-b", volume: 0.2 },
+  { at: NEITHER.triceps, src: "tick", volume: 0.3 },
+  { at: NEITHER.shoulder, src: "tock", volume: 0.3 },
   { at: NEITHER.cut, src: "buzzer", volume: 0.12 },
+  // recorrido y cruce
   { at: RANGE.from, src: "marker", volume: 0.22 },
-  { at: RANGE.frames, src: "paper", volume: 0.25 },
-  { at: RANGE.frames + 0.35, src: "tic", volume: 0.22 },
-  { at: RANGE.frames + 0.7, src: "tic", volume: 0.22 },
-  { at: FRONT.from + 0.2, src: "marker", volume: 0.2 },
-  { at: TIPS.comfy, src: "pop", volume: 0.25 },
-  { at: TIPS.fail, src: "pop", volume: 0.25 },
-  { at: TIPS.prog, src: "pop", volume: 0.25 },
-  { at: CTA.follow, src: "whoosh-a", volume: 0.22 },
+  { at: FRONT.from + 0.1, src: "marker", volume: 0.2 },
+  { at: FRONT.from + 0.9, src: "ding", volume: 0.3 },
+  // conclusión
+  { at: TOOLS.bar, src: "shine", volume: 0.3 },
+  { at: TIPS.comfy - 0.05, src: "pop", volume: 0.22 },
+  { at: TIPS.fail - 0.05, src: "pop", volume: 0.22 },
+  { at: TIPS.prog - 0.05, src: "correct", volume: 0.28 },
+  // CTA
+  { at: CTA.follow, src: "whoosh-a", volume: 0.25 },
+  { at: CTA.follow + 0.15, src: "pop", volume: 0.25 },
   { at: CTA.rig, src: "shine", volume: 0.25 },
   // barridos en los cortes
   ...JUMPS.filter((j) => j > 1).map((j, i) => ({

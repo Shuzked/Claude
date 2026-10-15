@@ -138,8 +138,9 @@ export const cameraAt = (frame: number, fps: number) => {
     ORIGIN.x,
     1080,
   );
+  const ty = FIXED.find((x) => t >= x.from && t < x.to)?.ty ?? TARGET.y;
   const trY = clampAxis(
-    TARGET.y - ORIGIN.y - scale * (face.y - ORIGIN.y),
+    ty - ORIGIN.y - scale * (face.y - ORIGIN.y),
     ORIGIN.y,
     1920,
   );

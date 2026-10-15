@@ -1,20 +1,26 @@
 import React from "react";
-import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import arms from "./arms.json";
-import { GREEN, PAPER } from "./theme";
-import { f, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc } from "./timeline";
+import cables from "./cables.json";
+import faceTrack from "./faceTrack.json";
+import { FONT, GREEN, PAPER } from "./theme";
+import { CTA, f, FORE, FRONT, HOOK, ISO, OBJ1, OBJ2, RANGE, toSrc, TOOLS, TRI } from "./timeline";
 
 // Gráficos pegados al cuerpo. Van dentro de la cámara virtual, en coordenadas del
-// vídeo (1080×1920), y siguen hombros, codos y muñecas (MediaPipe Pose, suavizado
-// por plano). Explican lo que Yago cuenta con la cuerda: el cable no va en línea
-// con el hombro y tira del brazo hacia dentro; el hombro aguanta en isométrico; el
-// giro final es del antebrazo y la demanda sobre el codo va de más a menos.
+// vídeo (1080×1920): rotoscopias (public/roto/<trabajo>/r_NNNNN.png, por fotograma
+// del original), cable detectado fotograma a fotograma (cables.json) y pose de
+// hombros, codos y muñecas (arms.json). Explican lo que Yago cuenta con la cuerda:
+// el cable no va en línea con el hombro y tira del brazo hacia dentro; el hombro
+// aguanta en isométrico; el giro final es del antebrazo; la demanda sobre el codo
+// va de más a menos.
 
 const RED = "#FF3B30";
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+const easeInOut = Easing.bezier(0.65, 0, 0.35, 1);
 const NEON = "drop-shadow(0 0 8px rgba(4,228,0,0.9)) drop-shadow(0 0 22px rgba(4,228,0,0.45))";
 const RED_GLOW = "drop-shadow(0 0 8px rgba(255,59,48,0.9)) drop-shadow(0 0 20px rgba(255,59,48,0.4))";
+const DARK = "drop-shadow(0 0 6px rgba(0,0,0,0.85))";
 
 type P = { x: number; y: number };
 type Pose = { nose: P; sh: [P, P]; el: [P, P]; wr: [P, P] }; // [izquierda de la imagen, derecha]
@@ -31,9 +37,32 @@ const poseAt = (t: number): Pose | null => {
   const b = s.frames[Math.min(s.frames.length - 1, i + 1)];
   const u = k - i;
   const g = (j: number): P => ({ x: a[j][0] + (b[j][0] - a[j][0]) * u, y: a[j][1] + (b[j][1] - a[j][1]) * u });
-  // ids: 0 nariz, 1/2 hombro izq/der (de la persona), 3/4 codo, 5/6 muñeca
   const L = (j: number, r: number) => (g(j).x < g(r).x ? [g(j), g(r)] : [g(r), g(j)]) as [P, P];
   return { nose: g(0), sh: L(1, 2), el: L(3, 4), wr: L(5, 6) };
+};
+
+/** Cable detectado: x = a + b·y, termina en y = end (la unión con la cuerda). */
+const CAB = cables as Record<string, { t0: number; frames: number[][] }>;
+const cableAt = (name: string, t: number) => {
+  const c = CAB[name];
+  const i = Math.max(0, Math.min(c.frames.length - 1, Math.round((t - c.t0) * 25)));
+  const [a, b, end] = c.frames[i];
+  return { x: (y: number) => a + b * y, end };
+};
+
+/** Cara (seguimiento por plano, suavizado ±0,4 s). */
+const FT = faceTrack as { fps: number; points: [number, number][] };
+const faceAt = (t: number): P => {
+  const i = Math.round(t * FT.fps);
+  let sx = 0;
+  let sy = 0;
+  let n = 0;
+  for (let j = Math.max(0, i - 10); j <= Math.min(FT.points.length - 1, i + 10); j++) {
+    sx += FT.points[j][0];
+    sy += FT.points[j][1];
+    n++;
+  }
+  return { x: sx / n, y: sy / n };
 };
 
 const useClock = () => {
@@ -48,6 +77,30 @@ const useClock = () => {
 };
 
 const lerp = (a: P, b: P, u: number): P => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u });
+const Svg: React.FC<{ children: React.ReactNode; opacity?: number }> = ({ children, opacity = 1 }) => (
+  <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible", opacity }}>
+    {children}
+  </svg>
+);
+
+/** Fotograma de una rotoscopia (o nada fuera de su tramo). */
+const Roto: React.FC<{ job: string; t: number; range: [number, number]; style?: React.CSSProperties }> = ({ job, t, range, style }) => {
+  const fi = Math.round(t * 25);
+  if (fi < Math.round(range[0] * 25) || fi >= Math.round(range[1] * 25)) return null;
+  return (
+    <Img
+      src={staticFile(`roto/${job}/r_${String(fi).padStart(5, "0")}.png`)}
+      style={{ position: "absolute", inset: 0, width: 1080, height: 1920, ...style }}
+    />
+  );
+};
+
+/** Encendido de neón: titila un par de veces y queda vibrando un poco. */
+const neonOn = (d: number) => {
+  if (d < 0) return 0;
+  if ((d > 0.06 && d < 0.1) || (d > 0.17 && d < 0.2)) return 0.25;
+  return Math.min(1, d / 0.05) * (0.9 + 0.1 * Math.sin(d * 31) * Math.sin(d * 11));
+};
 
 /** Línea que se dibuja de a → b. */
 const Draw: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; dash?: string; glow?: string; opacity?: number }> = ({
@@ -60,19 +113,17 @@ const Draw: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; dash?:
   glow = NEON,
   opacity = 1,
 }) => {
-  const e = lerp(a, b, Math.max(0, Math.min(1, p)));
   if (p <= 0.001) return null;
-  return (
-    <line x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke={color} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} style={{ filter: glow }} opacity={opacity} />
-  );
+  const e = lerp(a, b, Math.max(0, Math.min(1, p)));
+  return <line x1={a.x} y1={a.y} x2={e.x} y2={e.y} stroke={color} strokeWidth={w} strokeLinecap="round" strokeDasharray={dash} style={{ filter: glow }} opacity={opacity} />;
 };
 
-/** Flecha de a → b que crece con `p` (punta incluida). */
+/** Flecha de a → b que crece con `p`; la punta rebota un poco al llegar. */
 const Arrow: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; glow?: string }> = ({ a, b, p, color = GREEN, w = 9, glow = NEON }) => {
   if (p <= 0.01) return null;
   const e = lerp(a, b, p);
   const ang = Math.atan2(b.y - a.y, b.x - a.x);
-  const hs = 30 * Math.min(1, p * 1.5);
+  const hs = 30 * Math.min(1.15, p * 1.4);
   const h1 = { x: e.x - Math.cos(ang - 0.5) * hs, y: e.y - Math.sin(ang - 0.5) * hs };
   const h2 = { x: e.x - Math.cos(ang + 0.5) * hs, y: e.y - Math.sin(ang + 0.5) * hs };
   return (
@@ -83,254 +134,248 @@ const Arrow: React.FC<{ a: P; b: P; p: number; color?: string; w?: number; glow?
   );
 };
 
-/** Anillo de articulación con latido. */
-const Joint: React.FC<{ c: P; p: number; t: number; color?: string; r?: number }> = ({ c, p, t, color = GREEN, r = 22 }) => {
-  if (p <= 0.01) return null;
-  const beat = 1 + Math.sin(t * 7) * 0.08;
-  const ring = (t * 1.4) % 1;
-  return (
-    <g style={{ filter: color === RED ? RED_GLOW : NEON }}>
-      <circle cx={c.x} cy={c.y} r={r * p * beat} fill="none" stroke={color} strokeWidth={5} />
-      <circle cx={c.x} cy={c.y} r={7 * p} fill={color} />
-      <circle cx={c.x} cy={c.y} r={r * (1 + ring * 1.4) * p} fill="none" stroke={color} strokeWidth={2.5} opacity={(1 - ring) * 0.7} />
-    </g>
-  );
-};
-
-/** Pastilla de texto anclada a un punto del cuerpo. */
-const Chip: React.FC<{ at: P; p: number; children: React.ReactNode; color?: string; ink?: string; size?: number; dx?: number; dy?: number }> = ({
-  at,
-  p,
-  children,
-  color = GREEN,
-  ink = "#0A0A0A",
-  size = 38,
-  dx = 0,
-  dy = 0,
-}) => {
-  if (p <= 0.01) return null;
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: at.x + dx,
-        top: at.y + dy,
-        transform: `translate(-50%, -50%) scale(${p}) rotate(${(1 - p) * -10}deg)`,
-        opacity: Math.min(1, p * 2),
-        background: color,
-        color: ink,
-        fontFamily: "Montserrat",
-        fontWeight: 900,
-        fontStyle: "italic",
-        textTransform: "uppercase",
-        fontSize: size,
-        letterSpacing: -0.5,
-        padding: "8px 16px 4px",
-        borderRadius: 10,
-        whiteSpace: "nowrap",
-        boxShadow: color === RED ? "0 0 26px rgba(255,59,48,0.55)" : "0 0 26px rgba(4,228,0,0.55)",
-      }}
-    >
-      {children}
-    </div>
-  );
-};
-
-/** Arco con flecha alrededor del brazo (rotación). `dir` 1 = horario. */
-const SpinArc: React.FC<{ c: P; rx: number; ry: number; p: number; t: number; dir: 1 | -1; color?: string }> = ({ c, rx, ry, p, t, dir, color = GREEN }) => {
-  if (p <= 0.01) return null;
-  const sweep = Math.PI * 1.35 * p;
-  const phase = Math.sin(t * 5) * 0.25;
-  const a0 = Math.PI * 0.15 + phase;
-  const pts: P[] = [];
-  for (let i = 0; i <= 30; i++) {
-    const a = a0 + dir * sweep * (i / 30);
-    pts.push({ x: c.x + Math.cos(a) * rx, y: c.y + Math.sin(a) * ry });
-  }
-  const end = pts[pts.length - 1];
-  const prev = pts[pts.length - 3];
-  const ang = Math.atan2(end.y - prev.y, end.x - prev.x);
-  const hs = 22;
-  return (
-    <g style={{ filter: NEON }}>
-      <polyline points={pts.map((q) => `${q.x},${q.y}`).join(" ")} fill="none" stroke={color} strokeWidth={6} strokeLinecap="round" />
-      <path
-        d={`M ${end.x - Math.cos(ang - 0.55) * hs} ${end.y - Math.sin(ang - 0.55) * hs} L ${end.x + Math.cos(ang) * 6} ${end.y + Math.sin(ang) * 6} L ${end.x - Math.cos(ang + 0.55) * hs} ${end.y - Math.sin(ang + 0.55) * hs} Z`}
-        fill={color}
-      />
-    </g>
-  );
-};
+/** Pastilla con línea guía hacia un punto (la línea se dibuja y la pastilla rebota). */
+const Callout: React.FC<{ to: P; from: P; p: number; q: number; children: React.ReactNode; size?: number }> = ({ to, from, p, q, children, size = 36 }) => (
+  <>
+    <Svg>
+      <Draw a={to} b={from} p={p} w={4} />
+      {p > 0.02 ? <circle cx={to.x} cy={to.y} r={8 * Math.min(1, p * 2)} fill={GREEN} style={{ filter: NEON }} /> : null}
+    </Svg>
+    {q > 0.01 ? (
+      <div
+        style={{
+          position: "absolute",
+          left: from.x,
+          top: from.y,
+          transform: `translate(-50%, -50%) scale(${q}) rotate(${(1 - q) * -12 - 3}deg)`,
+          opacity: Math.min(1, q * 2),
+          background: GREEN,
+          color: "#0A0A0A",
+          fontFamily: FONT,
+          fontWeight: 900,
+          fontStyle: "italic",
+          textTransform: "uppercase",
+          fontSize: size,
+          padding: "8px 18px 4px",
+          borderRadius: 10,
+          whiteSpace: "nowrap",
+          boxShadow: "0 0 26px rgba(4,228,0,0.55)",
+        }}
+      >
+        {children}
+      </div>
+    ) : null}
+  </>
+);
 
 // ---------------------------------------------------------------------------------
-// Hook (voz en off): señala el tríceps
-const HookTriceps: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+// Hook: el tríceps se enciende en verde (rotoscopia), se mantiene y se apaga
+const TricepsOn: React.FC<{ t: number }> = ({ t }) => {
+  const { ramp } = useClock();
+  const on = neonOn(t - TRI.on) * (1 - ramp(TRI.off, HOOK.from - 0.02, easeInOut));
+  if (on <= 0.01) return null;
+  const pulse = 0.85 + 0.15 * Math.sin(t * 6);
+  return <Roto job="tri" t={t} range={[0, 1.8]} style={{ opacity: on, filter: `drop-shadow(0 0 ${10 + 14 * pulse}px rgba(4,228,0,${0.8 * pulse})) drop-shadow(0 0 40px rgba(4,228,0,0.4))` }} />;
+};
+
+// Hook: señal de prohibido sobre la cuerda colgada (rojo)
+const ROPE_HOOK = { x: 410, y: 850 };
+const RopeNo: React.FC<{ t: number }> = ({ t }) => {
   const { pop, ramp } = useClock();
-  const p = pop(0.35, 11);
-  const out = ramp(HOOK.from - 0.25, HOOK.from);
-  // brazo señalado: el de la izquierda de la imagen (hombro → codo)
-  const c = lerp(pose.sh[0], pose.el[0], 0.5);
-  const q = p * (1 - out);
+  const p = pop(HOOK.no, 8, 240);
+  const slash = ramp(HOOK.no + 0.12, HOOK.no + 0.32);
+  const out = ramp(HOOK.to - 0.25, HOOK.to, easeInOut);
+  const r = 175;
+  const wob = Math.sin(t * 9) * 2.5 * p;
+  if (p < 0.01) return null;
   return (
-    <>
-      <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        <Joint c={{ x: c.x - 30, y: c.y }} p={q} t={t} r={70} />
-        <Draw a={{ x: c.x - 30, y: c.y }} b={{ x: c.x + 170, y: c.y - 150 }} p={ramp(0.5, 0.8) * (1 - out)} w={4} />
-      </svg>
-      <Chip at={{ x: c.x + 260, y: c.y - 170 }} p={pop(0.75, 11) * (1 - out)}>
-        Tríceps
-      </Chip>
-    </>
+    <Svg opacity={1 - out}>
+      <g transform={`translate(${ROPE_HOOK.x} ${ROPE_HOOK.y}) scale(${p}) rotate(${wob})`} style={{ filter: RED_GLOW }}>
+        <circle r={r} fill="rgba(255,59,48,0.12)" stroke={RED} strokeWidth={18} />
+        <line x1={-r * 0.7} y1={-r * 0.7} x2={-r * 0.7 + r * 1.4 * slash} y2={-r * 0.7 + r * 1.4 * slash} stroke={RED} strokeWidth={18} strokeLinecap="round" />
+      </g>
+    </Svg>
   );
 };
 
 // 1 · «El cable no va pegado al hombro y como va por dentro, le genera demandas»
-// Plano frontal: eje del cable (verde) frente a la línea de cada hombro (blanca), la
-// distancia entre ambos y el tirón hacia dentro sobre el codo.
-const CABLE_FRONT = (y: number) => 465 + y * 0.052; // x del cable a la altura y (medido en el plano)
 const ObjCable: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
-  const out = ramp(16.4, 16.66);
-  const cable = ramp(OBJ1.cable, OBJ1.cable + 0.7) * (1 - out);
-  const lines = ramp(OBJ1.cable + 0.5, OBJ1.cable + 1.0) * (1 - out);
-  const gap = ramp(OBJ1.inside, OBJ1.inside + 0.4) * (1 - out);
-  const pull = ramp(OBJ1.inside + 0.3, OBJ1.inside + 0.8) * (1 - out);
-  const dem = pop(OBJ1.demand, 9) * (1 - out);
-  const yEnd = Math.min(pose.wr[0].y, pose.wr[1].y) - 330;
-  const top = { x: CABLE_FRONT(0), y: 0 };
-  const bot = { x: CABLE_FRONT(yEnd), y: yEnd };
+  const out = ramp(16.42, 16.66);
+  const cab = cableAt("obj", t);
+  const cable = ramp(OBJ1.cable - 0.1, OBJ1.cable + 0.35) * (1 - out);
+  const lines = ramp(14.44, 14.75) * (1 - out); // «al hombro»
+  const gap = ramp(OBJ1.inside, OBJ1.inside + 0.25) * (1 - out); // «por dentro»
+  const pull = pop(OBJ1.inside + 0.1, 10, 300) * (1 - out);
+  const red = neonOn(t - OBJ1.demand + 0.25) * (1 - out); // «le genera demandas»
+  const yEnd = cab.end;
+  const top = { x: cab.x(0), y: 0 };
+  const bot = { x: cab.x(yEnd), y: yEnd };
   const yGap = pose.sh[0].y + 230;
+  const labelAt = { x: cab.x(560), y: 560 };
   return (
     <>
-      <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        {/* línea de cada hombro */}
+      <Roto job="shr" t={t} range={[13.12, 16.68]} style={{ opacity: red * (0.85 + 0.15 * Math.sin(t * 8)), filter: "drop-shadow(0 0 16px rgba(255,59,48,0.75))" }} />
+      <Svg>
         {pose.sh.map((s, i) => (
-          <Draw key={i} a={s} b={{ x: s.x, y: s.y + 620 }} p={lines} color={PAPER} w={4} dash="14 12" glow="drop-shadow(0 0 6px rgba(0,0,0,0.8))" />
+          <Draw key={i} a={s} b={{ x: s.x, y: s.y + 600 }} p={lines} color={PAPER} w={4} dash="14 12" glow={DARK} />
         ))}
-        {/* eje del cable */}
-        <Draw a={top} b={bot} p={cable} w={7} />
-        {/* distancia hombro → cable a ambos lados */}
+        <Draw a={top} b={bot} p={cable} w={6} />
         {pose.sh.map((s, i) => (
-          <g key={i} opacity={gap}>
-            <Arrow a={{ x: s.x, y: yGap }} b={{ x: CABLE_FRONT(yGap) + (i ? 14 : -14), y: yGap }} p={gap} color={PAPER} w={5} glow="drop-shadow(0 0 6px rgba(0,0,0,0.9))" />
-          </g>
+          <Arrow key={i} a={{ x: s.x, y: yGap }} b={{ x: cab.x(yGap) + (i ? 12 : -12), y: yGap }} p={gap} color={PAPER} w={5} glow={DARK} />
         ))}
-        {/* el cable tira del codo hacia dentro */}
         {pose.el.map((e, i) => (
-          <Arrow key={i} a={{ x: e.x + (i ? 40 : -40), y: e.y }} b={{ x: e.x + (i ? -120 : 120), y: e.y }} p={pull} color={RED} glow={RED_GLOW} />
+          <Arrow key={i} a={{ x: e.x + (i ? 30 : -30), y: e.y }} b={{ x: e.x + (i ? -120 : 120), y: e.y }} p={pull} color={RED} glow={RED_GLOW} />
         ))}
-        {pose.sh.map((s, i) => (
-          <Joint key={i} c={s} p={dem} t={t} color={RED} r={34} />
-        ))}
-      </svg>
-      <Chip at={{ x: CABLE_FRONT(300), y: 300 }} p={pop(OBJ1.cable + 0.4, 11) * (1 - out)} size={32}>
+      </Svg>
+      <Callout to={labelAt} from={{ x: labelAt.x + 230, y: labelAt.y - 70 }} p={ramp(OBJ1.cable + 0.15, OBJ1.cable + 0.45) * (1 - out)} q={pop(OBJ1.cable + 0.35, 10) * (1 - out)}>
         Cable
-      </Chip>
-      <Chip at={{ x: (pose.sh[0].x + CABLE_FRONT(yGap)) / 2, y: yGap - 52 }} p={gap} color={PAPER} size={34}>
-        Por dentro
-      </Chip>
+      </Callout>
     </>
   );
 };
 
-// 2 · «Al abrir la cuerda cuando llegamos abajo…»: plano cercano, los extremos de la
-// cuerda se separan
+// 2 · «Al abrir la cuerda cuando llegamos abajo…»: los extremos se separan
 const HANDS_CLOSE: [P, P] = [
   { x: 225, y: 1120 },
   { x: 700, y: 1290 },
 ];
 const ObjOpen: React.FC = () => {
-  const pose = { wr: HANDS_CLOSE };
-  const { ramp, pop } = useClock();
-  const p = ramp(OBJ2.open, OBJ2.open + 0.5);
+  const { pop, ramp } = useClock();
   const out = ramp(19.6, 19.84);
-  const q = p * (1 - out);
   return (
-    <>
-      <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        {pose.wr.map((w, i) => (
-          <Arrow key={i} a={{ x: w.x + (i ? 60 : -50), y: w.y + 90 }} b={{ x: w.x + (i ? 250 : -200), y: w.y + 170 }} p={q} />
-        ))}
-      </svg>
-      <Chip at={{ x: (pose.wr[0].x + pose.wr[1].x) / 2, y: Math.min(pose.wr[0].y, pose.wr[1].y) - 120 }} p={pop(OBJ2.open + 0.3, 11) * (1 - out)}>
-        Se abre
-      </Chip>
-    </>
+    <Svg>
+      {HANDS_CLOSE.map((w, i) => (
+        <Arrow key={i} a={{ x: w.x + (i ? 60 : -50), y: w.y + 90 }} b={{ x: w.x + (i ? 250 : -200), y: w.y + 170 }} p={pop(OBJ2.open + i * 0.08, 10, 260) * (1 - out)} />
+      ))}
+    </Svg>
   );
 };
 
-// 2 · «…generamos una rotación interna del hombro»: arcos alrededor del brazo
-const ObjRot: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
-  const { ramp, pop } = useClock();
-  const p = ramp(OBJ2.rot - 0.05, OBJ2.rot + 0.5);
-  const out = ramp(OBJ2.to - 0.25, OBJ2.to);
-  const q = p * (1 - out);
+// 2 · «…rotación interna del hombro»: anillos alrededor del brazo que pasan por
+// detrás y por delante (3D falso con el recorte del brazo en medio)
+const ringPts = (c: P, axis: P, rx: number, ry: number, a0: number, a1: number) => {
+  const ang = Math.atan2(axis.y, axis.x) + Math.PI / 2; // el anillo es perpendicular al brazo
+  const ca = Math.cos(ang);
+  const sa = Math.sin(ang);
+  const pts: P[] = [];
+  for (let i = 0; i <= 24; i++) {
+    const a = a0 + (a1 - a0) * (i / 24);
+    const lx = Math.cos(a) * rx;
+    const ly = Math.sin(a) * ry;
+    pts.push({ x: c.x + lx * ca - ly * sa, y: c.y + lx * sa + ly * ca });
+  }
+  return pts;
+};
+const Ring: React.FC<{ pose: Pose; t: number; i: number; layer: "back" | "front" }> = ({ pose, t, i, layer }) => {
+  const { ramp } = useClock();
+  const p = ramp(OBJ2.rot - 0.08, OBJ2.rot + 0.4) * (1 - ramp(OBJ2.to - 0.25, OBJ2.to, easeInOut));
+  if (p <= 0.01) return null;
+  const sh = pose.sh[i];
+  const el = pose.el[i];
+  const c = lerp(sh, el, 0.42);
+  const axis = { x: el.x - sh.x, y: el.y - sh.y };
+  const rx = 112 * (0.6 + 0.4 * p);
+  const ry = 40 * (0.6 + 0.4 * p);
+  // giro hacia dentro: el cometa recorre el anillo (mitad delantera = abajo)
+  const dir = i ? -1 : 1;
+  const head = (t - OBJ2.rot) * 5.2 * dir;
+  const [a0, a1] = layer === "front" ? [0, Math.PI] : [Math.PI, Math.PI * 2];
+  const pts = ringPts(c, axis, rx, ry, a0, a1);
+  const segs: React.ReactNode[] = [];
+  for (let k = 0; k < pts.length - 1; k++) {
+    const a = a0 + (a1 - a0) * (k / 24);
+    // brillo del cometa: máximo en la cabeza y decae por detrás de ella
+    let d = ((((head - a) * dir) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    d = 1 - Math.min(1, d / 2.2);
+    const op = (layer === "back" ? 0.55 : 1) * (0.28 + 0.72 * d) * p;
+    segs.push(<line key={k} x1={pts[k].x} y1={pts[k].y} x2={pts[k + 1].x} y2={pts[k + 1].y} stroke={GREEN} strokeWidth={layer === "back" ? 8 : 11} strokeLinecap="round" opacity={op} />);
+  }
+  // punta de flecha en la cabeza del cometa (en la capa que toque)
+  const ha = ((head % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const inFront = ha < Math.PI;
+  let tip: React.ReactNode = null;
+  if ((layer === "front") === inFront) {
+    const q0 = ringPts(c, axis, rx, ry, ha - 0.25 * dir, ha - 0.25 * dir)[0];
+    const q1 = ringPts(c, axis, rx, ry, ha, ha)[0];
+    const an = Math.atan2(q1.y - q0.y, q1.x - q0.x);
+    const hs = 30;
+    tip = (
+      <path
+        d={`M ${q1.x - Math.cos(an - 0.55) * hs} ${q1.y - Math.sin(an - 0.55) * hs} L ${q1.x + Math.cos(an) * 6} ${q1.y + Math.sin(an) * 6} L ${q1.x - Math.cos(an + 0.55) * hs} ${q1.y - Math.sin(an + 0.55) * hs} Z`}
+        fill={GREEN}
+        opacity={p * (layer === "back" ? 0.6 : 1)}
+      />
+    );
+  }
   return (
-    <>
-      <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-        {pose.sh.map((s, i) => {
-          const c = lerp(s, pose.el[i], 0.45);
-          return <SpinArc key={i} c={c} rx={95} ry={34} p={q} t={t} dir={i ? -1 : 1} />;
-        })}
-      </svg>
-      <Chip at={{ x: 540, y: Math.min(pose.sh[0].y, pose.sh[1].y) - 120 }} p={pop(OBJ2.rot + 0.3, 11) * (1 - out)} size={34}>
-        Rotación interna
-      </Chip>
-    </>
+    <g style={{ filter: NEON }}>
+      {segs}
+      {tip}
+    </g>
   );
 };
+const ObjRot: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => (
+  <>
+    <Svg>
+      <Ring pose={pose} t={t} i={0} layer="back" />
+      <Ring pose={pose} t={t} i={1} layer="back" />
+    </Svg>
+    <Roto job="arm" t={t} range={[19.84, 22.16]} />
+    <Svg>
+      <Ring pose={pose} t={t} i={0} layer="front" />
+      <Ring pose={pose} t={t} i={1} layer="front" />
+    </Svg>
+  </>
+);
 
-// «Para que los brazos no se vayan hacia dentro, los hombros mantienen una fuerza
-// isométrica»: el cable tira del codo hacia dentro (rojo) y el hombro lo sujeta (verde)
-// el cable baja algo inclinado desde la polea (fuera de plano, arriba a la derecha)
-const CABLE_ISO = (y: number) => 873 - 0.167 * y;
+// «…los hombros deben mantener una fuerza isométrica»: el cable tira del codo hacia
+// dentro (codos en rojo) y el hombro lo sujeta (hombros en verde)
 const IsoHold: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const { ramp, pop } = useClock();
-  const cable = ramp(ISO.from, ISO.from + 0.7);
-  const pull = ramp(ISO.inward - 0.1, ISO.inward + 0.4);
-  const hold = pop(ISO.hold - 0.15, 9);
+  const cab = cableAt("iso", t);
+  const cable = ramp(ISO.from, ISO.from + 0.45);
+  const pull = pop(ISO.inward - 0.1, 10, 300);
+  const elbows = neonOn(t - ISO.inward + 0.1);
+  const hold = pop(ISO.hold - 0.15, 9, 260);
+  const shoulders = neonOn(t - ISO.hold + 0.15);
   const out = ramp(ISO.to - 0.25, ISO.to);
   const shake = hold > 0.5 ? Math.sin(t * 40) * 1.6 : 0;
   return (
-    <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible", opacity: 1 - out }}>
-      {(() => {
-        const yc = (pose.wr[0].y + pose.wr[1].y) / 2 - 400;
-        return <Draw a={{ x: CABLE_ISO(0), y: 0 }} b={{ x: CABLE_ISO(yc), y: yc }} p={cable} w={7} />;
-      })()}
-      {pose.el.map((e, i) => {
-        const inward = i ? -1 : 1; // hacia el centro del cuerpo
-        return (
-          <g key={i}>
-            <Arrow a={{ x: e.x - inward * 30, y: e.y + 10 }} b={{ x: e.x + inward * 110, y: e.y + 10 }} p={pull} color={RED} glow={RED_GLOW} />
-            <Arrow a={{ x: e.x - inward * 40 + shake, y: e.y - 36 }} b={{ x: e.x - inward * 160 + shake, y: e.y - 36 }} p={hold} />
-          </g>
-        );
-      })}
-      {pose.sh.map((s, i) => (
-        <Joint key={i} c={s} p={hold} t={t} r={30} />
-      ))}
-    </svg>
+    <div style={{ position: "absolute", inset: 0, opacity: 1 - out }}>
+      <Roto job="iel" t={t} range={[24.4, 30.52]} style={{ opacity: elbows, filter: "drop-shadow(0 0 14px rgba(255,59,48,0.75))" }} />
+      <Roto job="ish" t={t} range={[24.4, 30.52]} style={{ opacity: shoulders, filter: "drop-shadow(0 0 14px rgba(4,228,0,0.75))" }} />
+      <Svg>
+        <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={cable} w={6} />
+        {pose.el.map((e, i) => {
+          const inward = i ? -1 : 1;
+          return (
+            <g key={i}>
+              <Arrow a={{ x: e.x - inward * 30, y: e.y + 10 }} b={{ x: e.x + inward * 110, y: e.y + 10 }} p={pull} color={RED} glow={RED_GLOW} />
+              <Arrow a={{ x: e.x - inward * 40 + shake, y: e.y - 36 }} b={{ x: e.x - inward * 160 + shake, y: e.y - 36 }} p={hold} />
+            </g>
+          );
+        })}
+      </Svg>
+    </div>
   );
 };
 
-// Recorrido de perfil: cable, antebrazo y la distancia del codo a la línea del cable
-// (lo que «pesa» la carga sobre el codo), que se va acortando al extender.
-const PULLEY_SIDE = { x: 334, y: 600 };
-export const demandAt = (pose: Pose) => {
-  // brazo que se ve (el más cercano a cámara): el de la derecha de la imagen
-  const e = pose.el[1];
-  const w = pose.wr[1];
-  const dx = w.x - PULLEY_SIDE.x;
-  const dy = w.y - PULLEY_SIDE.y;
-  const l = Math.hypot(dx, dy);
-  // distancia perpendicular del codo a la recta polea → mano
-  return Math.abs((e.x - PULLEY_SIDE.x) * dy - (e.y - PULLEY_SIDE.y) * dx) / l;
-};
-const SideRange: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+// «la rotación… del antebrazo»: los dos antebrazos se encienden en verde
+const ForeOn: React.FC<{ t: number }> = ({ t }) => {
   const { ramp } = useClock();
-  const p = ramp(RANGE.from, RANGE.from + 0.6);
-  const out = ramp(RANGE.frames - 0.25, RANGE.frames);
-  const q = p * (1 - out);
+  const on = neonOn(t - FORE.from + 0.1) * (1 - ramp(FORE.to - 0.3, FORE.to, easeInOut));
+  if (on <= 0.01) return null;
+  return <Roto job="fore" t={t} range={[57.0, 60.16]} style={{ opacity: on * 0.95, filter: "drop-shadow(0 0 14px rgba(4,228,0,0.8)) drop-shadow(0 0 34px rgba(4,228,0,0.35))" }} />;
+};
+
+// Recorrido de perfil: cable, antebrazo y la distancia del codo a la línea del cable
+// (lo que «pesa» la carga sobre el codo), que se acorta al extender.
+const PULLEY_SIDE = { x: 334, y: 600 };
+const SideRange: React.FC<{ pose: Pose }> = ({ pose }) => {
+  const { ramp } = useClock();
+  const p = ramp(RANGE.from, RANGE.from + 0.5);
+  const out = ramp(76.0, 76.2);
   const e = pose.el[1];
   const w = pose.wr[1];
   const dx = w.x - PULLEY_SIDE.x;
@@ -338,50 +383,122 @@ const SideRange: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
   const l = Math.hypot(dx, dy);
   const u = ((e.x - PULLEY_SIDE.x) * dx + (e.y - PULLEY_SIDE.y) * dy) / (l * l);
   const foot = { x: PULLEY_SIDE.x + dx * u, y: PULLEY_SIDE.y + dy * u };
+  const arm = Math.hypot(e.x - foot.x, e.y - foot.y);
+  const hot = arm > 165; // demanda alta: rojo
   return (
-    <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible", opacity: q }}>
+    <Svg opacity={p * (1 - out)}>
       <Draw a={PULLEY_SIDE} b={w} p={p} w={6} />
-      <Draw a={e} b={w} p={p} color={PAPER} w={9} glow="drop-shadow(0 0 8px rgba(0,0,0,0.8))" />
-      <Draw a={e} b={foot} p={ramp(RANGE.from + 0.4, RANGE.from + 0.9)} color={RED} w={6} dash="10 9" glow={RED_GLOW} />
-      <Joint c={e} p={p} t={t} r={26} />
-    </svg>
+      <Draw a={e} b={w} p={p} color={PAPER} w={9} glow={DARK} />
+      <Draw a={e} b={foot} p={ramp(RANGE.from + 0.3, RANGE.from + 0.7)} color={hot ? RED : GREEN} w={7} dash="10 9" glow={hot ? RED_GLOW : NEON} />
+      <circle cx={e.x} cy={e.y} r={hot ? 18 : 12} fill={hot ? RED : GREEN} style={{ filter: hot ? RED_GLOW : NEON }} />
+    </Svg>
   );
 };
 
-// Frontal final: el cable y la cuerda hasta las dos manos
-const FrontCables: React.FC<{ pose: Pose }> = ({ pose }) => {
-  const { ramp } = useClock();
-  const p = ramp(FRONT.from + 0.2, FRONT.from + 0.9);
+// Frontal: cable y la prolongación imaginaria de cada antebrazo (codo → muñeca), que
+// se cruzan
+const FrontCross: React.FC<{ pose: Pose; t: number }> = ({ pose, t }) => {
+  const { ramp, pop } = useClock();
+  const cab = cableAt("front", t);
+  const p = ramp(FRONT.from + 0.1, FRONT.from + 0.5);
+  const ext = ramp(FRONT.from + 0.4, FRONT.from + 1.0);
   const out = ramp(FRONT.to - 0.25, FRONT.to);
-  const top = { x: 600, y: 120 };
-  const yJ = Math.min(pose.wr[0].y, pose.wr[1].y) - 300;
-  const j = { x: 588, y: yJ };
+  const [eL, eR] = pose.el;
+  const [wL, wR] = pose.wr;
+  const d1 = { x: wL.x - eL.x, y: wL.y - eL.y };
+  const d2 = { x: wR.x - eR.x, y: wR.y - eR.y };
+  const den = d1.x * d2.y - d1.y * d2.x;
+  let X: P | null = null;
+  if (Math.abs(den) > 1e-3) {
+    const s = ((eR.x - eL.x) * d2.y - (eR.y - eL.y) * d2.x) / den;
+    X = { x: eL.x + d1.x * s, y: eL.y + d1.y * s };
+    if (s < 0.8 || X.y < 150 || X.y > 1850 || X.x < 60 || X.x > 1020) X = null;
+  }
+  const hit = pop(FRONT.from + 0.9, 8, 260);
+  const ring = (t * 1.5) % 1;
   return (
-    <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible", opacity: 1 - out }}>
-      <Draw a={top} b={j} p={p} w={7} />
-      {pose.wr.map((w, i) => (
-        <Draw key={i} a={j} b={w} p={ramp(FRONT.from + 0.7, FRONT.from + 1.1)} w={5} />
-      ))}
-    </svg>
+    <Svg opacity={1 - out}>
+      <Draw a={{ x: cab.x(0), y: 0 }} b={{ x: cab.x(cab.end), y: cab.end }} p={p} w={6} />
+      {X ? <Draw a={eL} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} /> : null}
+      {X ? <Draw a={eR} b={X} p={ext} color={PAPER} w={5} dash="16 12" glow={DARK} /> : null}
+      {X && hit > 0.02 ? (
+        <g transform={`translate(${X.x} ${X.y}) scale(${hit})`} style={{ filter: NEON }}>
+          <circle r={16} fill={GREEN} />
+          <circle r={16 + ring * 40} fill="none" stroke={GREEN} strokeWidth={3} opacity={1 - ring} />
+        </g>
+      ) : null}
+    </Svg>
+  );
+};
+
+// Conclusión: saca la barra y la cuerda; brillan al salir y se apagan poco a poco
+const ToolsGlow: React.FC<{ t: number }> = ({ t }) => {
+  const { ramp } = useClock();
+  const on = neonOn(t - TOOLS.bar) * (1 - ramp(TOOLS.fade, TOOLS.to, easeInOut));
+  if (on <= 0.01) return null;
+  const pulse = 0.8 + 0.2 * Math.sin(t * 7);
+  return (
+    <Roto
+      job="tool"
+      t={t}
+      range={[84.6, 88.6]}
+      style={{
+        opacity: on,
+        filter: `brightness(${1.6 + 1.2 * pulse}) sepia(1) hue-rotate(60deg) saturate(${4 * pulse}) drop-shadow(0 0 12px rgba(4,228,0,0.95)) drop-shadow(0 0 32px rgba(4,228,0,0.5))`,
+      }}
+    />
+  );
+};
+
+// CTA: «@heracles_fit» encima de la cabeza, siguiendo la cara
+const Handle: React.FC<{ t: number }> = ({ t }) => {
+  const { pop } = useClock();
+  const q = pop(CTA.follow + 0.15, 10, 220);
+  if (q < 0.01) return null;
+  const face = faceAt(t);
+  const bob = Math.sin(t * 3.2) * 6;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: face.x,
+        top: face.y - 200 + bob,
+        transform: `translate(-50%, -50%) scale(${q}) rotate(${(1 - q) * 10 - 2}deg)`,
+        opacity: Math.min(1, q * 2),
+        background: "rgba(10,10,10,0.85)",
+        border: `3px solid ${GREEN}`,
+        borderRadius: 999,
+        padding: "10px 22px 8px",
+        boxShadow: "0 0 26px rgba(4,228,0,0.45)",
+        fontFamily: FONT,
+        fontWeight: 900,
+        fontStyle: "italic",
+        fontSize: 40,
+        color: GREEN,
+        whiteSpace: "nowrap",
+      }}
+    >
+      @heracles_fit
+    </div>
   );
 };
 
 export const BodyLayer: React.FC = () => {
   const { t } = useClock();
   const pose = poseAt(t);
-  if (!pose) return null;
   return (
     <div style={{ position: "absolute", inset: 0 }}>
-      {t < HOOK.from ? <HookTriceps pose={pose} t={t} /> : null}
-      {t >= OBJ1.from && t < 16.68 ? <ObjCable pose={pose} t={t} /> : null}
+      {t < 1.8 ? <TricepsOn t={t} /> : null}
+      {t >= HOOK.no - 0.05 && t < HOOK.to + 0.05 ? <RopeNo t={t} /> : null}
+      {pose && t >= OBJ1.from && t < 16.68 ? <ObjCable pose={pose} t={t} /> : null}
       {t >= 16.68 && t < 19.84 ? <ObjOpen /> : null}
-      {t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
-      {t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
-      {t >= RANGE.from && t < RANGE.frames ? <SideRange pose={pose} t={t} /> : null}
-      {t >= FRONT.from && t < FRONT.to ? <FrontCables pose={pose} /> : null}
+      {pose && t >= 19.84 && t < OBJ2.to ? <ObjRot pose={pose} t={t} /> : null}
+      {pose && t >= ISO.from && t < ISO.to ? <IsoHold pose={pose} t={t} /> : null}
+      {t >= 57.0 && t < 60.16 ? <ForeOn t={t} /> : null}
+      {pose && t >= RANGE.from && t < 76.2 ? <SideRange pose={pose} /> : null}
+      {pose && t >= FRONT.from && t < FRONT.to ? <FrontCross pose={pose} t={t} /> : null}
+      {t >= 84.6 && t < 88.6 ? <ToolsGlow t={t} /> : null}
+      {t >= CTA.follow ? <Handle t={t} /> : null}
     </div>
   );
 };
-
-export { poseAt };
-export type { Pose };

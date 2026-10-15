@@ -3,14 +3,15 @@ import {
   AbsoluteFill,
   Easing,
   Img,
+  staticFile,
   interpolate,
   spring,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { cameraAt } from "./Camera";
 import { FONT, GREEN, PAPER } from "./theme";
-import { CTA, f, FORE, HOOK, ISO, NEITHER, OBJ1, OBJ2, RANGE, TIPS, toSrc, TWO } from "./timeline";
+import { CTA, f, FORE, HOOK, ISO, NEITHER, OBJ1, OBJ2, TIPS, toSrc, TWO } from "./timeline";
 
 // Rótulos de «Utiliza la cuerda para hacer tríceps» (pantalla). Los gráficos pegados
 // al cuerpo están en Body.tsx. Todas las capas leen el tiempo del ORIGINAL (toSrc).
@@ -197,17 +198,25 @@ const Point: React.FC<{ from: number; to: number; n?: string; text: string; top?
   );
 };
 
-// Hook: «ni se te ocurra utilizar la cuerda» → ¿NO USAR CUERDA?
+// Hook: «ni se te ocurra utilizar la cuerda» → la imagen se tiñe de rojo (está mal)
+// y el rótulo golpea con sacudida
 const Hook: React.FC = () => {
   const { t, squash, ramp, idle } = useClock();
   if (t < HOOK.from - 0.05 || t > HOOK.to + 0.05) return null;
   const q = squash(HOOK.from, 10, 220);
-  const no = squash(HOOK.no, 7, 300);
-  const cross = ramp(HOOK.no, HOOK.no + 0.22);
+  const no = squash(HOOK.no, 6, 320);
+  const red = ramp(HOOK.no - 0.05, HOOK.no + 0.12) * (1 - ramp(HOOK.to - 0.3, HOOK.to, easeInOut));
   const out = ramp(HOOK.to - 0.25, HOOK.to, easeInOut);
   const id = idle(1.2);
+  const d = t - HOOK.no;
+  const hit = d > 0 && d < 0.4 ? Math.sin(d * 85) * 16 * (1 - d / 0.4) : 0;
+  const flash = d > 0 && d < 0.18 ? 1 - d / 0.18 : 0;
   return (
     <AbsoluteFill>
+      {/* filtro rojo: la imagen se tiñe y se oscurece por los bordes */}
+      <AbsoluteFill style={{ background: "rgba(255,30,20,1)", mixBlendMode: "color", opacity: 0.62 * red }} />
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(60,0,0,0.75) 100%)", opacity: red }} />
+      <AbsoluteFill style={{ background: "rgba(255,59,48,1)", opacity: 0.35 * flash }} />
       <div
         style={{
           position: "absolute",
@@ -218,48 +227,90 @@ const Hook: React.FC = () => {
           flexDirection: "column",
           alignItems: "center",
           opacity: Math.min(1, q.p * 2) * (1 - out),
-          transform: `translateY(${id.y}px) rotate(${-3 + id.r}deg)`,
+          transform: `translate(${hit}px, ${id.y}px) rotate(${-3 + id.r}deg)`,
         }}
       >
         <Words text="¿No usar" at={HOOK.from} gap={0.07} style={{ ...display, ...stroke(8), fontSize: 86, marginRight: "-0.22em" }} />
         <div
           style={{
-            position: "relative",
             ...display,
             fontSize: 112,
-            color: INK,
-            background: GREEN,
+            color: PAPER,
+            background: RED,
             padding: "8px 30px 2px",
             marginTop: 10,
-            filter: GLOW,
-            transform: `scale(${(0.5 + 0.5 * q.p) * no.sx}, ${(0.5 + 0.5 * q.p) * no.sy}) rotate(${(1 - no.p) * 6}deg)`,
+            filter: "drop-shadow(0 0 18px rgba(255,59,48,0.7))",
+            transform: `scale(${(0.5 + 0.5 * q.p) * no.sx}, ${(0.5 + 0.5 * q.p) * no.sy}) rotate(${(1 - no.p) * 8 - 2}deg)`,
           }}
         >
           Cuerda?
-          {/* tachón rojo que se dibuja en «ni se te ocurra» */}
-          <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-            <path d="M -4 70 L 104 34" stroke={RED} strokeWidth={9} vectorEffect="non-scaling-stroke" strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - cross} style={{ filter: "drop-shadow(0 0 8px rgba(255,59,48,0.8))" }} />
-          </svg>
         </div>
       </div>
     </AbsoluteFill>
   );
 };
 
-// «estas dos cosas»
-const Two: React.FC = () => {
-  const { t, squash, ramp } = useClock();
-  if (t < TWO.at - 0.05 || t > TWO.to + 0.05) return null;
-  const q = squash(TWO.at, 7, 280);
-  const out = ramp(TWO.to - 0.2, TWO.to, easeInOut);
+// «estas dos cosas»: «2» y «COSAS» en grande DETRÁS de Yago (como en el quiz). El
+// recorte de Yago va encima con la misma cámara que el vídeo.
+const neonOn = (d: number) => {
+  if (d < 0) return 0;
+  if ((d > 0.06 && d < 0.1) || (d > 0.17 && d < 0.2)) return 0.25;
+  return Math.min(1, d / 0.05) * (0.9 + 0.1 * Math.sin(d * 31) * Math.sin(d * 11));
+};
+const TwoBehind: React.FC = () => {
+  const { t, frame, fps, pop, ramp } = useClock();
+  if (t < TWO.at - 0.3 || t >= 13.12) return null;
+  const a = pop(TWO.at - 0.2, 14, 260);
+  const b = pop(TWO.at + 0.12, 13, 260);
+  const out = ramp(TWO.to - 0.2, TWO.to + 0.02, easeInOut);
+  const d = t - (TWO.at - 0.2);
+  const light = neonOn(d);
+  const sh = (at: number) => {
+    const k = t - at;
+    return k > 0 && k < 0.35 ? Math.sin(k * 90) * 12 * (1 - k / 0.35) : 0;
+  };
+  const sx = sh(TWO.at - 0.2) + sh(TWO.at + 0.12);
+  const cam = cameraAt(frame, fps);
+  const big: React.CSSProperties = { ...display, position: "absolute", left: 0, right: 0, textAlign: "center", lineHeight: 0.8 };
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (1 - out) }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 18, transform: `scale(${q.p * q.sx}, ${q.p * q.sy}) rotate(${(1 - q.p) * -12 - 3}deg)` }}>
-          <div style={{ ...display, fontStyle: "normal", fontSize: 150, color: GREEN, filter: GLOW, ...stroke(6) }}>2</div>
-          <div style={{ ...display, ...stroke(8), fontSize: 76 }}>cosas</div>
+      <AbsoluteFill style={{ background: "radial-gradient(ellipse at 50% 38%, rgba(4,228,0,0.16) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0.7) 100%)", opacity: Math.min(1, a) * (1 - out) }} />
+      <AbsoluteFill style={{ transform: `translate(${sx}px, ${sx * 0.4}px) scale(${1 + out * 0.12})`, opacity: 1 - out }}>
+        <div
+          style={{
+            ...big,
+            top: 150,
+            fontSize: 760,
+            fontStyle: "italic",
+            color: GREEN,
+            WebkitTextStroke: "14px #A6FF9E",
+            paintOrder: "stroke fill",
+            textShadow: `0 0 ${30 + 60 * light}px rgba(4,228,0,${0.35 + 0.55 * light}), 0 0 ${120 * light}px rgba(59,255,46,${0.5 * light})`,
+            transform: `scale(${2.2 - 1.2 * a}) rotate(${(1 - a) * 12}deg)`,
+            opacity: Math.min(1, a * 3) * (0.55 + 0.45 * light),
+            filter: `blur(${(1 - Math.min(1, a)) * 24}px)`,
+          }}
+        >
+          2
         </div>
-      </div>
+        <div
+          style={{
+            ...big,
+            top: 800,
+            fontSize: 250,
+            letterSpacing: -6,
+            transform: `scale(${1.8 - 0.8 * b})`,
+            opacity: Math.min(1, b * 3),
+            filter: `blur(${(1 - Math.min(1, b)) * 18}px)`,
+          }}
+        >
+          Cosas
+        </div>
+      </AbsoluteFill>
+      {/* Yago por delante */}
+      <AbsoluteFill style={{ transform: `translate(${cam.x}px, ${cam.y}px) scale(${cam.scale}) rotate(${cam.rot}deg)`, transformOrigin: "50% 32%" }}>
+        <Img src={staticFile(`roto/two/r_${String(Math.round(t * 25)).padStart(5, "0")}.png`)} style={{ width: "100%", height: "100%" }} />
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
@@ -287,195 +338,180 @@ const Iso: React.FC = () => {
   );
 };
 
-// «rotación del antebrazo»: antebrazo esquemático que gira (pronación ↔ supinación)
+// «rotación del antebrazo»: zoom a los antebrazos (cámara) y rótulo limpio con
+// una flecha circular que gira
 const Fore: React.FC = () => {
-  const { t, squash, ramp, idle, frame, fps } = useClock();
+  const { t, squash, ramp, idle } = useClock();
   if (t < FORE.from - 0.05 || t > FORE.to + 0.05) return null;
   const q = squash(FORE.from, 9, 230);
   const out = ramp(FORE.to - 0.3, FORE.to, easeInOut);
   const id = idle(5.1, 0.8);
-  const spin = Math.sin((frame / fps) * 4.2) * 70; // grados de giro de la mano
+  const spin = (t - FORE.from) * 300;
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 1060, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (1 - out) }}>
-        <Glass style={{ display: "flex", alignItems: "center", gap: 20, padding: "16px 28px 16px 20px", transform: `translateY(${id.y}px) scale(${q.p * q.sx}, ${q.p * q.sy}) rotate(${-2 + id.r}deg)` }}>
-          <svg width={150} height={90} viewBox="0 0 150 90" style={{ overflow: "visible" }}>
-            {/* antebrazo */}
-            <rect x={6} y={34} width={92} height={22} rx={11} fill={PAPER} />
-            {/* mano que gira sobre el eje del antebrazo */}
-            <g transform={`translate(112 45) scale(1 ${Math.cos((spin * Math.PI) / 180)})`}>
-              <rect x={-14} y={-26} width={28} height={52} rx={12} fill={GREEN} style={{ filter: GLOW }} />
-              <rect x={-14} y={-26} width={10} height={52} rx={5} fill="rgba(0,0,0,0.25)" />
-            </g>
-            {/* flecha de giro */}
-            <path d="M 96 10 A 30 30 0 0 1 140 30" fill="none" stroke={GREEN} strokeWidth={5} strokeLinecap="round" />
-            <path d="M 136 18 L 142 32 L 128 30 Z" fill={GREEN} />
-          </svg>
-          <div style={{ ...display, fontSize: 48, lineHeight: 1 }}>
-            Rotación del
-            <br />
-            <span style={{ color: GREEN }}>antebrazo</span>
-          </div>
-        </Glass>
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// «ni la musculatura del tríceps, ni del hombro pinchan ni cortan»
-const Neither: React.FC = () => {
-  const { t, squash, ramp } = useClock();
-  if (t < NEITHER.triceps - 0.05 || t > NEITHER.to + 0.05) return null;
-  const out = ramp(NEITHER.to - 0.3, NEITHER.to, easeInOut);
-  const chip = (txt: string, at: number) => {
-    const q = squash(at, 9, 240);
-    const x = ramp(NEITHER.cut, NEITHER.cut + 0.25);
-    const shake = t > NEITHER.cut && t < NEITHER.cut + 0.35 ? Math.sin(t * 70) * 6 * (1 - (t - NEITHER.cut) / 0.35) : 0;
-    return (
-      <div
-        style={{
-          position: "relative",
-          ...display,
-          fontSize: 52,
-          color: INK,
-          background: PAPER,
-          padding: "10px 22px 6px",
-          borderRadius: 10,
-          opacity: Math.min(1, q.p * 2),
-          transform: `translate(${shake}px, ${(1 - q.p) * 40}px) scale(${q.sx}, ${q.sy}) rotate(${(1 - q.p) * 10 - 2}deg)`,
-        }}
-      >
-        {txt}
-        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-          <path d="M -3 50 L 103 50" stroke={RED} strokeWidth={8} vectorEffect="non-scaling-stroke" strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - x} />
-        </svg>
-      </div>
-    );
-  };
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", top: 1060, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 22, opacity: 1 - out }}>
-        {chip("Tríceps", NEITHER.triceps)}
-        {chip("Hombro", NEITHER.shoulder)}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// Recorrido: tres fotogramas sucesivos de la misma repetición (sin espejar)
-const Frames: React.FC = () => {
-  const { t, squash, ramp } = useClock();
-  if (t < RANGE.frames - 0.05 || t > RANGE.to + 0.05) return null;
-  const out = ramp(RANGE.to - 0.3, RANGE.to, easeInOut);
-  const items = [
-    { src: "frames/inicio.jpg", label: "Inicio", lvl: 1, at: RANGE.frames },
-    { src: "frames/medio.jpg", label: "Medio", lvl: 0.6, at: RANGE.frames + 0.35 },
-    { src: "frames/final.jpg", label: "Final", lvl: 0.25, at: RANGE.frames + 0.7 },
-  ];
-  return (
-    <AbsoluteFill style={{ background: `rgba(6,6,6,${0.82 * Math.min(1, ramp(RANGE.frames - 0.1, RANGE.frames + 0.2))})`, opacity: 1 - out }}>
-      <div style={{ position: "absolute", top: 470, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 18 }}>
-        {items.map((it, i) => {
-          const q = squash(it.at, 10, 230);
-          const bar = ramp(it.at + 0.15, it.at + 0.5);
-          return (
-            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", opacity: Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 80}px) rotate(${(i - 1) * 2 + (1 - q.p) * 8}deg) scale(${q.sx}, ${q.sy})` }}>
-              <div style={{ width: 330, height: 495, borderRadius: 16, overflow: "hidden", border: "5px solid rgba(255,255,255,0.92)", boxShadow: "0 30px 60px rgba(0,0,0,0.6)" }}>
-                <Img src={staticFile(it.src)} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              </div>
-              <div style={{ ...display, fontSize: 46, marginTop: 18, color: GREEN, filter: GLOW, ...stroke(6) }}>{it.label}</div>
-              {/* demanda sobre el codo: de más a menos */}
-              <div style={{ ...label, fontSize: 18, letterSpacing: 3, color: "rgba(255,255,255,0.65)", marginTop: 12 }}>Demanda codo</div>
-              <div style={{ width: 200, height: 18, borderRadius: 9, background: "rgba(255,255,255,0.12)", marginTop: 8, overflow: "hidden" }}>
-                <div style={{ width: `${it.lvl * 100 * bar}%`, height: "100%", borderRadius: 9, background: it.lvl > 0.8 ? RED : it.lvl > 0.5 ? "#FFB020" : GREEN }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// Conclusión: Comodidad · Acercarte al fallo · Progresar
-const Tips: React.FC = () => {
-  const { t, squash, ramp, idle } = useClock();
-  if (t < TIPS.comfy - 0.05 || t > TIPS.to + 0.05) return null;
-  const out = ramp(TIPS.to - 0.3, TIPS.to, easeInOut);
-  const items: [string, number][] = [
-    ["Comodidad", TIPS.comfy],
-    ["Acercarte al fallo", TIPS.fail],
-    ["Progresar", TIPS.prog],
-  ];
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", top: 300, right: 60, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 14, opacity: 1 - out, transform: `translateX(${out * 60}px)` }}>
-        {items.map(([txt, at], i) => {
-          const q = squash(at, 9, 240);
-          const id = idle(i * 1.7, 0.6);
-          const check = ramp(at + 0.1, at + 0.35);
-          return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, opacity: Math.min(1, q.p * 2), transform: `translate(${(1 - q.p) * 140}px, ${id.y}px) scale(${q.sx}, ${q.sy}) rotate(${id.r * 0.6}deg)` }}>
-              <div style={{ ...display, fontSize: 48, color: i === 2 ? INK : INK, background: i === 2 ? GREEN : PAPER, padding: "10px 20px 6px", borderRadius: 10, filter: i === 2 ? GLOW : undefined }}>{txt}</div>
-              <svg width={52} height={52} viewBox="0 0 52 52">
-                <circle cx={26} cy={26} r={24} fill={GREEN} style={{ filter: GLOW }} />
-                <path d="M 14 27 L 23 36 L 39 17" fill="none" stroke={INK} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - check} />
-              </svg>
-            </div>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
-// CTA: un único rótulo «Sígueme · @heracles_fit», sin tapar cara ni subtítulos
-const Follow: React.FC = () => {
-  const { t, squash, idle } = useClock();
-  if (t < CTA.follow - 0.05) return null;
-  const q = squash(CTA.follow, 9, 220);
-  const id = idle(7.3, 0.8);
-  const shine = ((t - CTA.rig) * 1.2) % 1.6;
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) }}>
+      <div style={{ position: "absolute", top: 300, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: Math.min(1, q.p * 2) * (1 - out) }}>
         <div
           style={{
-            position: "relative",
-            overflow: "hidden",
             display: "flex",
             alignItems: "center",
-            gap: 14,
-            background: "rgba(10,10,10,0.88)",
-            border: `3px solid ${GREEN}`,
-            padding: "14px 28px 12px",
-            borderRadius: 999,
-            boxShadow: "0 0 30px rgba(4,228,0,0.4)",
-            transform: `translateY(${(1 - q.p) * -50 + id.y}px) scale(${q.sx}, ${q.sy}) rotate(${id.r * 0.5}deg)`,
+            gap: 16,
+            background: GREEN,
+            padding: "10px 26px 8px 14px",
+            borderRadius: 14,
+            filter: GLOW,
+            transform: `translateY(${(1 - q.p) * -50 + id.y}px) scale(${q.sx}, ${q.sy}) rotate(${-2 + id.r}deg)`,
           }}
         >
-          <div style={{ ...display, fontSize: 46 }}>Sígueme</div>
-          <div style={{ width: 10, height: 10, borderRadius: 99, background: GREEN }} />
-          <div style={{ ...display, fontSize: 46, color: GREEN, textTransform: "none" }}>@heracles_fit</div>
-          {t > CTA.rig ? (
-            <div style={{ position: "absolute", top: 0, bottom: 0, width: 90, left: `${shine * 100 - 30}%`, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)", transform: "skewX(-20deg)" }} />
-          ) : null}
+          <svg width={64} height={64} viewBox="0 0 64 64" style={{ transform: `rotate(${spin}deg)` }}>
+            <path d="M 32 8 A 24 24 0 1 1 9.5 23" fill="none" stroke={INK} strokeWidth={7} strokeLinecap="round" />
+            <path d="M 2 16 L 11 30 L 20 15 Z" fill={INK} />
+          </svg>
+          <Words text="Rotación del antebrazo" at={FORE.from + 0.05} gap={0.06} style={{ ...display, fontSize: 52, color: INK, marginRight: "-0.22em" }} />
         </div>
       </div>
     </AbsoluteFill>
   );
 };
 
+// «ni la musculatura del tríceps, ni del hombro pinchan ni cortan»: medidor de quién
+// trabaja en el giro. El antebrazo se llena; tríceps y hombro intentan subir, caen a 0
+// y se apagan con «ni pinchan ni cortan»
+const Neither: React.FC = () => {
+  const { t, squash, ramp, idle } = useClock();
+  if (t < NEITHER.from - 0.05 || t > NEITHER.to + 0.05) return null;
+  const card = squash(NEITHER.from, 10, 220);
+  const out = ramp(NEITHER.to - 0.3, NEITHER.to, easeInOut);
+  const id = idle(6.2, 0.7);
+  const rows: { name: string; at: number; on: boolean }[] = [
+    { name: "Antebrazo", at: NEITHER.from + 0.05, on: true },
+    { name: "Tríceps", at: NEITHER.triceps, on: false },
+    { name: "Hombro", at: NEITHER.shoulder, on: false },
+  ];
+  return (
+    <AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          top: 1010,
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          opacity: Math.min(1, card.p * 2) * (1 - out),
+          transform: `translateY(${(1 - card.p) * 80 + id.y}px) rotate(${id.r * 0.5}deg)`,
+        }}
+      >
+        <Glass style={{ padding: "18px 26px 20px", width: 640, transform: `scale(${card.sx}, ${card.sy})` }}>
+          <div style={{ ...label, fontSize: 20, letterSpacing: 4, color: "rgba(255,255,255,0.55)", marginBottom: 6 }}>¿Quién gira la cuerda?</div>
+          {rows.map((r, i) => {
+            const q = squash(r.at, 9, 240);
+            // los «off» suben un poco y caen a cero; el «on» se llena con rebote
+            const lvl = r.on
+              ? Math.min(1.05, ramp(r.at, r.at + 0.5, Easing.bezier(0.3, 1.5, 0.5, 1)))
+              : Math.max(0, Math.sin(Math.min(1, (t - r.at) / 0.45) * Math.PI) * 0.28) * (t > r.at ? 1 : 0);
+            const dead = !r.on && t > NEITHER.cut;
+            const x = ramp(NEITHER.cut, NEITHER.cut + 0.2);
+            const shake = dead && t < NEITHER.cut + 0.3 ? Math.sin(t * 80) * 5 * (1 - (t - NEITHER.cut) / 0.3) : 0;
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 12, opacity: Math.min(1, q.p * 2) * (dead ? 0.5 + 0.5 * (1 - x) : 1), transform: `translateX(${(1 - q.p) * -60 + shake}px)` }}>
+                <div style={{ ...display, fontSize: 38, width: 210, color: r.on ? GREEN : PAPER }}>{r.name}</div>
+                <div style={{ position: "relative", flex: 1, height: 26, borderRadius: 13, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                  <div style={{ width: `${Math.max(0, lvl) * 100}%`, height: "100%", borderRadius: 13, background: r.on ? `linear-gradient(90deg, rgba(4,228,0,0.6), ${GREEN})` : PAPER, boxShadow: r.on ? "0 0 18px rgba(4,228,0,0.7)" : undefined }} />
+                </div>
+                <div style={{ ...display, fontSize: 36, width: 86, textAlign: "right", color: r.on ? GREEN : dead ? RED : PAPER, transform: `scale(${dead ? 1 + 0.25 * Math.sin(x * Math.PI) : 1})` }}>
+                  {r.on ? `${Math.round(Math.min(1, lvl) * 100)}%` : dead ? "0%" : `${Math.round(lvl * 100)}%`}
+                </div>
+              </div>
+            );
+          })}
+        </Glass>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Conclusión: escalera de tres peldaños que sube (Comodidad → Al fallo → Progresar);
+// una bola verde salta de peldaño en peldaño al ritmo de la voz
+const Tips: React.FC = () => {
+  const { t, squash, ramp, idle, pop } = useClock();
+  if (t < TIPS.comfy - 0.15 || t > TIPS.to + 0.05) return null;
+  const out = ramp(TIPS.to - 0.3, TIPS.to, easeInOut);
+  const steps: [string, number][] = [
+    ["Comodidad", TIPS.comfy],
+    ["Al fallo", TIPS.fail],
+    ["Progresar", TIPS.prog],
+  ];
+  const SW = 300;
+  const SH = 70;
+  const id = idle(8.1, 0.6);
+  // posición de la bola: salta al peldaño que se nombra
+  let bx = 0;
+  let by = 0;
+  steps.forEach(([, at], i) => {
+    const h = pop(at - 0.05, 11, 260);
+    if (i === 0) {
+      bx = SW * 0.5;
+      by = -SH * 0 - 40 * (1 - h);
+    } else {
+      bx += SW * h;
+      by -= SH * h;
+    }
+  });
+  const hop = steps.reduce((acc, [, at]) => {
+    const d = t - (at - 0.05);
+    return d > 0 && d < 0.35 ? Math.sin((d / 0.35) * Math.PI) * 60 : acc;
+  }, 0);
+  return (
+    <AbsoluteFill>
+      <div style={{ position: "absolute", top: 200, left: 540 - (SW * 3) / 2, width: SW * 3, height: SH * 3 + 60, opacity: 1 - out, transform: `translateY(${id.y - out * 30}px) rotate(${-3 + id.r * 0.5}deg)` }}>
+        {steps.map(([txt, at], i) => {
+          const q = squash(at - 0.12, 10, 240);
+          return (
+            <div key={i} style={{ position: "absolute", left: i * SW, top: SH * (2 - i) + 40, width: SW - 10, opacity: Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 60}px) scale(${q.sx}, ${q.sy})`, transformOrigin: "50% 100%" }}>
+              <div style={{ ...display, fontSize: 40, textAlign: "center", color: i === 2 ? GREEN : PAPER, filter: i === 2 ? GLOW : undefined, ...stroke(6) }}>{txt}</div>
+              <div style={{ height: 14, marginTop: 10, borderRadius: 7, background: i === 2 ? GREEN : "rgba(255,255,255,0.85)", boxShadow: i === 2 ? "0 0 20px rgba(4,228,0,0.8)" : "0 6px 18px rgba(0,0,0,0.5)" }} />
+            </div>
+          );
+        })}
+        <div style={{ position: "absolute", left: bx - 20, top: SH * 2 + 40 + by - 40 - hop + 54, width: 40, height: 40, borderRadius: 99, background: GREEN, boxShadow: "0 0 24px rgba(4,228,0,0.9)", opacity: Math.min(1, pop(TIPS.comfy - 0.05, 11) * 2) }} />
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// CTA «Sígueme» (como siempre): una línea verde se traza, la palabra sube a través de
+// ella y una flecha fina sigue empujando hacia arriba. El @ va sobre su cabeza (Body).
+const Follow: React.FC = () => {
+  const { t, ramp } = useClock();
+  const at = CTA.follow;
+  if (t < at - 0.1) return null;
+  const line = ramp(at - 0.05, at + 0.35, easeInOut);
+  const rise = ramp(at + 0.2, at + 0.75, Easing.bezier(0.2, 1.4, 0.35, 1));
+  const arrow = ramp(at + 0.7, at + 1.05, Easing.bezier(0.2, 1.3, 0.4, 1));
+  const bob = Math.sin(Math.max(0, t - at - 1.0) * 5) * 8 * arrow;
+  const W = 560;
+  return (
+    <div style={{ position: "absolute", top: 1080, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <svg width={120} height={70} viewBox="0 0 120 70" style={{ opacity: Math.min(1, arrow * 3), transform: `translateY(${(1 - arrow) * 190 - bob}px) scaleX(${0.4 + 0.6 * arrow})`, filter: GLOW }}>
+        <path d="M 14 56 L 60 14 L 106 56" fill="none" stroke={GREEN} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div style={{ height: 140, overflow: "hidden", marginTop: 6, display: "flex", alignItems: "flex-end" }}>
+        <div style={{ ...display, fontSize: 132, letterSpacing: interpolate(rise, [0, 1], [30, 2]), transform: `translateY(${(1 - rise) * 150}px)`, textShadow: "0 6px 30px rgba(0,0,0,0.6)" }}>Sígueme</div>
+      </div>
+      <div style={{ width: W * line, height: 5, borderRadius: 3, background: GREEN, boxShadow: "0 0 18px rgba(4,228,0,0.8)", marginTop: 6 }} />
+    </div>
+  );
+};
+
 export const Graphics: React.FC = () => (
   <AbsoluteFill>
     <Hook />
-    <Two />
+    <TwoBehind />
     <Point from={OBJ1.from} to={OBJ1.to} n="1" text="Demanda sobre el hombro" />
     <Point from={OBJ2.from} to={OBJ2.to} n="2" text="Giro al terminar" />
     <Iso />
     <Fore />
     <Neither />
-    <Frames />
     <Tips />
     <Follow />
   </AbsoluteFill>
