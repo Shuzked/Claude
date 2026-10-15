@@ -125,11 +125,18 @@ export const FIXED: Framing[] = [
   { from: 0, to: 4.4, face: [540, 960], scale: 1.0 }, // press de apertura: plano entero
   { from: 4.4, to: 5.96, face: [540, 900], scale: 1.0 },
   { from: 5.96, to: 18.24, face: [560, 900], scale: 1.12, ty: 900 }, // brazo entero: hombro, codo, mano
+  { from: 18.24, to: 20, face: [540, 1150], scale: 1.12, ty: 1000 }, // press desde atrás
+  { from: 20, to: 21.76, face: [540, 960], scale: 1.0 },
+  { from: 21.76, to: 22.52, face: [540, 1150], scale: 1.12, ty: 1000 },
+  { from: 22.52, to: 24.04, face: [540, 960], scale: 1.0 },
+  { from: 24.04, to: 25.4, face: [540, 1100], scale: 1.08, ty: 1000 },
+  { from: 25.4, to: 26.72, face: [540, 960], scale: 1.0 },
+  { from: 26.72, to: 27.72, face: [540, 1100], scale: 1.08, ty: 1000 },
   { from: 27.72, to: 34.48, face: [540, 960], scale: 1.0 },
   { from: 38.48, to: 44.08, face: [540, 960], scale: 1.0 }, // los dos Yagos
   { from: 53.04, to: 67.4, face: [520, 1000], scale: 1.45, ty: 900 },
   { from: 67.4, to: 75.36, face: [540, 1233], scale: 1.6, ty: 960 }, // banco desde atrás
-  { from: 88.48, to: 94.2, face: [540, 1000], scale: 1.35, ty: 900 },
+  { from: 88.48, to: 94.2, face: [540, 980], scale: 1.5, ty: 900 },
 ];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
 
@@ -144,17 +151,20 @@ export const JUMPS = [
 ].sort((a, b) => a - b);
 
 // --- Escenas (segundos del original) ----------------------------------------------
-export const HOOK = { from: 0.16, to: 5.85 };
-export const HUMERUS = { from: 6.52, line: 7.76, to: 11.6 };
+export const HOOK = { from: 0.16, press: 2.72, heavy: 3.24, light: 4.4, ten: 5.52, to: 5.85 };
+export const HUMERUS = { from: 6.52, line: 7.76, to: 8.95 }; // se apaga antes de que abra los brazos
 export const ADD = { from: 15.76, to: 18.2 };
-// Pantalla dividida (press a la izquierda, aperturas a la derecha)
-export const SPLIT = { from: 18.24, elbow: 20.36, fixed: 22.96, lever: 24.84, to: 27.72 };
+// Press y aperturas en el orden del metraje: primero press (codo que se mueve), luego
+// aperturas (codo casi fijo); en «palanca» se congela el press y después la apertura
+export const SPLIT = { from: 18.24, elbow: 20.36, flyFrom: 21.76, fixed: 22.96, lever: 24.84, leverFly: 25.92, to: 27.29 };
 export const KG = { from: 28.56, to: 34.15 };
 export const SIMILAR = { from: 36.16, word: 39.56, to: 40.85 };
 export const REHOOK = { at: 41.08 };
+export const STUDY_BG = { from: 44.08, to: 58.95 };
 export const STUDY = { from: 44.12, n: 44.92, weeks: 48.16, days: 51.48, fig: 53.1, both: 53.8, none: 55.08, to: 58.9 };
 export const INTEREST = { at: 64.16, to: 67.1 };
 export const ELBOW = { press: 68.32, fly: 71.08, to: 75.05 };
+export const COMBINE = { press: 88.6, fly: 88.78, merge: 89.44, to: 90.9 };
 export const DECIDE = { press: 76.68, fly: 82.0, needs: 90.44, needsTo: 93.9 };
 export const CTA = { from: 105.04, key: 105.6 };
 
@@ -164,8 +174,8 @@ export const mutedAt = (t: number) => MUTE.some(([a, b]) => t >= a && t < b);
 // --- Encuadre ----------------------------------------------------------------------
 export type Punch = { at: number; amount: number; hold: number };
 export const punches: Punch[] = [
-  { at: 3.24, amount: 0.05, hold: 0.6 }, // «200 kilos»
-  { at: 5.52, amount: 0.05, hold: 0.3 }, // «diez»
+  { at: 3.24, amount: 0.12, hold: 1.0 }, // «200 kilos»: golpe pesado
+  { at: 5.52, amount: 0.04, hold: 0.3 }, // «diez»
   { at: 30.36, amount: 0.05, hold: 1.0 }, // «no lo convierte»
   { at: 39.12, amount: 0.05, hold: 1.4 }, // «crezca similar»
   { at: 41.08, amount: 0.09, hold: 2.6 }, // «¿Pero cómo…?» acercamiento suave
@@ -245,17 +255,26 @@ export type Sfx = { at: number; src: FxName; volume: number };
 export const allSfx: Sfx[] = [
   { at: HOOK.from, src: "hit", volume: 0.3 },
   { at: HOOK.from + 0.25, src: "whoosh-b", volume: 0.2 },
+  { at: HOOK.press, src: "riser", volume: 0.14 },
+  { at: HOOK.heavy, src: "impact", volume: 0.45 },
+  { at: HOOK.heavy, src: "hit", volume: 0.35 },
+  { at: HOOK.light + 0.1, src: "boing", volume: 0.2 },
+  { at: HOOK.ten, src: "pop", volume: 0.24 },
   { at: HUMERUS.line, src: "marker", volume: 0.25 },
   { at: ADD.from, src: "pop", volume: 0.24 },
-  { at: SPLIT.from, src: "whoosh-a", volume: 0.25 },
+  { at: SPLIT.from, src: "pop", volume: 0.22 },
+  { at: SPLIT.flyFrom, src: "pop", volume: 0.22 },
   { at: SPLIT.elbow, src: "tic", volume: 0.28 },
   { at: SPLIT.fixed, src: "stamp", volume: 0.25 },
   { at: SPLIT.lever, src: "snap", volume: 0.3 },
   { at: SPLIT.lever + 0.4, src: "marker", volume: 0.22 },
+  { at: SPLIT.leverFly, src: "snap", volume: 0.3 },
+  { at: SPLIT.leverFly + 0.4, src: "marker", volume: 0.22 },
   { at: KG.from, src: "pop", volume: 0.22 },
   { at: KG.from + 1.9, src: "buzzer", volume: 0.12 },
   { at: SIMILAR.word, src: "correct", volume: 0.25 },
   { at: REHOOK.at, src: "riser", volume: 0.12 },
+  { at: STUDY_BG.from - 0.1, src: "whoosh-a", volume: 0.3 },
   { at: STUDY.from, src: "paper", volume: 0.3 },
   { at: STUDY.n, src: "pop", volume: 0.24 },
   { at: STUDY.weeks, src: "pop", volume: 0.24 },
@@ -266,13 +285,17 @@ export const allSfx: Sfx[] = [
   { at: INTEREST.at, src: "pop", volume: 0.22 },
   { at: ELBOW.press, src: "tic", volume: 0.28 },
   { at: ELBOW.fly, src: "tic", volume: 0.28 },
+  { at: COMBINE.press, src: "pop", volume: 0.24 },
+  { at: COMBINE.fly, src: "pop", volume: 0.24 },
+  { at: COMBINE.merge, src: "whoosh-b", volume: 0.2 },
+  { at: COMBINE.merge + 0.28, src: "impact-hi", volume: 0.3 },
   { at: DECIDE.press, src: "pop", volume: 0.22 },
   { at: DECIDE.fly, src: "pop", volume: 0.22 },
   { at: DECIDE.needs, src: "shine", volume: 0.25 },
   { at: CTA.from, src: "whoosh-a", volume: 0.25 },
   { at: CTA.key, src: "stamp", volume: 0.35 },
   // barridos en los cortes
-  ...JUMPS.filter((j) => j > 1).map((j, i) => ({
+  ...JUMPS.filter((j) => j > 1 && !(j > SPLIT.lever && j < SPLIT.to + 0.1)).map((j, i) => ({
     at: j,
     src: (i % 2 ? "whoosh-a" : "whoosh-b") as FxName,
     volume: SHOT_CUTS.includes(j) ? 0.36 : 0.24,

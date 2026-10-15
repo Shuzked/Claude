@@ -12,7 +12,7 @@ import {
 } from "remotion";
 import faceTrack from "./faceTrack.json";
 import { GradeDefs, gradeFilter } from "./Grade";
-import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
+import { f, FIXED, HOOK, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -113,9 +113,16 @@ export const cameraAt = (frame: number, fps: number) => {
     easing: Easing.bezier(0.16, 1, 0.3, 1),
   });
 
-  const x = Math.sin(frame / 41) * 6 + Math.sin(frame / 17) * 2;
-  const y = Math.cos(frame / 53) * 5 + Math.sin(frame / 23) * 1.5;
-  const rot = Math.sin(frame / 67) * 0.25;
+  // hook exagerado: con 200 kg la cámara tiembla por el esfuerzo y recibe el golpe del
+  // peso; con 10 kg flota ligera
+  const strain = t < HOOK.light ? interpolate(t, [HOOK.press, HOOK.heavy, HOOK.light - 0.15, HOOK.light], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 0;
+  const jolt = t >= HOOK.heavy && t < HOOK.light ? Math.exp(-(t - HOOK.heavy) * 7) : 0;
+  const shakeX = strain * (Math.sin(frame * 2.9) * 5 + Math.sin(frame * 5.3) * 3) + jolt * Math.sin(frame * 3.7) * 26;
+  const shakeY = strain * (Math.cos(frame * 3.4) * 4 + Math.sin(frame * 6.1) * 2) + jolt * 34 * Math.cos((t - HOOK.heavy) * 30);
+  const float = t >= HOOK.light && t < HOOK.to + 0.2 ? Math.sin((t - HOOK.light) * 4) * 12 : 0;
+  const x = Math.sin(frame / 41) * 6 + Math.sin(frame / 17) * 2 + shakeX;
+  const y = Math.cos(frame / 53) * 5 + Math.sin(frame / 23) * 1.5 + shakeY + float;
+  const rot = Math.sin(frame / 67) * 0.25 + strain * Math.sin(frame * 2.3) * 0.5 + jolt * 1.2 * Math.sin(frame * 2.1);
 
   // apertura compuesta: encuadres fijos (general → el que habla)
   const fixed = FIXED.find((x) => t >= x.from && t < x.to);

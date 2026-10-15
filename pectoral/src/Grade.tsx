@@ -17,7 +17,7 @@ const table = (gain: number, off: number, gamma: number) => {
     let y = Math.max(0, Math.min(1, x * gain + off));
     y = Math.pow(y, gamma);
     const s = y * y * (3 - 2 * y); // curva en S
-    y = y + (s - y) * 0.28;
+    y = y + (s - y) * 0.36;
     v.push(Math.max(0, Math.min(1, y)).toFixed(4));
   }
   return v.join(" ");
@@ -39,7 +39,7 @@ export const GradeDefs: React.FC = () => (
             <feFuncG type="table" tableValues={table(s.gain[1], s.off, s.gamma)} />
             <feFuncB type="table" tableValues={table(s.gain[2], s.off, s.gamma)} />
           </feComponentTransfer>
-          <feColorMatrix type="saturate" values="1.08" />
+          <feColorMatrix type="saturate" values="1.1" />
         </filter>
       ))}
     </defs>
