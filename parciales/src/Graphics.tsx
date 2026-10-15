@@ -501,10 +501,31 @@ const PhotoRF: React.FC = () => {
   const t = useT();
   const { durationInFrames, fps } = useVideoConfig();
   const dur = durationInFrames / fps;
+  const k = PHOTO_W / 360;
   const card = useSpringAt(0, 13);
-  const hl = useReveal(0.4, 0.7);
-  const out = interpolate(t, [dur - 0.3, dur], [0, 1], { ...clamp, easing: easeInOut });
+  // 1) el degradado verde baja por el músculo de la cadera a la rodilla
+  const hl = interpolate(t, [0.3, 0.95], [0, 1], { ...clamp, easing: easeOut });
   const glow = 0.85 + 0.15 * Math.sin(t * 5);
+  // 2) punto sobre el músculo, 3) línea que se dibuja, 4) etiqueta
+  const dot = useSpringAt(0.75, 10);
+  const line = interpolate(t, [0.82, 1.12], [0, 1], { ...clamp, easing: easeOut });
+  const tag = useSpringAt(1.05, 14);
+  const tagText = interpolate(t, [1.12, 1.4], [0, 1], { ...clamp, easing: easeOut });
+  const tagOut = interpolate(t, [dur - 0.45, dur - 0.2], [0, 1], { ...clamp, easing: easeInOut });
+  const out = interpolate(t, [dur - 0.3, dur], [0, 1], { ...clamp, easing: easeInOut });
+  // coordenadas en píxeles de la foto original (360×480)
+  const P = { x: 125, y: 268 }; // centro del recto femoral
+  const E = { x: 196, y: 222 }; // codo de la línea
+  const L = { x: 226, y: 222 }; // arranque de la etiqueta
+  const seg1 = Math.hypot(E.x - P.x, E.y - P.y);
+  const seg2 = L.x - E.x;
+  const len = seg1 + seg2;
+  const wipe = hl * 125 - 15; // borde inferior difuminado del barrido, en %
+  const wipeMask = {
+    WebkitMaskImage: `linear-gradient(to bottom, black ${wipe}%, transparent ${wipe + 15}%)`,
+    maskImage: `linear-gradient(to bottom, black ${wipe}%, transparent ${wipe + 15}%)`,
+  } as React.CSSProperties;
+  const layer: React.CSSProperties = { position: "absolute", inset: 0, width: "100%", height: "100%" };
   return (
     <AbsoluteFill style={{ opacity: 1 - out }}>
       <AbsoluteFill style={{ background: "rgba(8,8,8,0.55)", opacity: Math.min(1, card * 2) }} />
@@ -517,17 +538,69 @@ const PhotoRF: React.FC = () => {
           height: PHOTO_W * (480 / 360),
           transform: `translateY(${(1 - card) * 140}px) rotate(${-2.5 + (1 - card) * 6}deg) scale(${0.9 + 0.1 * card})`,
           opacity: Math.min(1, card * 2),
-          borderRadius: 18,
-          overflow: "hidden",
-          border: "6px solid rgba(255,255,255,0.92)",
-          boxShadow: "0 40px 90px rgba(0,0,0,0.6)",
         }}
       >
-        <Img src={staticFile("photos/yago-escenario.jpg")} style={{ width: "100%", height: "100%", display: "block" }} />
-        {/* recto femoral: tinte verde con bordes difuminados que conserva la piel + brillo */}
-        <Img src={staticFile("photos/rf-glow.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", mixBlendMode: "screen", opacity: hl * glow }} />
-        <Img src={staticFile("photos/rf-tint.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: hl }} />
-        <Img src={staticFile("photos/rf-tint.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", mixBlendMode: "screen", opacity: 0.45 * hl * glow }} />
+        <div
+          style={{
+            ...layer,
+            borderRadius: 18,
+            overflow: "hidden",
+            border: "6px solid rgba(255,255,255,0.92)",
+            boxSizing: "border-box",
+            boxShadow: "0 40px 90px rgba(0,0,0,0.6)",
+          }}
+        >
+          <Img src={staticFile("photos/yago-escenario.jpg")} style={{ ...layer, display: "block" }} />
+          {/* recto femoral: tinte verde con bordes difuminados que conserva la piel + brillo */}
+          <div style={{ ...layer, ...wipeMask }}>
+            <Img src={staticFile("photos/rf-glow.png")} style={{ ...layer, mixBlendMode: "screen", opacity: glow }} />
+            <Img src={staticFile("photos/rf-tint.png")} style={layer} />
+            <Img src={staticFile("photos/rf-tint.png")} style={{ ...layer, mixBlendMode: "screen", opacity: 0.45 * glow }} />
+          </div>
+        </div>
+        {/* señalización: punto, línea y etiqueta (fuera del recorte de la foto) */}
+        <svg viewBox="0 0 360 480" style={{ ...layer, overflow: "visible", opacity: 1 - tagOut }}>
+          <circle cx={P.x} cy={P.y} r={7 * dot} fill="none" stroke="#3BFF2E" strokeWidth={1.2} opacity={0.6 * (1 - Math.max(0, dot - 1) * 4)} />
+          <circle cx={P.x} cy={P.y} r={3.2 * dot} fill="#3BFF2E" style={{ filter: "drop-shadow(0 0 4px rgba(4,228,0,0.9))" }} />
+          <path
+            d={`M ${P.x} ${P.y} L ${E.x} ${E.y} L ${L.x} ${L.y}`}
+            fill="none"
+            stroke="#3BFF2E"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={len}
+            strokeDashoffset={len * (1 - line)}
+            style={{ filter: "drop-shadow(0 0 3px rgba(4,228,0,0.8))" }}
+          />
+        </svg>
+        <div
+          style={{
+            position: "absolute",
+            left: L.x * k - 2,
+            top: L.y * k,
+            transform: `translateY(-50%) translateX(${(1 - tag) * -24 + tagOut * 20}px) scaleX(${Math.max(0, tag)})`,
+            transformOrigin: "left center",
+            opacity: Math.min(1, tag * 3) * (1 - tagOut),
+            background: GREEN,
+            borderRadius: 10,
+            padding: "10px 20px 6px",
+            whiteSpace: "nowrap",
+            boxShadow: "0 0 30px rgba(4,228,0,0.55)",
+          }}
+        >
+          <div
+            style={{
+              ...display,
+              fontSize: 40,
+              color: "#0A0A0A",
+              clipPath: `inset(0 ${(1 - tagText) * 100}% 0 0)`,
+              transform: `translateX(${(1 - tagText) * -10}px)`,
+            }}
+          >
+            Recto femoral
+          </div>
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -626,7 +699,7 @@ const FORMS_AT = 16.32; // el estudio deja paso a las tres formas
 
 /** El paper real: título y abstract, con «in the knee extension exercise» resaltado
  *  cuando dice «extensión de rodilla». Tiempos relativos a la escena. */
-const PAPER_W = 940;
+const PAPER_W = 860;
 const PaperCard: React.FC<{ at: number; mark: number; outAt: number }> = ({ at, mark, outAt }) => {
   const t = useT();
   const p = useSpringAt(at, 13);
@@ -639,9 +712,11 @@ const PaperCard: React.FC<{ at: number; mark: number; outAt: number }> = ({ at, 
     <div
       style={{
         position: "absolute",
-        top: 330,
-        left: (1080 - PAPER_W - 40) / 2,
+        top: 380,
+        // centrado dentro del área de contenido (AREA.w), con el padding incluido
+        left: (AREA.w - (PAPER_W + 40)) / 2,
         width: PAPER_W + 40,
+        boxSizing: "border-box",
         padding: "22px 20px 26px",
         background: "white",
         borderRadius: 14,

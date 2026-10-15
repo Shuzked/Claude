@@ -396,7 +396,8 @@ const graphicsSfx: Sfx[] = [
   ...headline(...headlineWordTimes),
   ...marker(...headlineMarkers),
   { at: PHOTO_RF.from + 0.05, src: "paper", volume: 0.25 },
-  { at: PHOTO_RF.from + 0.4, src: "pop", volume: 0.18 },
+  { at: PHOTO_RF.from + 0.3, src: "marker", volume: 0.2 },
+  { at: PHOTO_RF.from + 1.05, src: "pop", volume: 0.22 },
   { at: PAPER_AT.at, src: "paper", volume: 0.25 },
   { at: PAPER_AT.mark, src: "marker", volume: 0.35 },
   // estudio y las tres formas
