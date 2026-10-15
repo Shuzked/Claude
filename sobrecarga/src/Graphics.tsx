@@ -42,10 +42,6 @@ const display: React.CSSProperties = {
   whiteSpace: "nowrap",
   color: PAPER,
 };
-const stroke = (w: number): React.CSSProperties => ({
-  WebkitTextStroke: `${w}px rgba(0,0,0,0.88)`,
-  paintOrder: "stroke fill",
-});
 /** Contorno solo por fuera: anillo de sombras duras, sin trazo dentro de las letras. */
 const outline = (w: number): React.CSSProperties => ({
   textShadow: Array.from({ length: 16 }, (_, i) => {
@@ -53,6 +49,8 @@ const outline = (w: number): React.CSSProperties => ({
     return `${(Math.cos(a) * w).toFixed(2)}px ${(Math.sin(a) * w).toFixed(2)}px 0 rgba(0,0,0,0.88)`;
   }).join(", "),
 });
+// equivalente visual al antiguo trazo de `w` px (la mitad quedaba por fuera)
+const stroke = (w: number) => outline(w / 2);
 const label: React.CSSProperties = {
   fontFamily: FONT,
   fontWeight: 800,
@@ -79,7 +77,57 @@ const useClock = () => {
       ...clamp,
       easing: ease,
     });
-  return { t, frame, fps, pop, ramp };
+  /** Muelle con squash & stretch: se estira al moverse rápido y se aplasta al frenar. */
+  const squash = (at: number, damping = 11, stiffness = 210) => {
+    const cfg = { damping, stiffness, mass: 0.6 };
+    const p = spring({ frame: frame - f(at), fps, config: cfg });
+    const p0 = spring({ frame: frame - f(at) - 1, fps, config: cfg });
+    const v = Math.max(-0.35, Math.min(0.35, (p - p0) * 2.4));
+    return { p, sx: 1 - v * 0.45, sy: 1 + v * 0.55 };
+  };
+  /** Vida en reposo: flotación y balanceo suaves y continuos. */
+  const idle = (seed: number, amp = 1) => {
+    const s = frame / fps;
+    return {
+      y: Math.sin(s * 2.1 + seed) * 5 * amp,
+      r: Math.sin(s * 1.6 + seed * 1.7) * 1.3 * amp,
+      s: 1 + Math.sin(s * 2.6 + seed * 0.7) * 0.012 * amp,
+    };
+  };
+  return { t, frame, fps, pop, ramp, squash, idle };
+};
+
+/** Texto que entra palabra a palabra con muelle, giro y squash (estilo Lottie). */
+const Words: React.FC<{ text: string; at: number; gap?: number; style?: React.CSSProperties; color?: (i: number) => string | undefined }> = ({
+  text,
+  at,
+  gap = 0.07,
+  style,
+  color,
+}) => {
+  const { squash } = useClock();
+  return (
+    <div style={style}>
+      {text.split(" ").map((w, i) => {
+        const q = squash(at + i * gap, 10, 240);
+        return (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              marginRight: "0.22em",
+              color: color?.(i),
+              opacity: Math.min(1, q.p * 3),
+              transform: `translateY(${(1 - q.p) * 50}px) rotate(${(1 - q.p) * -14}deg) scale(${q.sx}, ${q.sy})`,
+              transformOrigin: "50% 100%",
+            }}
+          >
+            {w}
+          </span>
+        );
+      })}
+    </div>
+  );
 };
 
 /** Tarjeta oscura de cristal, base de todos los recursos. */
@@ -148,11 +196,13 @@ const Tag: React.FC<{
 
 /** Dos líneas: arriba en blanco con contorno, abajo en pastilla verde. */
 const TwoLine: React.FC<{ at: number; top: string; bottom: string }> = ({ at, top, bottom }) => {
-  const { pop } = useClock();
-  const b = pop(at + 0.35, 11);
+  const { squash, idle } = useClock();
+  const q = squash(at + 0.35, 9, 220);
+  const b = q.p;
+  const id = idle(2.3, 0.8);
   return (
     <>
-      <div style={{ ...display, ...stroke(8), fontSize: 62 }}>{top}</div>
+      <Words text={top} at={at} style={{ ...display, ...stroke(8), fontSize: 62, marginRight: "-0.22em" }} />
       <div
         style={{
           ...display,
@@ -163,7 +213,7 @@ const TwoLine: React.FC<{ at: number; top: string; bottom: string }> = ({ at, to
           borderRadius: 12,
           marginTop: 14,
           filter: GLOW,
-          transform: `scale(${0.7 + 0.3 * b})`,
+          transform: `translateY(${id.y}px) rotate(${-2 + id.r}deg) scale(${(0.7 + 0.3 * b) * q.sx}, ${(0.7 + 0.3 * b) * q.sy})`,
           opacity: Math.min(1, b * 2),
         }}
       >
@@ -177,13 +227,25 @@ const TwoLine: React.FC<{ at: number; top: string; bottom: string }> = ({ at, to
 // E01 · el tópico: «Lo que dicen»
 
 const Saying: React.FC = () => {
-  const { pop, t } = useClock();
-  const p = pop(SAYING.from, 10);
+  const { t, squash, idle } = useClock();
+  const box = squash(SAYING.from, 9, 220);
+  const qL = squash(SAYING.from + 0.12, 8, 260);
+  const qR = squash(SAYING.from + 0.22, 8, 260);
+  const id = idle(0.6);
   if (t < SAYING.from - 0.05 || t > SAYING.to + 0.05) return null;
+  const Q = 92; // caja de cada comilla: misma medida a los dos lados  // la de cierre es la de apertura girada 180°
+  const quote = (q: { p: number; sx: number; sy: number }, right: boolean, seed: number) => {
+    const wob = Math.sin((t + seed) * 6) * 4 * q.p;
+    return (
+      <div style={{ width: Q, height: Q, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: Math.min(1, q.p * 3), transform: `scale(${q.p * q.sx}, ${q.p * q.sy}) rotate(${(right ? 180 : 0) + (1 - q.p) * (right ? 40 : -40) + wob}deg)` }}>
+        <div style={{ ...display, fontStyle: "normal", fontSize: 150, color: GREEN, lineHeight: 1, height: 150, marginTop: 70, filter: GLOW }}>“</div>
+      </div>
+    );
+  };
   return (
     <Tag from={SAYING.from} to={SAYING.to} top={250}>
-      <div style={{ display: "flex", alignItems: "flex-start", transform: `rotate(${-4 + (1 - p) * 10}deg)` }}>
-        <div style={{ ...display, fontSize: 130, color: GREEN, lineHeight: 0.7, marginRight: 8, filter: GLOW }}>“</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, transform: `translateY(${id.y}px) rotate(${-4 + id.r + (1 - box.p) * 10}deg)` }}>
+        <div style={{ alignSelf: "flex-start", marginTop: -34 }}>{quote(qL, false, 0)}</div>
         <div
           style={{
             ...display,
@@ -192,11 +254,12 @@ const Saying: React.FC = () => {
             background: PAPER,
             padding: "14px 26px 8px",
             borderRadius: 8,
+            transform: `scale(${box.sx * id.s}, ${box.sy * id.s})`,
           }}
         >
-          Lo que dicen
+          <Words text="Lo que dicen" at={SAYING.from + 0.08} gap={0.06} style={{ marginRight: "-0.22em" }} />
         </div>
-        <div style={{ ...display, fontSize: 130, color: GREEN, lineHeight: 0.7, marginLeft: 8, filter: GLOW }}>”</div>
+        <div style={{ alignSelf: "flex-start", marginTop: -34 }}>{quote(qR, true, 1.3)}</div>
       </div>
     </Tag>
   );
@@ -206,9 +269,11 @@ const Saying: React.FC = () => {
 // E02 · libreta de ejemplo: 10 / 10 / 10 y la undécima que no sale
 
 const Notes: React.FC = () => {
-  const { t, frame, pop, ramp } = useClock();
+  const { t, frame, pop, ramp, squash, idle } = useClock();
   if (t < NOTES.from - 0.05 || t > NOTES.to + 0.05) return null;
-  const card = pop(NOTES.from, 13, 180);
+  const cardQ = squash(NOTES.from, 11, 180);
+  const card = cardQ.p;
+  const id = idle(1.1, 0.7);
   const out = ramp(NOTES.to - 0.3, NOTES.to, easeInOut);
   const BAR = 470;
   // la cuarta sesión intenta pasar del 10… y rebota
@@ -221,6 +286,11 @@ const Notes: React.FC = () => {
     const over = last ? push * (1 - fail) * 0.1 : 0; // la barra se estira un 10 % más
     const n = last && t >= NOTES.eleven + 0.35 ? 11 : Math.round(10 * fill);
     const red = last && t >= NOTES.fail;
+    // el número da un saltito cada vez que cambia
+    const step = (10 * fill) % 1;
+    const bump = n > 0 && n < 10 && !last ? Math.sin(step * Math.PI) * 0.12 : 0;
+    const q11 = last ? squash(NOTES.eleven + 0.35, 7, 280) : null;
+    const qFail = last ? squash(NOTES.fail, 6, 300) : null;
     return (
       <div
         key={i}
@@ -260,7 +330,16 @@ const Notes: React.FC = () => {
             filter: red ? "drop-shadow(0 0 10px rgba(255,59,48,0.6))" : GLOW,
           }}
         >
-          <span style={{ position: "relative", display: "inline-block" }}>
+          <span
+            style={{
+              position: "relative",
+              display: "inline-block",
+              transformOrigin: "50% 80%",
+              transform: q11 && qFail
+                ? `scale(${(0.6 + 0.4 * q11.p) * q11.sx * qFail.sy}, ${(0.6 + 0.4 * q11.p) * q11.sy * qFail.sx}) rotate(${(1 - qFail.p) * -12}deg)`
+                : `scale(${1 + bump}, ${1 + bump * 1.4})`,
+            }}
+          >
             {n}
             {red ? (
               // X centrada sobre el 11
@@ -276,7 +355,7 @@ const Notes: React.FC = () => {
   };
   return (
     <AbsoluteFill style={{ opacity: 1 - out }}>
-      <div style={{ position: "absolute", top: 830, left: 70, right: 70, transform: `translateY(${(1 - card) * 120}px) scale(${0.94 + 0.06 * card})`, opacity: Math.min(1, card * 2) }}>
+      <div style={{ position: "absolute", top: 830, left: 70, right: 70, transform: `translateY(${(1 - card) * 120 + id.y}px) rotate(${id.r * 0.5}deg) scale(${(0.94 + 0.06 * card) * cardQ.sx}, ${(0.94 + 0.06 * card) * cardQ.sy})`, opacity: Math.min(1, card * 2) }}>
         <Glass style={{ padding: "26px 34px 32px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div style={{ ...display, fontSize: 40 }}>
@@ -320,11 +399,14 @@ const Thought: React.FC = () => {
 // cinética al ritmo de la frase
 
 const Repeat: React.FC = () => {
-  const { t, pop, ramp } = useClock();
+  const { t, pop, ramp, squash, idle } = useClock();
   if (t < CALM.in - 0.02 || t > CALM.labelTo + 0.05) return null;
   const out = ramp(CALM.labelTo - 0.3, CALM.labelTo, easeInOut);
   const a = pop(CALM.in, 12, 230);
-  const b = pop(CALM.no, 8, 260);
+  const bq = squash(CALM.no, 8, 260);
+  const b = bq.p;
+  const id = idle(3.1);
+  const grow = ramp(CALM.grow + 0.2, CALM.grow + 0.6);
   const c = pop(CALM.grow, 12, 230);
   const blur = (p: number) => `blur(${Math.max(0, 1 - p) * 5}px)`;
   return (
@@ -337,7 +419,7 @@ const Repeat: React.FC = () => {
           opacity: Math.min(1, a * 2),
         }}
       />
-      <div style={{ position: "absolute", top: 1040, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${-out * 40}px)` }}>
+      <div style={{ position: "absolute", top: 1040, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${-out * 40 + id.y}px) rotate(${id.r * 0.6}deg)` }}>
         <div style={{ ...display, ...stroke(8), fontSize: 82, opacity: Math.min(1, a * 3), transform: `translateX(${(1 - a) * -500}px) skewX(${(1 - a) * -20}deg)`, filter: blur(a) }}>
           Repetir una marca
         </div>
@@ -350,14 +432,20 @@ const Repeat: React.FC = () => {
             padding: "10px 30px 4px",
             marginTop: 14,
             filter: GLOW,
-            transform: `scale(${1.6 - 0.6 * b}) rotate(${-3 + (1 - b) * 10}deg)`,
+            transform: `scale(${(1.6 - 0.6 * b) * bq.sx * id.s}, ${(1.6 - 0.6 * b) * bq.sy * id.s}) rotate(${-3 + (1 - b) * 10 - id.r}deg)`,
             opacity: Math.min(1, b * 3),
           }}
         >
           No significa
         </div>
         <div style={{ ...display, ...stroke(8), fontSize: 54, marginTop: 18, opacity: Math.min(1, c * 3), transform: `translateX(${(1 - c) * 500}px) skewX(${(1 - c) * 20}deg)`, filter: blur(c) }}>
-          que hayas dejado de <span style={{ color: GREEN }}>crecer</span>
+          que hayas dejado de{" "}
+          <span style={{ color: GREEN, position: "relative", display: "inline-block", transform: `translateY(${-Math.sin(grow * Math.PI) * 10}px) scale(${1 + Math.sin(grow * Math.PI) * 0.12})` }}>
+            crecer
+            <svg width="100%" height={24} viewBox="0 0 100 24" preserveAspectRatio="none" style={{ position: "absolute", left: 0, bottom: -18, overflow: "visible" }}>
+              <path d="M 2 14 Q 30 4, 55 12 T 98 8" fill="none" stroke={GREEN} strokeWidth={5} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - grow} style={{ filter: GLOW }} />
+            </svg>
+          </span>
         </div>
       </div>
     </AbsoluteFill>
@@ -368,22 +456,29 @@ const Repeat: React.FC = () => {
 // E05 · «La fatiga puede limitar…»: batería que se vacía
 
 const Fatigue: React.FC = () => {
-  const { t, ramp } = useClock();
+  const { t, frame, ramp, squash } = useClock();
   if (t < FATIGUE.from - 0.05 || t > FATIGUE.to + 0.05) return null;
   const level = 1 - 0.7 * ramp(FATIGUE.from + 0.3, FATIGUE.from + 1.6, easeInOut);
   const low = level < 0.45;
   const blink = low ? 0.6 + 0.4 * Math.abs(Math.sin(t * 8)) : 1;
+  const bat = squash(FATIGUE.from + 0.05, 8, 240);
+  const shiver = low ? Math.sin(frame * 2.3) * 1.6 : 0;
+  const sag = (1 - level) * 6; // se va «cansando»: cae y se inclina un poco
   return (
     <Tag from={FATIGUE.from} to={FATIGUE.to} top={1060}>
       <Glass style={{ padding: "20px 30px 18px", display: "flex", alignItems: "center", gap: 22 }}>
-        <svg width={92} height={50} viewBox="0 0 92 50">
+        <svg width={92} height={50} viewBox="0 0 92 50" style={{ overflow: "visible", transform: `translate(${shiver}px, ${sag * 0.6}px) rotate(${-sag}deg) scale(${bat.p * bat.sx}, ${bat.p * bat.sy})` }}>
           <rect x={3} y={3} width={78} height={44} rx={8} fill="none" stroke={PAPER} strokeWidth={5} />
           <rect x={83} y={16} width={7} height={18} rx={2} fill={PAPER} />
           <rect x={10} y={10} width={64 * level} height={30} rx={4} fill={low ? RED : GREEN} opacity={blink} />
         </svg>
-        <div style={{ ...display, fontSize: 44, whiteSpace: "normal" }}>
-          La fatiga <span style={{ color: GREEN }}>puede</span> limitar el rendimiento
-        </div>
+        <Words
+          text="La fatiga puede limitar el rendimiento"
+          at={FATIGUE.from + 0.1}
+          gap={0.06}
+          color={(i) => (i === 2 ? GREEN : undefined)}
+          style={{ ...display, fontSize: 44, whiteSpace: "normal" }}
+        />
       </Glass>
     </Tag>
   );
@@ -394,7 +489,7 @@ const Fatigue: React.FC = () => {
 // pasan con la misma marca y una lupa que revisa la tendencia
 
 const Trend: React.FC = () => {
-  const { t, pop, ramp } = useClock();
+  const { t, pop, ramp, squash, idle } = useClock();
   const st = useEnter(TREND.review, TREND.reviewTo);
   if (t < TREND.review - 0.05 || t > TREND.reviewTo + 0.05) return null;
   const weeks = [0, 1, 2, 3].map((i) => TREND.review + i * 0.32);
@@ -427,7 +522,9 @@ const Trend: React.FC = () => {
   }
   if (t >= hops[3] + 0.12) onDot = 3;
   const lensScale = (0.3 + 0.7 * drop) * (1 + beat);
-  const tag = pop(TREND.look + 0.6, 11);
+  const tagQ = squash(TREND.look + 0.6, 9, 230);
+  const tag = tagQ.p;
+  const tid = idle(4.2, 0.8);
   const W = 760;
   return (
     <AbsoluteFill>
@@ -477,7 +574,7 @@ const Trend: React.FC = () => {
             borderRadius: 12,
             marginTop: -18,
             filter: GLOW,
-            transform: `scale(${0.6 + 0.4 * tag}) rotate(-2deg)`,
+            transform: `translateY(${tid.y}px) scale(${(0.6 + 0.4 * tag) * tagQ.sx}, ${(0.6 + 0.4 * tag) * tagQ.sy}) rotate(${-2 + tid.r}deg)`,
             opacity: Math.min(1, tag * 2),
           }}
         >
@@ -502,14 +599,25 @@ const Idea: React.FC = () => (
 // «¿Mantener?» a «¿Cambiar?» y se queda ahí
 
 const Choice: React.FC = () => {
-  const { t, ramp, pop } = useClock();
+  const { t, ramp, pop, squash, idle, frame } = useClock();
+  const id = idle(5.5, 0.8);
   // entra con un pequeño salto y al acabar la escena se va desvaneciendo poco a poco
   const inP = pop(CHOICE.keep - 0.1, 13, 190);
   const fade = ramp(CHOICE.to - 0.7, CHOICE.to - 0.05, easeInOut);
   const st: React.CSSProperties = {
     opacity: Math.min(1, inP * 2) * (1 - fade),
-    transform: `translateY(${(1 - inP) * 60}px) scale(${0.92 + 0.08 * inP})`,
+    transform: `translateY(${(1 - inP) * 60 + id.y}px) rotate(${id.r * 0.5}deg) scale(${0.92 + 0.08 * inP})`,
   };
+  const ease = Easing.bezier(0.3, 1.4, 0.4, 1);
+  const posAt = (fr: number) => {
+    const r = (a: number, b: number) => interpolate(fr, [f(a), Math.max(f(a) + 1, f(b))], [0, 1], { ...clamp, easing: ease });
+    const k = r(CHOICE.keep, CHOICE.keep + 0.3);
+    const c = r(CHOICE.change, CHOICE.change + 0.3);
+    return -1 * k * (1 - c) + c;
+  };
+  const vel = Math.max(-1, Math.min(1, (posAt(frame) - posAt(frame - 1)) * 4));
+  const qKeep = squash(CHOICE.keep + 0.05, 8, 260);
+  const qChange = squash(CHOICE.change + 0.05, 8, 260);
   if (t < CHOICE.keep - 0.15 || t > CHOICE.to + 0.05) return null;
   const toKeep = ramp(CHOICE.keep, CHOICE.keep + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
   const toChange = ramp(CHOICE.change, CHOICE.change + 0.3, Easing.bezier(0.3, 1.4, 0.4, 1));
@@ -519,14 +627,15 @@ const Choice: React.FC = () => {
   const TW = 230;
   const K = 96;
   const x = (TW - K) / 2 + pos * ((TW - K) / 2 - 8);
-  const opt = (txt: string, active: number) => (
+  const opt = (txt: string, active: number, q: { sx: number; sy: number }, origin: string) => (
     <div
       style={{
         ...display,
-        fontSize: 50,
+        fontSize: 46,
         color: active > 0.5 ? GREEN : "#A6A6A6",
         filter: active > 0.5 ? GLOW : undefined,
-        transform: `scale(${1 + 0.1 * active})`,
+        transform: `translateY(${-6 * active}px) scale(${(1 + 0.1 * active) * (active > 0.5 ? q.sx : 1)}, ${(1 + 0.1 * active) * (active > 0.5 ? q.sy : 1)}) rotate(${active > 0.5 ? -2 : 0}deg)`,
+        transformOrigin: origin, // crece hacia fuera, nunca encima del interruptor
         ...outline(3),
       }}
     >
@@ -535,8 +644,8 @@ const Choice: React.FC = () => {
   );
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", top: 1120, left: 0, right: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 26, ...st }}>
-        {opt("¿Mantener?", Math.max(0, -pos))}
+      <div style={{ position: "absolute", top: 1120, left: 0, right: 0, display: "flex", justifyContent: "center", alignItems: "center", gap: 22, ...st }}>
+        {opt("¿Mantener?", Math.max(0, -pos), qKeep, "100% 100%")}
         <div style={{ position: "relative", width: TW, height: K + 16, borderRadius: 999, background: "rgba(10,10,10,0.9)", border: "3px solid rgba(255,255,255,0.25)", flexShrink: 0 }}>
           <div
             style={{
@@ -548,6 +657,8 @@ const Choice: React.FC = () => {
               borderRadius: 999,
               background: GREEN,
               boxShadow: "0 0 26px rgba(4,228,0,0.65)",
+              // se estira en la dirección del movimiento y se aplasta al frenar
+              transform: `scale(${1 + Math.abs(vel) * 0.35}, ${1 - Math.abs(vel) * 0.22})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -558,7 +669,7 @@ const Choice: React.FC = () => {
           >
           </div>
         </div>
-        {opt("¿Cambiar?", Math.max(0, pos))}
+        {opt("¿Cambiar?", Math.max(0, pos), qChange, "0% 100%")}
       </div>
     </AbsoluteFill>
   );
@@ -568,7 +679,8 @@ const Choice: React.FC = () => {
 // E09 · CTA: masterclass gratuita y «Comenta SOBRECARGA» (bocadillo de siempre)
 
 const Cta: React.FC = () => {
-  const { t, pop } = useClock();
+  const { t, pop, idle } = useClock();
+  const id = idle(6.7, 0.9);
   if (t < CTA.master - 0.1) return null;
   const m = pop(CTA.master, 12);
   const c = pop(CTA.master + 0.5, 11);
@@ -619,7 +731,7 @@ const Cta: React.FC = () => {
             marginTop: 14,
             width: 860,
             height: 250,
-            transform: `scale(${(0.3 + 0.7 * Math.max(key, t >= CTA.master + 0.7 ? c : 0)) * breathe}) rotate(${-3 + 2 * c}deg)`,
+            transform: `translateY(${id.y}px) scale(${(0.3 + 0.7 * Math.max(key, t >= CTA.master + 0.7 ? c : 0)) * breathe}) rotate(${-3 + 2 * c + id.r}deg)`,
             opacity: Math.min(1, c * 2.5),
             filter: "drop-shadow(0 0 18px rgba(4,228,0,0.45))",
           }}
