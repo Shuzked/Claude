@@ -46,6 +46,13 @@ const stroke = (w: number): React.CSSProperties => ({
   WebkitTextStroke: `${w}px rgba(0,0,0,0.88)`,
   paintOrder: "stroke fill",
 });
+/** Contorno solo por fuera: anillo de sombras duras, sin trazo dentro de las letras. */
+const outline = (w: number): React.CSSProperties => ({
+  textShadow: Array.from({ length: 16 }, (_, i) => {
+    const a = (i / 16) * Math.PI * 2;
+    return `${(Math.cos(a) * w).toFixed(2)}px ${(Math.sin(a) * w).toFixed(2)}px 0 rgba(0,0,0,0.88)`;
+  }).join(", "),
+});
 const label: React.CSSProperties = {
   fontFamily: FONT,
   fontWeight: 800,
@@ -517,10 +524,10 @@ const Choice: React.FC = () => {
       style={{
         ...display,
         fontSize: 50,
-        color: active > 0.5 ? GREEN : "rgba(255,255,255,0.6)",
+        color: active > 0.5 ? GREEN : "#A6A6A6",
         filter: active > 0.5 ? GLOW : undefined,
         transform: `scale(${1 + 0.1 * active})`,
-        ...stroke(6),
+        ...outline(3),
       }}
     >
       {txt}
