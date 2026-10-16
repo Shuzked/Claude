@@ -259,12 +259,13 @@ const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
   const since = (frame - f(L.at)) / fps;
   const k = (a: number, b: number, e = easeOut) => interpolate(since, [a, b], [0, 1], { ...clamp, easing: e });
   // la apertura entra con un barrido lateral que empuja al press
-  const swipe = kind === "fly" ? k(0, 0.3, easeInOut) : 1;
+  const swipe = kind === "fly" ? k(0, 0.2, easeInOut) : 1;
   const leave = kind === "press" ? ramp(L.to, L.to + 0.2, easeInOut) : 0;
-  const lv = k(0.1, 0.45);
-  const grav = k(0.45, 1.0);
-  const perp = k(1.0, 1.55);
-  const word = spring({ frame: frame - f(L.at) - Math.round(1.45 * fps), fps, config: { damping: 9, stiffness: 180, mass: 0.6 } });
+  // entrada rápida para que todo quede expuesto el máximo tiempo
+  const lv = k(0.03, 0.2);
+  const grav = k(0.12, 0.35);
+  const perp = k(0.3, 0.55);
+  const word = spring({ frame: frame - f(L.at) - Math.round(0.5 * fps), fps, config: { damping: 9, stiffness: 260, mass: 0.6 } });
   const zoom = 1.1 - 0.08 * inQ.p + 0.025 * k(0, 2.4, (u) => u);
   const blur = kind === "fly" ? 18 * (1 - swipe) * swipe * 4 : leave * 14;
   const dx = kind === "fly" ? (1 - swipe) * 1080 : -leave * 1080;
@@ -315,7 +316,7 @@ const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
  *  Press: el codo se flexiona y se extiende. Aperturas: el codo queda fijo y todo el
  *  brazo gira desde el hombro como una sola pieza. `t` = segundos desde que aparece. */
 const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
-  const cyc = 0.5 - 0.5 * Math.cos(Math.max(0, t - 0.9) * 2.8);
+  const cyc = 0.5 - 0.5 * Math.cos(Math.max(0, t - 0.5) * 3.6);
   const sh = { x: 80, y: 290 };
   const upper = 140;
   const fore = 130;
@@ -327,10 +328,10 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
   const a2 = a1 + ((180 - elbow) * Math.PI) / 180 * -1;
   const hd = { x: el.x + Math.cos(a2) * fore, y: el.y + Math.sin(a2) * fore };
   // se dibuja por partes: brazo, antebrazo, mancuerna y arco (nada aparece de golpe)
-  const draw = Math.min(1, Math.max(0, t / 0.4));
-  const draw2 = Math.min(1, Math.max(0, (t - 0.35) / 0.4));
-  const db = spring({ frame: Math.round((t - 0.7) * 25), fps: 25, config: { damping: 11, stiffness: 160, mass: 0.6 } });
-  const arcP = Math.min(1, Math.max(0, (t - 0.85) / 0.45));
+  const draw = Math.min(1, Math.max(0, t / 0.18));
+  const draw2 = Math.min(1, Math.max(0, (t - 0.15) / 0.18));
+  const db = spring({ frame: Math.round((t - 0.3) * 25), fps: 25, config: { damping: 10, stiffness: 260, mass: 0.6 } });
+  const arcP = Math.min(1, Math.max(0, (t - 0.35) / 0.2));
   const col = bend ? GREEN : "#FFB020";
   // arco del ángulo del codo (entre la dirección al hombro y a la mano)
   const toSh = Math.atan2(sh.y - el.y, sh.x - el.x);
@@ -385,17 +386,17 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
 const ExTag: React.FC<{ from: number; to: number; text: string; green?: boolean; icon: "bend" | "fixed"; iconAt: number }> = ({ from, to, text, green, icon, iconAt }) => {
   const { t, squash, ramp, idle } = useClock();
   if (t < from - 0.05 || t > to + 0.05) return null;
-  const q = squash(from, 12, 140);
-  const out = ramp(to - 0.35, to, easeInOut);
-  const ul = ramp(from + 0.3, from + 0.9);
-  const ic = squash(iconAt, 12, 130);
+  const q = squash(from, 9, 260);
+  const out = ramp(to - 0.15, to, easeInOut);
+  const ul = ramp(from + 0.1, from + 0.35);
+  const ic = squash(iconAt, 9, 260);
   const id = idle(from, 0.7);
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
       <Burst x={540} y={350} d={t - from - 0.05} r={130} n={12} color={green ? GREEN : PAPER} />
       <div style={{ position: "absolute", top: 290, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px) rotate(${-2 + id.r * 0.5}deg) scale(${popOut(out)})` }}>
         <div style={{ position: "relative", transform: `scale(${q.p * q.sx}, ${q.p * q.sy})` }}>
-          <Words text={text} at={from + 0.08} gap={0.12} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER }} />
+          <Words text={text} at={from + 0.03} gap={0.05} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER }} />
           <div style={{ position: "absolute", left: 0, bottom: -10, height: 10, width: `${ul * 100}%`, background: green ? GREEN : PAPER, borderRadius: 6, filter: green ? GLOW : undefined }} />
         </div>
       </div>
@@ -414,8 +415,8 @@ const Split: React.FC = () => {
   const head = pop(SPLIT.lever + 0.1, 9, 240);
   return (
     <AbsoluteFill>
-      <ExTag from={SPLIT.from + 0.02} to={SPLIT.flyFrom - 0.05} text="Press" icon="bend" iconAt={20.02} />
-      <ExTag from={SPLIT.flyFrom + 0.02} to={24.0} text="Aperturas" green icon="fixed" iconAt={22.54} />
+      <ExTag from={SPLIT.from + 0.02} to={SPLIT.flyFrom - 0.01} text="Press" icon="bend" iconAt={20.02} />
+      <ExTag from={SPLIT.flyFrom + 0.02} to={24.03} text="Aperturas" green icon="fixed" iconAt={22.54} />
       <Freeze kind="press" />
       <Freeze kind="fly" />
       {t >= SPLIT.lever ? (

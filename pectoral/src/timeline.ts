@@ -81,10 +81,8 @@ export const SEGMENTS: [number, number][] = (() => {
 
 // Pausas con la imagen congelada (la voz se calla, la música sigue): dan tiempo a leer
 // la palanca del press y la de las aperturas.
-export const HOLDS: { at: number; dur: number }[] = [
-  { at: 25.32, dur: 0.9 },
-  { at: 27.27, dur: 1.0 },
-];
+// (sin pausas: la voz no se corta)
+export const HOLDS: { at: number; dur: number }[] = [];
 
 type Seg = { src: number; dur: number; hold: boolean; out: number };
 const SEGS: Seg[] = (() => {
