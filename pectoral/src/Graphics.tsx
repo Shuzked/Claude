@@ -3,6 +3,9 @@ import {
   AbsoluteFill,
   Easing,
   Img,
+  Loop,
+  OffthreadVideo,
+  Sequence,
   interpolate,
   spring,
   staticFile,
@@ -564,7 +567,7 @@ const Study: React.FC = () => {
   const card = squash(STUDY.from, 11, 200);
   const id = idle(9.1, 0.6);
   const chips: [string, number][] = [
-    ["26 completadores", STUDY.n],
+    ["26 hombres", STUDY.n],
     ["10 semanas", STUDY.weeks],
     ["2 días/semana", STUDY.days],
   ];
@@ -592,8 +595,38 @@ const Study: React.FC = () => {
           </div>
         </AbsoluteFill>
       ) : null}
+      {t < STUDY_BG.to ? <ExecTiles opacity={bg} /> : null}
       {t >= STUDY.fig - 0.05 ? <Board /> : null}
     </AbsoluteFill>
+  );
+};
+
+// «haciendo press o aperturas»: la ejecución grabada en dos cuadrados pequeños
+const EXEC = [
+  { src: "split/press.mp4", name: "Press", at: 49.56, x: 160 },
+  { src: "split/fly.mp4", name: "Aperturas", at: 50.2, x: 560 },
+];
+const ExecTiles: React.FC<{ opacity: number }> = ({ opacity }) => {
+  const { squash, idle } = useClock();
+  return (
+    <>
+      {EXEC.map((e, i) => {
+        const q = squash(e.at, 10, 220);
+        const id = idle(3.3 + i * 2.1, 0.6);
+        return (
+          <div key={e.src} style={{ position: "absolute", left: e.x, top: 945, width: 360, opacity: opacity * Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 140 + id.y}px) scale(${q.sx * (0.6 + 0.4 * q.p)}, ${q.sy * (0.6 + 0.4 * q.p)}) rotate(${(i ? 2 : -2) + id.r * 0.5}deg)` }}>
+            <div style={{ width: 360, height: 360, borderRadius: 22, overflow: "hidden", border: `4px solid ${i ? PAPER : GREEN}`, boxShadow: "0 30px 70px rgba(0,0,0,0.6)", background: "#000" }}>
+              <Sequence from={f(e.at)} layout="none">
+                <Loop durationInFrames={70} layout="none">
+                  <OffthreadVideo src={staticFile(e.src)} muted style={{ width: 360, height: 467, objectFit: "cover", marginTop: -40 }} />
+                </Loop>
+              </Sequence>
+            </div>
+            <div style={{ position: "absolute", left: "50%", bottom: -26, transform: "translateX(-50%)", ...display, fontSize: 40, color: INK, background: i ? PAPER : GREEN, padding: "8px 18px 4px", borderRadius: 10 }}>{e.name}</div>
+          </div>
+        );
+      })}
+    </>
   );
 };
 
