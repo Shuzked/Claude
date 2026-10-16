@@ -289,7 +289,7 @@ const HookReact: React.FC = () => {
     <AbsoluteFill>
       <AbsoluteFill style={{ opacity: fadeIn * (1 - fadeOut), maskImage: mask, WebkitMaskImage: mask }}>
         <Sequence from={f(REACT.hook)} durationInFrames={f(REACT.cut) - f(REACT.hook) + 2} layout="none">
-          <OffthreadVideo src={staticFile("broll/reaccion_loop.mp4")} muted style={{ position: "absolute", left: -90, top: -570, width: 1200, height: 2133 }} />
+          <OffthreadVideo src={staticFile("broll/ejemplo_hook.mp4")} muted style={{ position: "absolute", left: 0, top: -500, width: 1080, height: 1920 }} />
         </Sequence>
               </AbsoluteFill>
       <CameraSpace>
