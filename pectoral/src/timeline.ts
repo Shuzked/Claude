@@ -133,13 +133,31 @@ export const FIXED: Framing[] = [
   { from: 25.4, to: 26.72, face: [540, 960], scale: 1.0 },
   { from: 26.72, to: 27.72, face: [540, 1100], scale: 1.08, ty: 1000 },
   { from: 27.72, to: 34.48, face: [540, 960], scale: 1.0 },
-  { from: 38.48, to: 44.08, face: [540, 960], scale: 1.0 }, // los dos Yagos
   { from: 53.04, to: 58.95, face: [380, 900], scale: 1.2, ty: 1000 }, // palo: él a la izquierda, «pizarra» a la derecha
   { from: 67.4, to: 75.36, face: [540, 1233], scale: 1.6, ty: 960 }, // banco desde atrás
   { from: 88.48, to: 94.2, face: [540, 980], scale: 1.5, ty: 900 },
 ];
 // acercamiento progresivo siguiendo la cara (tras la «pizarra», hasta el siguiente plano)
-export const ZOOMS = [{ from: 58.95, to: 67.4, s0: 1.25, s1: 1.9 }];
+export const ZOOMS = [] as { from: number; to: number; s0: number; s1: number }[];
+// planos con la cabeza siempre centrada (nariz de la pose, suavizada; heads.json)
+export const HEADCAMS = [
+  { from: 58.95, to: 67.4, scale: 2.25, ty: 640, data: 0 }, // recoge el palo: plano medio directo
+  { from: 94.2, to: 100.84, scale: 1.5, ty: 700, data: 1 }, // sentado
+];
+// encuadre por claves (dos Yagos): [t, x, y, escala] en coordenadas del vídeo
+export const KEYCAMS = [
+  {
+    from: 38.48,
+    to: 44.08,
+    ty: 800,
+    keys: [
+      [40.95, 540, 960, 1.0],
+      [41.6, 575, 840, 1.36],
+      [42.4, 470, 840, 1.38],
+      [44.08, 462, 845, 1.42],
+    ] as [number, number, number, number][],
+  },
+];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
 
 export const JUMPS = [
@@ -166,7 +184,7 @@ export const STUDY_BG = { from: 44.08, to: 53.04 };
 export const STUDY = { from: 44.12, n: 44.92, weeks: 48.16, days: 51.48, fig: 53.1, both: 53.8, none: 55.08, to: 58.9 };
 export const INTEREST = { at: 64.16, to: 67.1 };
 export const ELBOW = { press: 68.32, fly: 71.08, to: 75.05 };
-export const COMBINE = { press: 88.6, fly: 88.78, merge: 89.44, to: 90.9 };
+export const COMBINE = { press: 88.6, fly: 88.78, merge: 89.44, to: 92.7 };
 export const DECIDE = { press: 76.68, fly: 82.0, needs: 90.44, needsTo: 93.9 };
 export const CTA = { from: 105.04, key: 105.6 };
 
@@ -180,7 +198,6 @@ export const punches: Punch[] = [
   { at: 5.52, amount: 0.04, hold: 0.3 }, // «diez»
   { at: 30.36, amount: 0.05, hold: 1.0 }, // «no lo convierte»
   { at: 39.12, amount: 0.05, hold: 1.4 }, // «crezca similar»
-  { at: 41.08, amount: 0.09, hold: 2.6 }, // «¿Pero cómo…?» acercamiento suave
   { at: 59.92, amount: 0.05, hold: 1.0 }, // «interesante»
   { at: 97.72, amount: 0.08, hold: 2.4 }, // «cuál te conviene a ti»
   { at: 105.04, amount: 0.05, hold: 1.4 }, // «comenta PECTORAL»

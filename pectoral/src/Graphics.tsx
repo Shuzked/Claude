@@ -321,7 +321,11 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
   const el = { x: sh.x + Math.cos(a1) * upper, y: sh.y + Math.sin(a1) * upper };
   const a2 = a1 + ((180 - elbow) * Math.PI) / 180 * -1;
   const hd = { x: el.x + Math.cos(a2) * fore, y: el.y + Math.sin(a2) * fore };
-  const draw = Math.min(1, Math.max(0, t / 0.35));
+  // se dibuja por partes: brazo, antebrazo, mancuerna y arco (nada aparece de golpe)
+  const draw = Math.min(1, Math.max(0, t / 0.3));
+  const draw2 = Math.min(1, Math.max(0, (t - 0.3) / 0.3));
+  const db = spring({ frame: Math.round((t - 0.55) * 25), fps: 25, config: { damping: 9, stiffness: 240, mass: 0.6 } });
+  const arcP = Math.min(1, Math.max(0, (t - 0.65) / 0.3));
   const col = bend ? GREEN : "#FFB020";
   // arco del ángulo del codo (entre la dirección al hombro y a la mano)
   const toSh = Math.atan2(sh.y - el.y, sh.x - el.x);
@@ -339,25 +343,25 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
         {/* torso */}
         <rect x={20} y={262} width={420} height={56} rx={24} fill="rgba(255,255,255,0.12)" />
         <line x1={sh.x} y1={sh.y} x2={sh.x + (el.x - sh.x) * draw} y2={sh.y + (el.y - sh.y) * draw} stroke={PAPER} strokeWidth={22} strokeLinecap="round" />
-        {draw >= 1 ? <line x1={el.x} y1={el.y} x2={hd.x} y2={hd.y} stroke={PAPER} strokeWidth={18} strokeLinecap="round" /> : null}
-        {draw >= 1 ? (
-          <g transform={`translate(${hd.x} ${hd.y}) rotate(${(a2 * 180) / Math.PI + 90})`}>
+        {draw2 > 0 ? <line x1={el.x} y1={el.y} x2={el.x + (hd.x - el.x) * draw2} y2={el.y + (hd.y - el.y) * draw2} stroke={PAPER} strokeWidth={18} strokeLinecap="round" /> : null}
+        {db > 0.01 ? (
+          <g transform={`translate(${hd.x} ${hd.y}) rotate(${(a2 * 180) / Math.PI + 90}) scale(${db})`}>
             <rect x={-30} y={-6} width={60} height={12} rx={4} fill="#9a9a9a" />
             <rect x={-42} y={-20} width={16} height={40} rx={4} fill="#d8d8d8" />
             <rect x={26} y={-20} width={16} height={40} rx={4} fill="#d8d8d8" />
           </g>
         ) : null}
-        {draw >= 1 ? <path d={`M ${p0.x} ${p0.y} A ${r} ${r} 0 0 ${d > 0 ? 1 : 0} ${p1.x} ${p1.y}`} fill="none" stroke={col} strokeWidth={7} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 6px ${col})` }} /> : null}
+        {arcP > 0 ? <path d={`M ${p0.x} ${p0.y} A ${r} ${r} 0 0 ${d > 0 ? 1 : 0} ${p1.x} ${p1.y}`} pathLength={1} strokeDasharray={`${arcP} 1`} fill="none" stroke={col} strokeWidth={7} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 6px ${col})` }} /> : null}
         <circle cx={sh.x} cy={sh.y} r={14} fill={INK} stroke={PAPER} strokeWidth={4} />
         <circle cx={el.x} cy={el.y} r={15} fill={col} stroke={INK} strokeWidth={4} style={{ filter: `drop-shadow(0 0 8px ${col})` }} />
-        {draw >= 1 ? (
-          <text x={el.x + Math.cos(mid) * (r + 34)} y={el.y + Math.sin(mid) * (r + 34) + 10} textAnchor="middle" fill={col} fontFamily={FONT} fontWeight={900} fontSize={30}>
+        {arcP > 0 ? (
+          <text opacity={arcP} x={el.x + Math.cos(mid) * (r + 34)} y={el.y + Math.sin(mid) * (r + 34) + 10} textAnchor="middle" fill={col} fontFamily={FONT} fontWeight={900} fontSize={30}>
             {Math.round(elbow)}°
           </text>
         ) : null}
-        {!bend && draw >= 1 ? (
+        {!bend && arcP > 0 ? (
           // candado sobre el codo
-          <g transform={`translate(${el.x + 34} ${el.y - 52})`}>
+          <g transform={`translate(${el.x + 34} ${el.y - 52}) scale(${arcP})`}>
             <rect x={-14} y={-2} width={28} height={22} rx={4} fill="#FFB020" />
             <path d="M -8 -2 V -10 A 8 8 0 0 1 8 -10 V -2" fill="none" stroke="#FFB020" strokeWidth={4} />
           </g>
@@ -509,9 +513,8 @@ const Backdrop: React.FC<{ from: number; to: number; title: string; id: string }
 // Estudio (pantalla completa sobre el plano en negro y el siguiente): portada del paper,
 // datos del diseño y la Figura 4 con su leyenda
 // «Pizarra imaginaria» (53–59 s): la Figura 4 centrada detrás de Yago, que va delante
-// (rotoscopiado con el palo). La punta del palo señala cada punto de la figura mientras
-// lo explica: primero la suma (D, «creció con ambos») y luego A, B y C («los tres puntos»).
-const STICK = stick as { t0: number; fps: number; x: number; y: number; w: number; h: number; tips: ([number, number] | null)[] };
+// (rotoscopiado con el palo, birefnet sobre el 4K) y las conclusiones centradas en grande.
+const STICK = stick as { t0: number; fps: number; x: number; y: number; w: number; h: number; ext?: string; dir?: string; tips: ([number, number] | null)[] };
 const tipAt = (t: number) => {
   const i = Math.round((t - STICK.t0) * STICK.fps);
   const win: [number, number][] = [];
@@ -524,14 +527,6 @@ const tipAt = (t: number) => {
   return { x: med(0), y: med(1) };
 };
 const BOARD = { left: 160, top: 330, w: 760 };
-const IMG = { x: BOARD.left + 14, y: BOARD.top + 62, w: BOARD.w - 28 };
-// centros de los paneles A–D de la figura (fracciones de la imagen) y cuándo se señalan
-const POINTS: { k: string; fx: number; fy: number; at: number; to: number; label: string }[] = [
-  { k: "D", fx: 0.76, fy: 0.78, at: 53.8, to: 55.0, label: "Suma: ambos crecen" },
-  { k: "A", fx: 0.26, fy: 0.3, at: 56.0, to: 56.75, label: "A · medial" },
-  { k: "B", fx: 0.76, fy: 0.3, at: 56.75, to: 57.5, label: "B · intermedio" },
-  { k: "C", fx: 0.26, fy: 0.78, at: 57.5, to: 58.6, label: "C · lateral" },
-];
 const Board: React.FC = () => {
   const { t, frame, fps, squash, ramp, idle } = useClock();
   const fig = squash(STUDY.fig, 12, 190);
@@ -544,10 +539,6 @@ const Board: React.FC = () => {
   const n = String(Math.max(0, Math.min(STICK.tips.length - 1, i))).padStart(3, "0");
   const tip0 = tipAt(t);
   const tip = tip0 ? toScreen(frame, fps, tip0) : null;
-  const pt = POINTS.find((p) => t >= p.at && t < p.to);
-  const ptQ = pt ? squash(pt.at, 9, 260) : null;
-  const imgH = IMG.w * (1309 / 1320);
-  const target = pt ? { x: IMG.x + pt.fx * IMG.w, y: IMG.y + pt.fy * imgH } : null;
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
       <div style={{ position: "absolute", left: BOARD.left, top: BOARD.top, width: BOARD.w, transformOrigin: "50% 100%", transform: `translateY(${(1 - fig.p) * 120 + bid.y}px) scale(${fig.p * fig.sx * popOut(out)}, ${fig.p * fig.sy * popOut(out)})` }}>
@@ -558,35 +549,28 @@ const Board: React.FC = () => {
           {wipe > 0 && wipe < 1 ? <div style={{ position: "absolute", top: 0, bottom: 0, left: `${wipe * 100}%`, width: 6, background: GREEN, boxShadow: "0 0 18px 6px rgba(4,228,0,0.7)" }} /> : null}
         </div>
       </div>
-      {/* el punto que está explicando: marco que late y etiqueta */}
-      {pt && target && ptQ ? (
-        <div style={{ position: "absolute", left: target.x, top: target.y, transform: `translate(-50%, -50%) scale(${ptQ.p * ptQ.sx}, ${ptQ.p * ptQ.sy})` }}>
-          <div style={{ width: 330, height: 310, borderRadius: 18, border: `5px solid ${GREEN}`, boxShadow: `0 0 ${18 + 8 * Math.sin(t * 9)}px rgba(4,228,0,0.8), inset 0 0 20px rgba(4,228,0,0.25)` }} />
-          <div style={{ position: "absolute", left: "50%", top: -26, transform: "translate(-50%, -50%)", ...display, fontSize: 30, color: INK, background: GREEN, padding: "6px 14px 3px", borderRadius: 8, filter: GLOW }}>{pt.label}</div>
-        </div>
-      ) : null}
       {/* Yago delante de la pizarra */}
       <CameraSpace>
         <div style={{ position: "absolute", left: STICK.x, top: STICK.y, width: STICK.w, height: STICK.h, filter: gradeFilter(STICK.t0 + 0.1) }}>
-          <Img src={staticFile(`roto/stick/s_${n}.png`)} style={{ width: "100%", height: "100%" }} />
+          <Img src={staticFile(`roto/${STICK.dir ?? "stick"}/s_${n}.${STICK.ext ?? "png"}`)} style={{ width: "100%", height: "100%" }} />
         </div>
       </CameraSpace>
       {/* destello en la punta del palo y haz hasta el punto señalado */}
       {tip && wipe > 0.9 ? (
         <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-          {target && ptQ ? <line x1={tip.x} y1={tip.y} x2={tip.x + (target.x - tip.x) * ptQ.p} y2={tip.y + (target.y - tip.y) * ptQ.p} stroke={GREEN} strokeWidth={4} strokeDasharray="3 12" strokeDashoffset={-frame * 4} strokeLinecap="round" style={{ filter: NEON }} /> : null}
           <circle cx={tip.x} cy={tip.y} r={10 + 3 * Math.sin(t * 12)} fill="#EFFFF0" style={{ filter: NEON }} />
         </svg>
       ) : null}
-      {/* conclusiones como pegatinas sobre las esquinas de la pizarra */}
-      <div style={{ position: "absolute", right: 60, top: 255, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * -30}px) scale(${both.sx * popOut(out)}, ${both.sy * popOut(out)}) rotate(3deg)` }}>
-        <div style={{ position: "relative", ...display, fontSize: 42, color: INK, background: GREEN, padding: "10px 20px 5px", borderRadius: 12, filter: GLOW }}>
+      {/* conclusiones, centradas y en grande */}
+      <div style={{ position: "absolute", left: 0, right: 0, top: 620, display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+        <div style={{ position: "relative", ...display, fontSize: 84, color: INK, background: GREEN, padding: "16px 34px 8px", borderRadius: 18, filter: GLOW, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * 50}px) scale(${both.sx * popOut(out)}, ${both.sy * popOut(out)}) rotate(-2deg)` }}>
           Ambos crecieron
-          <Burst x={40} y={30} d={t - STUDY.both} r={60} />
+          <div style={{ position: "absolute", left: "50%", top: "50%" }}><Burst x={0} y={0} d={t - STUDY.both} r={200} n={14} /></div>
         </div>
-      </div>
-      <div style={{ position: "absolute", right: 60, top: 1175, opacity: Math.min(1, none.p * 2), transform: `translateY(${(1 - none.p) * 30}px) scale(${none.sx * popOut(out)}, ${none.sy * popOut(out)}) rotate(-2deg)` }}>
-        <div style={{ ...display, fontSize: 42, color: INK, background: PAPER, padding: "10px 20px 5px", borderRadius: 12, boxShadow: "0 14px 30px rgba(0,0,0,0.5)" }}>Sin ventaja clara</div>
+        <div style={{ position: "relative", ...display, fontSize: 84, color: INK, background: PAPER, padding: "16px 34px 8px", borderRadius: 18, boxShadow: "0 24px 50px rgba(0,0,0,0.55)", opacity: Math.min(1, none.p * 2), transform: `translateY(${(1 - none.p) * 50}px) scale(${none.sx * popOut(out)}, ${none.sy * popOut(out)}) rotate(1.5deg)` }}>
+          Sin ventaja clara
+          <div style={{ position: "absolute", left: "50%", top: "50%" }}><Burst x={0} y={0} d={t - STUDY.none} r={200} n={14} color={PAPER} /></div>
+        </div>
       </div>
     </AbsoluteFill>
   );
@@ -701,7 +685,7 @@ export const Graphics: React.FC = () => {
         ≈ Crecimiento similar
       </Pill>
       <Study />
-      <Pill from={INTEREST.at} to={INTEREST.to} top={290}>
+      <Pill from={INTEREST.at} to={INTEREST.to} top={200}>
         Crecer igual ≠ usarlos igual
       </Pill>
       <Pill from={ELBOW.press} to={ELBOW.fly - 0.1} top={290} size={44} rot={-1.5}>

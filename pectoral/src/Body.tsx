@@ -2,6 +2,7 @@ import React from "react";
 import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import arms from "./arms.json";
 import head from "./head.json";
+import pec from "./pec.json";
 import { gradeFilter } from "./Grade";
 import { GREEN, PAPER } from "./theme";
 import { ADD, COMBINE, f, HOOK, HUMERUS, toSrc } from "./timeline";
@@ -173,7 +174,7 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
   const FLY = 0.3; // viaje hasta el centro
   const m = ease((t - COMBINE.merge) / FLY);
   const C = { x: (hands[0].x + hands[1].x) / 2, y: Math.min(hands[0].y, hands[1].y) + 10 };
-  const out = ramp(COMBINE.to - 0.3, COMBINE.to, easeInOut);
+  const out = ramp(COMBINE.to - 0.7, COMBINE.to, easeInOut); // se desvanece despacio
   const hit = COMBINE.merge + FLY;
   const big = sq(hit - 0.02, 7, 260);
   const s = t - hit;
@@ -187,7 +188,6 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
     const e = ease(u);
     return { x: home.x + (C.x - home.x) * e, y: home.y + (C.y - home.y) * e - Math.sin(e * Math.PI) * 120, r: side * -18 * Math.sin(e * Math.PI) };
   };
-  const popOutB = (o: number) => (o < 0.3 ? 1 + 0.08 * (o / 0.3) : 1.08 * (1 - (o - 0.3) / 0.7));
   return (
   <>
     <Svg>
@@ -254,7 +254,7 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
         })
       : null}
     {s > -0.02 ? (
-      <div style={{ position: "absolute", left: C.x, top: C.y + Math.sin(t * 4) * 6, opacity: 1 - out, transform: `translate(-50%, -50%) rotate(${-3 + Math.sin(t * 3) * 1.2}deg) scale(${big.p * big.sx * popOutB(out)}, ${big.p * big.sy * popOutB(out)})` }}>
+      <div style={{ position: "absolute", left: C.x, top: C.y + Math.sin(t * 4) * 6, opacity: 1 - out, filter: out > 0 ? `blur(${out * 8}px)` : undefined, transform: `translate(-50%, ${-50 - out * 20}%) rotate(${-3 + Math.sin(t * 3) * 1.2}deg) scale(${big.p * big.sx * (1 - 0.12 * out)}, ${big.p * big.sy * (1 - 0.12 * out)})` }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
           <div style={{ position: "relative", overflow: "hidden", whiteSpace: "nowrap", background: GREEN, borderRadius: 20, padding: "16px 34px 12px", fontFamily: "Montserrat", fontWeight: 900, fontStyle: "italic", fontSize: 64, lineHeight: 1, color: "#0A0A0A", filter: NEON }}>
             COMBINACIÓN
@@ -267,6 +267,46 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
       </div>
     ) : null}
   </>
+  );
+};
+
+// «…desarrollar tu PECTORAL»: brillo sutil con la forma de los dos pectorales, bordes
+// difuminados, pegado al torso (hombros y caderas de la pose).
+const PEC = pec as { t0: number; fps: number; f: number[][] };
+export const PEC_AT = { from: 33.6, to: 34.28 };
+const PecGlow: React.FC<{ t: number }> = ({ t }) => {
+  const i = Math.max(0, Math.min(PEC.f.length - 1, Math.round((t - PEC.t0) * PEC.fps)));
+  const [ax, ay, bx, by, hx, hy, kx, ky] = PEC.f[i];
+  const shm = { x: (ax + bx) / 2, y: (ay + by) / 2 };
+  const hpm = { x: (hx + kx) / 2, y: (hy + ky) / 2 };
+  const down = { x: hpm.x - shm.x, y: hpm.y - shm.y };
+  const wv = { x: ax - bx, y: ay - by };
+  const W = Math.hypot(wv.x, wv.y);
+  const ang = (Math.atan2(wv.y, wv.x) * 180) / Math.PI;
+  const k = interpolate(t, [PEC_AT.from, PEC_AT.from + 0.25, PEC_AT.to - 0.25, PEC_AT.to], [0, 1, 1, 0], clamp);
+  const pulse = 0.85 + 0.15 * Math.sin(t * 7);
+  const lobe = (u: number, key: number) => {
+    // cada pectoral: desde el hombro hacia el esternón, algo por debajo de la línea de hombros
+    const c = { x: bx + wv.x * u + down.x * 0.2, y: by + wv.y * u + down.y * 0.2 };
+    // forma de pectoral: abanico redondeado desde el esternón hacia el hombro
+    const sx = u < 0.5 ? -1 : 1;
+    const r = W * 0.3;
+    return (
+      <path
+        key={key}
+        d={`M ${sx * r * 0.95} ${-r * 0.35} Q ${sx * r * 0.2} ${-r * 0.75} ${-sx * r * 0.85} ${-r * 0.45} L ${-sx * r * 0.9} ${r * 0.35} Q ${-sx * r * 0.4} ${r * 0.85} ${sx * r * 0.5} ${r * 0.55} Q ${sx * r * 0.95} ${r * 0.3} ${sx * r * 0.95} ${-r * 0.35} Z`}
+        transform={`translate(${c.x} ${c.y}) rotate(${ang})`}
+        fill="rgba(90,255,70,0.95)"
+      />
+    );
+  };
+  return (
+    <Svg opacity={k * 0.5 * pulse}>
+      <g style={{ filter: "blur(20px)" }}>
+        {lobe(0.3, 0)}
+        {lobe(0.7, 1)}
+      </g>
+    </Svg>
   );
 };
 
@@ -312,6 +352,7 @@ export const BodyLayer: React.FC = () => {
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       {t >= HOOK.press - 0.1 && t < HOOK.light ? <HeadInflate t={t} /> : null}
+      {t >= PEC_AT.from && t < PEC_AT.to ? <PecGlow t={t} /> : null}
       {t >= HUMERUS.from - 0.05 && t < HUMERUS.to + 0.05 ? <Humerus t={t} /> : null}
       {t >= ADD.from - 0.05 && t < ADD.to + 0.05 ? <AddArrows t={t} /> : null}
       {t >= COMBINE.press - 0.05 && t < COMBINE.to + 0.05 ? <Combine t={t} /> : null}

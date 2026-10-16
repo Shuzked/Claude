@@ -11,8 +11,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
+import heads from "./heads.json";
 import { GradeDefs, gradeFilter } from "./Grade";
-import { f, FIXED, HOOK, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS, ZOOMS } from "./timeline";
+import { f, FIXED, HEADCAMS, HOOK, JUMPS, KEYCAMS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS, ZOOMS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -79,6 +80,32 @@ const zoomSmooth: [number, number][] = (() => {
   }
   return out;
 })();
+const HEADS = heads as { t0: number; fps: number; pts: number[][] }[];
+const headCamAt = (t: number) => {
+  const h = HEADCAMS.find((x) => t >= x.from && t < x.to);
+  if (!h) return null;
+  const d = HEADS[h.data];
+  const u = (t - d.t0) * d.fps;
+  const i = Math.max(0, Math.min(d.pts.length - 2, Math.floor(u)));
+  const k = Math.max(0, Math.min(1, u - i));
+  return { x: d.pts[i][0] + (d.pts[i + 1][0] - d.pts[i][0]) * k, y: d.pts[i][1] + (d.pts[i + 1][1] - d.pts[i][1]) * k, scale: h.scale, ty: h.ty };
+};
+const keyCamAt = (t: number) => {
+  const c = KEYCAMS.find((x) => t >= x.from && t < x.to);
+  if (!c) return null;
+  const ks = c.keys;
+  if (t <= ks[0][0]) return { x: ks[0][1], y: ks[0][2], scale: ks[0][3], ty: c.ty };
+  for (let j = 0; j < ks.length - 1; j++) {
+    const [t0, x0, y0, s0] = ks[j];
+    const [t1, x1, y1, s1] = ks[j + 1];
+    if (t <= t1) {
+      const u = Easing.inOut(Easing.cubic)((t - t0) / (t1 - t0));
+      return { x: x0 + (x1 - x0) * u, y: y0 + (y1 - y0) * u, scale: s0 + (s1 - s0) * u, ty: c.ty };
+    }
+  }
+  const l = ks[ks.length - 1];
+  return { x: l[1], y: l[2], scale: l[3], ty: c.ty };
+};
 const zoomAt = (t: number) => ZOOMS.find((z) => t >= z.from && t < z.to);
 
 const trackAt = (t: number) => {
@@ -91,6 +118,8 @@ const faceAt = (t: number) => {
   if (tp) return { x: tp.x, y: tp.y };
   const fx = FIXED.find((x) => t >= x.from && t < x.to);
   if (fx) return { x: fx.face[0], y: fx.face[1] };
+  const hc = headCamAt(t) ?? keyCamAt(t);
+  if (hc) return { x: hc.x, y: hc.y };
   if (zoomAt(t)) {
     const i = Math.min(zoomSmooth.length - 1, Math.max(0, Math.round(t * track.fps)));
     return { x: zoomSmooth[i][0], y: zoomSmooth[i][1] };
@@ -159,8 +188,9 @@ export const cameraAt = (frame: number, fps: number) => {
   const zk = t >= FORE_ZOOM.at - 0.05 ? zin : 0;
   const zm = zoomAt(t);
   const zu = zm ? interpolate(t, [zm.from, zm.to], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) }) : 0;
+  const hcam = headCamAt(t) ?? keyCamAt(t);
   const scale =
-    (zm ? zm.s0 + (zm.s1 - zm.s0) * zu : fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
+    (hcam ? hcam.scale : zm ? zm.s0 + (zm.s1 - zm.s0) * zu : fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
 
   // barridos en los cortes: desenfoque de movimiento + empujón (como en los anteriores)
   let blur = 0;
@@ -184,7 +214,7 @@ export const cameraAt = (frame: number, fps: number) => {
     ORIGIN.x,
     1080,
   );
-  const ty = FIXED.find((x) => t >= x.from && t < x.to)?.ty ?? TARGET.y;
+  const ty = FIXED.find((x) => t >= x.from && t < x.to)?.ty ?? hcam?.ty ?? TARGET.y;
   const trY = clampAxis(
     ty - ORIGIN.y - scale * (face.y - ORIGIN.y),
     ORIGIN.y,
