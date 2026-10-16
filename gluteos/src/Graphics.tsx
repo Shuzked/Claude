@@ -304,6 +304,9 @@ const HookReact: React.FC = () => {
 // E01–E02 (0:05): el «mapa» que se repite en redes, explicado claro y al estilo de
 // siempre: un glúteo partido en dos; arriba «acortamiento», abajo «estiramiento». En
 // «no funciona» se tacha el reparto y cae el sello «Mapa simplista».
+// silueta de perfil (mirando a la derecha): espalda y glúteo a la izquierda
+const BODY_SIDE =
+  "M 138 20 C 118 20 104 36 106 60 C 107 76 114 86 118 94 L 120 106 C 108 112 96 124 93 142 C 89 168 92 196 100 222 C 102 238 96 250 84 264 C 68 282 66 310 78 332 C 86 344 98 350 104 358 C 106 384 106 410 112 438 C 104 460 98 486 104 512 C 108 532 114 548 116 566 C 112 576 112 584 120 588 L 194 590 C 200 588 198 580 190 576 C 174 570 160 566 152 556 C 150 528 152 496 150 470 C 150 452 156 440 160 426 C 164 396 166 366 166 334 C 166 312 168 296 170 282 C 174 264 176 246 176 226 C 178 196 180 168 176 146 C 172 128 164 116 158 108 L 160 94 C 168 92 172 86 174 80 L 182 72 L 178 64 C 180 50 176 34 166 26 C 158 21 148 19 138 20 Z";
 const MAP = { from: 6.95, top: 8.12, bot: 10.52, no: 11.76, stamp: 13.2, to: 14.78 };
 const GluteMapScene: React.FC = () => {
   const { t, squash, ramp, idle } = useClock();
@@ -326,16 +329,21 @@ const GluteMapScene: React.FC = () => {
         <div style={{ ...label, fontSize: 24, letterSpacing: 5, color: PAPER, background: "rgba(10,10,10,0.75)", padding: "8px 16px", borderRadius: 10, transform: `scale(${head.sx}, ${head.sy})` }}>Lo que se repite en redes</div>
       </div>
       <div style={{ position: "absolute", left: 140, top: 150, width: 800, height: 470, transformOrigin: "50% 0%", borderRadius: 26, background: "rgba(10,10,10,0.82)", border: `3px solid ${x > 0.5 ? RED : GREEN}`, boxShadow: `0 0 30px ${x > 0.5 ? "rgba(255,59,48,0.35)" : "rgba(4,228,0,0.3)"}, 0 30px 60px rgba(0,0,0,0.55)`, opacity: Math.min(1, c.p * 2), transform: `translateY(${(1 - c.p) * -120 + id.y}px) scale(${0.84 * c.sx * popOut(out)}, ${0.84 * c.sy * popOut(out)}) rotate(${-1 + id.r * 0.3}deg)` }}>
-        {/* glúteo mayor real (reconstrucción de Takahashi et al., 2025), de lado */}
-        <div style={{ position: "absolute", left: 60, top: 30, width: 250, height: 405, borderRadius: 18, overflow: "hidden", background: "white", opacity: Math.min(1, draw * 2) * dim, transform: `scale(${0.9 + 0.1 * draw})` }}>
-          <Img src={staticFile("paper/gmax_belly.png")} style={{ width: "100%", height: "100%", display: "block" }} />
-          <Img src={staticFile("paper/gmax_top.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.7 * top }} />
-          <Img src={staticFile("paper/gmax_bot.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.7 * bot }} />
-          <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 0, borderTop: "4px dashed #0a0a0a" }} />
-          <div style={{ position: "absolute", left: 8, top: 8, ...label, fontSize: 13, letterSpacing: 2, color: "rgba(0,0,0,0.65)" }}>↑ Superior</div>
-          <div style={{ position: "absolute", left: 8, bottom: 8, ...label, fontSize: 13, letterSpacing: 2, color: "rgba(0,0,0,0.65)" }}>↓ Inferior</div>
-        </div>
-        <div style={{ position: "absolute", left: 60, top: 440, width: 250, ...label, fontSize: 11, letterSpacing: 1, color: "rgba(255,255,255,0.55)", textAlign: "center", textTransform: "none", opacity: draw }}>Glúteo mayor · Takahashi et al., 2025</div>
+        {/* maniquí de perfil (solo contorno) con el glúteo partido en superior / inferior */}
+        <svg width={280} height={430} viewBox="40 12 170 420" style={{ position: "absolute", left: 50, top: 20, overflow: "hidden", maskImage: "linear-gradient(180deg, #000 85%, transparent)", WebkitMaskImage: "linear-gradient(180deg, #000 85%, transparent)", opacity: Math.min(1, draw * 2) * dim }}>
+          <defs>
+            <clipPath id="mq-body"><path d={BODY_SIDE} /></clipPath>
+          </defs>
+          <g clipPath="url(#mq-body)">
+            <rect x={40} y={248} width={86} height={52} fill={GREEN} opacity={0.85 * top} />
+            <rect x={40} y={300} width={86} height={56} fill="#FFB020" opacity={0.85 * bot} />
+          </g>
+          <path d={BODY_SIDE} fill="none" stroke={PAPER} strokeWidth={3.5} strokeLinejoin="round" pathLength={1} strokeDasharray={`${draw} 1`} />
+          <path d="M 142 128 C 150 170 152 205 150 236 C 150 270 152 300 154 322" fill="none" stroke={PAPER} strokeWidth={3} strokeLinecap="round" opacity={draw * 0.8} />
+          <line x1={56} y1={300} x2={140} y2={300} stroke={PAPER} strokeWidth={2.5} strokeDasharray="6 5" opacity={draw} />
+          <text x={62} y={262} fill={GREEN} fontFamily={FONT} fontWeight={900} fontSize={16} opacity={top} textAnchor="end">SUP.</text>
+          <text x={62} y={346} fill="#FFB020" fontFamily={FONT} fontWeight={900} fontSize={16} opacity={bot} textAnchor="end">INF.</text>
+        </svg>
         {/* etiquetas a la derecha del glúteo */}
         <div style={{ position: "absolute", left: 360, top: 90, opacity: Math.min(1, lt.p * 2) * dim, transform: `translateX(${(1 - lt.p) * 80}px) scale(${lt.sx}, ${lt.sy})`, transformOrigin: "0% 50%" }}>
           <div style={{ ...label, fontSize: 22, letterSpacing: 3, color: GREEN }}>↑ Parte superior</div>
