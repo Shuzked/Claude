@@ -121,11 +121,41 @@ export const SHOT_CUTS = [6.88, 14.84, 19.36, 23.88, 29.6, 41.6, 51.24, 61.64, 6
 
 export type Framing = { from: number; to: number; face: [number, number]; scale: number; ty?: number };
 export const FIXED: Framing[] = [
-  { from: 29.6, to: 41.6, face: [540, 960], scale: 1.0 }, // plano general: se ve la pierna al separarla
+  { from: 0, to: 6.88, face: [540, 960], scale: 1.0 }, // hook: rotoscopia sobre el vídeo de la reacción
+  { from: 6.88, to: 14.84, face: [540, 960], scale: 1.0 }, // Yago entero + tarjeta del vídeo original
+  { from: 14.84, to: 19.36, face: [540, 960], scale: 1.0 },
+  { from: 61.64, to: 68.88, face: [540, 960], scale: 1.0 }, // el feed sale de su móvil
   { from: 77.24, to: 79.96, face: [540, 960], scale: 1.0 }, // abducción de pie en polea
 ];
+// plano general 29,6–41,6: plano medio mientras habla y entero en cada gesto de pierna
+export const SCALEKEYS = [
+  {
+    from: 29.6,
+    to: 41.6,
+    keys: [
+      [29.6, 1.65],
+      [32.2, 1.65],
+      [32.75, 1.0],
+      [34.4, 1.0],
+      [35.0, 1.6],
+      [37.85, 1.6],
+      [38.4, 1.0],
+      [41.6, 1.0],
+    ] as [number, number][],
+  },
+];
 export const ZOOMS = [] as { from: number; to: number; s0: number; s1: number }[];
-export const HEADCAMS = [] as { from: number; to: number; scale: number; ty: number; data: number }[];
+// planos de charla: la cabeza siempre centrada (nariz de la pose, suavizada por plano)
+export const HEADCAMS = [
+  { from: 19.36, to: 23.88, scale: 1.45, ty: 640, data: 0 },
+  { from: 23.88, to: 29.6, scale: 1.3, ty: 640, data: 0 },
+  { from: 41.6, to: 51.24, scale: 1.35, ty: 640, data: 0 },
+  { from: 68.88, to: 77.24, scale: 1.4, ty: 640, data: 0 },
+  { from: 79.96, to: 82.72, scale: 1.45, ty: 640, data: 0 },
+  { from: 82.72, to: 85.52, scale: 1.6, ty: 640, data: 0 },
+  { from: 85.52, to: 90.08, scale: 1.5, ty: 640, data: 0 },
+  { from: 90.08, to: 94.4, scale: 1.6, ty: 640, data: 0 },
+];
 export const KEYCAMS = [] as { from: number; to: number; ty: number; keys: [number, number, number, number][] }[];
 export const TRACKS = [] as { from: number; to: number; file: string; scale: number }[];
 // (sin temblor de hook en este vídeo)
@@ -142,13 +172,15 @@ export const JUMPS = [
 
 // --- Escenas (segundos del original) ----------------------------------------------
 // E01–E02: reacción al vídeo original (pantalla dividida) y «mapa simplista»
-export const REACT = { in: 5.48, map: 7.48, out: 14.74 };
+export const REACT = { hook: 1.8, cut: 6.88, in: 5.48, map: 7.48, out: 14.74 };
 // E02: anatomía (P2, figura 3A) y «Aislar ≠ favorecer»
 export const ANAT = { from: 14.8, iso: 15.9, fav: 17.6, to: 19.34 };
 // E03: re-hook del ex
 export const EX = { at: 21.48 };
 // E04: catálogo de ejercicios → «Todos incluyen extensión de cadera»
 export const CAT = {
+  bgFrom: 23.88,
+  bgTo: 29.95,
   from: 24.64,
   items: [
     [25.0, "sentadilla", "Sentadillas"],
@@ -167,12 +199,14 @@ export const CAT = {
 export const ABD = { other: 36.56, word: 38.84, sep: 39.92, to: 41.5 };
 export const MAYOR = { medio: 44.4, mayor: 49.08, to: 51.2 };
 // E06: P1, figura 3A
-export const STUDY = { from: 51.28, fig: 52.92, ext: 53.08, extLab: 55.12, abd: 57.68, abdLab: 58.56, to: 61.62 };
+export const STUDY = { from: 51.28, fig: 52.92, ext: 53.08, extLab: 55.12, abd: 57.68, abdLab: 58.56, to: 61.62, bgFrom: 51.24, bgTo: 62.05 };
+// E07: el móvil «escupe» un feed de vídeos que pasa con sus propios swipes
+export const PHONE = { in: 64.3, swipes: [65.2, 65.8, 66.4, 66.85, 67.35], out: 68.15 };
 // E07: elegir, no acumular
-export const COMBO = { at: 63.36, to: 68.8 };
+export const COMBO = { at: 62.56, to: 64.2 };
 export const STARTP = { at: 69.08, card: 70.56, abd: 75.88, to: 77.2 };
 // E08: dos posiciones de abducción
-export const POS = { ext: 78.4, flex: 79.16, to: 82.7 };
+export const POS = { ext: 77.32, flex: 78.9, to: 79.94 };
 export const CRIT = { at: 83.16, to: 85.45 };
 // E09: conclusión y CTA
 export const APORTE = { at: 88.32, to: 90.0 };

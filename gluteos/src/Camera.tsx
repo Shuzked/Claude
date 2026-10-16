@@ -13,7 +13,7 @@ import {
 import faceTrack from "./faceTrack.json";
 import heads from "./heads.json";
 import { GradeDefs, gradeFilter } from "./Grade";
-import { f, FIXED, HEADCAMS, HOOK, JUMPS, KEYCAMS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS, ZOOMS } from "./timeline";
+import { f, FIXED, HEADCAMS, HOOK, JUMPS, KEYCAMS, punches, SCALEKEYS, segmentsOut, SHOT_CUTS, toSrc, TRACKS, ZOOMS } from "./timeline";
 
 // Cámara virtual sobre una toma única y fija:
 //  1. Encuadre base que alterna (medio / cerrado) en cada corte de pausa: el salto
@@ -90,6 +90,24 @@ const headCamAt = (t: number) => {
   const k = Math.max(0, Math.min(1, u - i));
   return { x: d.pts[i][0] + (d.pts[i + 1][0] - d.pts[i][0]) * k, y: d.pts[i][1] + (d.pts[i + 1][1] - d.pts[i][1]) * k, scale: h.scale, ty: h.ty };
 };
+// escala por claves (plano medio ↔ entero) con la cabeza seguida por la pose
+const scaleKeyAt = (t: number) => {
+  const c = SCALEKEYS.find((x) => t >= x.from && t < x.to);
+  if (!c || !HEADS.length) return null;
+  const ks = c.keys;
+  let sc = ks[ks.length - 1][1];
+  if (t <= ks[0][0]) sc = ks[0][1];
+  for (let j = 0; j < ks.length - 1; j++) {
+    if (t >= ks[j][0] && t <= ks[j + 1][0]) {
+      const u = Easing.inOut(Easing.cubic)((t - ks[j][0]) / (ks[j + 1][0] - ks[j][0]));
+      sc = ks[j][1] + (ks[j + 1][1] - ks[j][1]) * u;
+      break;
+    }
+  }
+  const d = HEADS[0];
+  const i = Math.max(0, Math.min(d.pts.length - 1, Math.round((t - d.t0) * d.fps)));
+  return { x: d.pts[i][0], y: d.pts[i][1], scale: sc, ty: 640 };
+};
 const keyCamAt = (t: number) => {
   const c = KEYCAMS.find((x) => t >= x.from && t < x.to);
   if (!c) return null;
@@ -118,7 +136,7 @@ const faceAt = (t: number) => {
   if (tp) return { x: tp.x, y: tp.y };
   const fx = FIXED.find((x) => t >= x.from && t < x.to);
   if (fx) return { x: fx.face[0], y: fx.face[1] };
-  const hc = headCamAt(t) ?? keyCamAt(t);
+  const hc = headCamAt(t) ?? scaleKeyAt(t) ?? keyCamAt(t);
   if (hc) return { x: hc.x, y: hc.y };
   if (zoomAt(t)) {
     const i = Math.min(zoomSmooth.length - 1, Math.max(0, Math.round(t * track.fps)));
@@ -188,7 +206,7 @@ export const cameraAt = (frame: number, fps: number) => {
   const zk = t >= FORE_ZOOM.at - 0.05 ? zin : 0;
   const zm = zoomAt(t);
   const zu = zm ? interpolate(t, [zm.from, zm.to], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic) }) : 0;
-  const hcam = headCamAt(t) ?? keyCamAt(t);
+  const hcam = headCamAt(t) ?? scaleKeyAt(t) ?? keyCamAt(t);
   const scale =
     (hcam ? hcam.scale : zm ? zm.s0 + (zm.s1 - zm.s0) * zu : fixed ? fixed.scale + drift * 0.6 : tracked ? tracked.scale + drift * 0.6 : base + drift) + punch + slam + FORE_ZOOM.amount * zk;
 

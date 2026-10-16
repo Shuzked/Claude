@@ -9,9 +9,9 @@ import {
   useVideoConfig,
 } from "remotion";
 import { FONT, GREEN } from "./theme";
-import { ANAT, CAT, f, MUTE, pageStart, REACT, visiblePages, type Word } from "./timeline";
+import { f, MUTE, pageStart, visiblePages, type Word } from "./timeline";
 
-const SPLITS: [number, number][] = [[REACT.in, REACT.out], [ANAT.from, ANAT.to], [CAT.from, CAT.clear + 0.4]];
+const SPLITS: [number, number][] = [];
 
 // Trazo de subrayador: bordes irregulares y punta inclinada, como un rotulador real.
 const MARKER_PATH =
