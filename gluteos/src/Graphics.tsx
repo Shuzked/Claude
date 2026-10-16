@@ -301,81 +301,73 @@ const HookReact: React.FC = () => {
   );
 };
 
-// E01–E02 (0:05): «mapa del tesoro» del glúteo. «Acortamiento → arriba» y
-// «estiramiento → abajo» se clavan como chinchetas; en «no funciona… un mapa» el mapa
-// se rasga y cae el sello «Mapa simplista».
-const MAP = { from: 6.95, top: 8.12, bot: 10.52, no: 11.76, stamp: 14.1, to: 14.78 };
+// E01–E02 (0:05): el «mapa» que se repite en redes, explicado claro y al estilo de
+// siempre: un glúteo partido en dos; arriba «acortamiento», abajo «estiramiento». En
+// «no funciona» se tacha el reparto y cae el sello «Mapa simplista».
+const MAP = { from: 6.95, top: 8.12, bot: 10.52, no: 11.76, stamp: 13.2, to: 14.78 };
 const GluteMapScene: React.FC = () => {
-  const { t, frame, squash, ramp, idle } = useClock();
+  const { t, squash, ramp, idle } = useClock();
   if (t < MAP.from - 0.05 || t > MAP.to + 0.05) return null;
-  const c = squash(MAP.from, 12, 170);
-  const draw = ramp(MAP.from + 0.1, MAP.from + 0.9);
-  const pTop = squash(MAP.top, 8, 260);
-  const pBot = squash(MAP.bot, 8, 260);
-  const tear = ramp(MAP.no, MAP.no + 0.5, easeInOut);
-  const st = squash(MAP.stamp - 0.9, 7, 300);
+  const c = squash(MAP.from, 12, 180);
+  const head = squash(MAP.from + 0.1, 10, 220);
+  const draw = ramp(MAP.from + 0.15, MAP.from + 0.8);
+  const top = ramp(MAP.top, MAP.top + 0.35);
+  const bot = ramp(MAP.bot, MAP.bot + 0.35);
+  const lt = squash(MAP.top + 0.1, 9, 240);
+  const lb = squash(MAP.bot + 0.1, 9, 240);
+  const x = ramp(MAP.no, MAP.no + 0.4);
+  const st = squash(MAP.stamp, 7, 300);
   const out = ramp(MAP.to - 0.3, MAP.to, easeInOut);
-  const id = idle(2.7, 0.6);
-  const route = draw * 1;
-  const L = "M 210 70 C 130 60 50 110 44 230 C 38 340 110 420 206 404 C 214 310 214 170 210 70 Z";
-  const R = "M 230 70 C 310 60 390 110 396 230 C 402 340 330 420 234 404 C 226 310 226 170 230 70 Z";
-  const pin = (q: { p: number; sx: number; sy: number }, x: number, y: number, col: string, txt: string, sub: string, dy: number) =>
-    q.p > 0.01 ? (
-      <g transform={`translate(${x} ${y - (1 - q.p) * 120}) scale(${q.sx} ${q.sy})`} opacity={Math.min(1, q.p * 2)}>
-        <ellipse cx={0} cy={8} rx={14 * q.p} ry={5 * q.p} fill="rgba(0,0,0,0.35)" />
-        <path d="M 0 6 L -12 -22 A 15 15 0 1 1 12 -22 Z" fill={col} stroke="#3a2a14" strokeWidth={3} />
-        <circle cx={0} cy={-28} r={6} fill="#fff8e8" />
-        <g transform={`translate(${x > 220 ? 26 : -26} ${dy})`}>
-          <rect x={x > 220 ? 0 : -210} y={-26} width={210} height={58} rx={10} fill="#3a2a14" />
-          <text x={x > 220 ? 105 : -105} y={-2} textAnchor="middle" fill="#fff3d6" fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={22}>{txt}</text>
-          <text x={x > 220 ? 105 : -105} y={22} textAnchor="middle" fill={col} fontFamily={FONT} fontWeight={800} fontSize={16} letterSpacing={2}>{sub}</text>
-        </g>
-      </g>
-    ) : null;
+  const id = idle(2.7, 0.5);
+  const dim = 1 - 0.55 * x;
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
-      <div style={{ position: "absolute", left: 90, top: 110, width: 900, height: 640, transformOrigin: "50% 0%", transform: `translateY(${(1 - c.p) * -200 + id.y}px) rotate(${-2 + id.r * 0.4 + (1 - c.p) * -10}deg) scale(${0.74 * c.sx * popOut(out)}, ${0.74 * c.sy * popOut(out)})`, opacity: Math.min(1, c.p * 2) }}>
-        <svg width={900} height={640} viewBox="0 0 900 640" style={{ overflow: "visible", filter: "drop-shadow(0 30px 40px rgba(0,0,0,0.6))" }}>
-          <defs>
-            <linearGradient id="parch" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#f3e2bd" />
-              <stop offset="1" stopColor="#d9bf8a" />
-            </linearGradient>
-            <clipPath id="tearL"><path d={`M 0 0 L ${450 - tear * 10} 0 L ${430 - tear * 30} 160 L ${468 - tear * 30} 300 L ${428 - tear * 30} 460 L ${452 - tear * 30} 640 L 0 640 Z`} /></clipPath>
-            <clipPath id="tearR"><path d={`M ${450 + tear * 10} 0 L 900 0 L 900 640 L ${452 + tear * 30} 640 L ${428 + tear * 30} 460 L ${468 + tear * 30} 300 L ${430 + tear * 30} 160 Z`} /></clipPath>
-          </defs>
-          {[0, 1].map((side) => (
-            <g key={side} clipPath={`url(#${side ? "tearR" : "tearL"})`} transform={`translate(${(side ? 1 : -1) * tear * 60} ${tear * 30}) rotate(${(side ? 1 : -1) * tear * 5} 450 320)`}>
-              <path d="M 20 30 Q 230 0 450 24 T 880 26 L 872 600 Q 650 630 450 612 T 26 618 Z" fill="url(#parch)" stroke="#8a6a3a" strokeWidth={4} />
-              {/* rosa de los vientos */}
-              <g transform="translate(790 120)" opacity={0.7}>
-                <path d="M 0 -50 L 10 0 L 0 50 L -10 0 Z" fill="#8a6a3a" />
-                <path d="M -50 0 L 0 10 L 50 0 L 0 -10 Z" fill="#b08b52" />
-                <text x={0} y={-58} textAnchor="middle" fill="#5a4320" fontFamily={FONT} fontWeight={900} fontSize={20}>N</text>
-              </g>
-              <text x={60} y={84} fill="#5a4320" fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={34}>EL «MAPA» DEL GLÚTEO</text>
-              <g transform="translate(230 120)">
-                <path d={L} fill="none" stroke="#5a4320" strokeWidth={5} pathLength={1} strokeDasharray={`${route} 1`} />
-                <path d={R} fill="none" stroke="#5a4320" strokeWidth={5} pathLength={1} strokeDasharray={`${route} 1`} />
-                {/* frontera arriba / abajo */}
-                <line x1={30} y1={235} x2={410} y2={235} stroke="#8a2a14" strokeWidth={4} strokeDasharray="14 10" opacity={draw} />
-                <path d={`M 60 360 C 140 300 260 330 330 190 C 360 130 300 90 250 120`} fill="none" stroke="#8a2a14" strokeWidth={4} strokeDasharray="4 12" opacity={draw * 0.8} />
-                {pin(pTop, 300, 150, "#2e8b2e", "Acortamiento", "→ PARTE ALTA", -10)}
-                {pin(pBot, 140, 330, "#b5651d", "Estiramiento", "→ PARTE BAJA", 10)}
-              </g>
-            </g>
-          ))}
-        </svg>
-        {t >= MAP.stamp - 0.95 ? (
-          <div style={{ position: "absolute", left: 0, right: 0, top: 250, display: "flex", justifyContent: "center", opacity: Math.min(1, st.p * 2) }}>
-            <div style={{ position: "relative", ...display, fontStyle: "normal", fontSize: 92, color: RED, border: `9px solid ${RED}`, borderRadius: 18, padding: "10px 30px 4px", background: "rgba(10,10,10,0.6)", transform: `rotate(-9deg) scale(${(2.2 - 1.2 * st.p) * st.sx}, ${(2.2 - 1.2 * st.p) * st.sy})`, filter: "drop-shadow(0 0 18px rgba(255,59,48,0.6))" }}>
-              Mapa simplista
-              <Burst x={300} y={60} d={t - (MAP.stamp - 0.75)} r={260} color={RED} n={16} />
-            </div>
-          </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 96, display: "flex", justifyContent: "center", opacity: Math.min(1, head.p * 2) }}>
+        <div style={{ ...label, fontSize: 24, letterSpacing: 5, color: PAPER, background: "rgba(10,10,10,0.75)", padding: "8px 16px", borderRadius: 10, transform: `scale(${head.sx}, ${head.sy})` }}>Lo que se repite en redes</div>
+      </div>
+      <div style={{ position: "absolute", left: 140, top: 150, width: 800, height: 470, transformOrigin: "50% 0%", borderRadius: 26, background: "rgba(10,10,10,0.82)", border: `3px solid ${x > 0.5 ? RED : GREEN}`, boxShadow: `0 0 30px ${x > 0.5 ? "rgba(255,59,48,0.35)" : "rgba(4,228,0,0.3)"}, 0 30px 60px rgba(0,0,0,0.55)`, opacity: Math.min(1, c.p * 2), transform: `translateY(${(1 - c.p) * -120 + id.y}px) scale(${0.84 * c.sx * popOut(out)}, ${0.84 * c.sy * popOut(out)}) rotate(${-1 + id.r * 0.3}deg)` }}>
+        {/* glúteo mayor real (reconstrucción de Takahashi et al., 2025), de lado */}
+        <div style={{ position: "absolute", left: 60, top: 30, width: 250, height: 405, borderRadius: 18, overflow: "hidden", background: "white", opacity: Math.min(1, draw * 2) * dim, transform: `scale(${0.9 + 0.1 * draw})` }}>
+          <Img src={staticFile("paper/gmax_belly.png")} style={{ width: "100%", height: "100%", display: "block" }} />
+          <Img src={staticFile("paper/gmax_top.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.7 * top }} />
+          <Img src={staticFile("paper/gmax_bot.png")} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.7 * bot }} />
+          <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 0, borderTop: "4px dashed #0a0a0a" }} />
+          <div style={{ position: "absolute", left: 8, top: 8, ...label, fontSize: 13, letterSpacing: 2, color: "rgba(0,0,0,0.65)" }}>↑ Superior</div>
+          <div style={{ position: "absolute", left: 8, bottom: 8, ...label, fontSize: 13, letterSpacing: 2, color: "rgba(0,0,0,0.65)" }}>↓ Inferior</div>
+        </div>
+        <div style={{ position: "absolute", left: 60, top: 440, width: 250, ...label, fontSize: 11, letterSpacing: 1, color: "rgba(255,255,255,0.55)", textAlign: "center", textTransform: "none", opacity: draw }}>Glúteo mayor · Takahashi et al., 2025</div>
+        {/* etiquetas a la derecha del glúteo */}
+        <div style={{ position: "absolute", left: 360, top: 90, opacity: Math.min(1, lt.p * 2) * dim, transform: `translateX(${(1 - lt.p) * 80}px) scale(${lt.sx}, ${lt.sy})`, transformOrigin: "0% 50%" }}>
+          <div style={{ ...label, fontSize: 22, letterSpacing: 3, color: GREEN }}>↑ Parte superior</div>
+          <div style={{ ...display, fontSize: 50, color: INK, background: GREEN, padding: "8px 16px 4px", borderRadius: 10, marginTop: 6 }}>Acortamiento</div>
+        </div>
+        <div style={{ position: "absolute", left: 360, top: 300, opacity: Math.min(1, lb.p * 2) * dim, transform: `translateX(${(1 - lb.p) * 80}px) scale(${lb.sx}, ${lb.sy})`, transformOrigin: "0% 50%" }}>
+          <div style={{ ...label, fontSize: 22, letterSpacing: 3, color: "#FFB020" }}>↓ Parte inferior</div>
+          <div style={{ ...display, fontSize: 50, color: INK, background: "#FFB020", padding: "8px 16px 4px", borderRadius: 10, marginTop: 6 }}>Estiramiento</div>
+        </div>
+        {/* tachado: «no funciona» */}
+        {x > 0.01 ? (
+          <svg width={800} height={470} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+            <line x1={60} y1={60} x2={60 + 680 * Math.min(1, x * 2)} y2={60 + 350 * Math.min(1, x * 2)} stroke={RED} strokeWidth={16} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 10px rgba(255,59,48,0.8))" }} />
+            {x > 0.5 ? <line x1={740} y1={60} x2={740 - 680 * (x - 0.5) * 2} y2={60 + 350 * (x - 0.5) * 2} stroke={RED} strokeWidth={16} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 10px rgba(255,59,48,0.8))" }} /> : null}
+          </svg>
         ) : null}
       </div>
-      <div style={{ display: "none" }}>{frame}</div>
+      {t >= MAP.no ? (
+        <div style={{ position: "absolute", left: 0, right: 0, top: 560, display: "flex", justifyContent: "center" }}>
+          <Pill from={MAP.no + 0.1} to={MAP.stamp - 0.05} top={0} size={48}>
+            No funciona así
+          </Pill>
+        </div>
+      ) : null}
+      {t >= MAP.stamp - 0.05 ? (
+        <div style={{ position: "absolute", left: 0, right: 0, top: 290, display: "flex", justifyContent: "center", opacity: Math.min(1, st.p * 2) }}>
+          <div style={{ position: "relative", ...display, fontStyle: "normal", fontSize: 92, color: RED, border: `9px solid ${RED}`, borderRadius: 18, padding: "10px 30px 4px", background: "rgba(10,10,10,0.75)", transform: `rotate(-8deg) scale(${(2.2 - 1.2 * st.p) * st.sx}, ${(2.2 - 1.2 * st.p) * st.sy})`, filter: "drop-shadow(0 0 18px rgba(255,59,48,0.6))" }}>
+            Mapa simplista
+            <Burst x={300} y={60} d={t - MAP.stamp} r={260} color={RED} n={16} />
+          </div>
+        </div>
+      ) : null}
     </AbsoluteFill>
   );
 };
@@ -405,19 +397,6 @@ const Anat: React.FC = () => {
   const flick = 0.9 + 0.06 * Math.sin(frame * 1.7);
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
-      {/* haz desde la palma mientras la sostiene */}
-      {lift.p < 0.95 && appear.p > 0.02 ? (
-        <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, mixBlendMode: "screen", opacity: (1 - lift.p) * appear.p }}>
-          <defs>
-            <linearGradient id="palmbeam" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0" stopColor="rgba(120,255,140,0.6)" />
-              <stop offset="1" stopColor="rgba(120,255,140,0.05)" />
-            </linearGradient>
-          </defs>
-          <polygon points={`${px - 20},${py - 20} ${px + 20},${py - 20} ${x + W * sc * 0.5 + (W / 2) * sc},${y + H * sc} ${x + W * sc * 0.5 - (W / 2) * sc},${y + H * sc}`} fill="url(#palmbeam)" style={{ filter: "blur(4px)" }} />
-          <ellipse cx={px} cy={py - 18} rx={34 + 4 * Math.sin(frame * 0.6)} ry={10} fill="rgba(160,255,170,0.8)" style={{ filter: "blur(4px)" }} />
-        </svg>
-      ) : null}
       <div style={{ position: "absolute", left: x, top: y, width: W, transformOrigin: "0% 0%", transform: `scale(${sc}) rotate(${(1 - lift.p) * -4}deg)`, opacity: lift.p > 0.5 ? 1 : flick }}>
         <div style={{ position: "relative", background: lift.p > 0.5 ? "white" : "rgba(235,255,238,0.9)", borderRadius: 18, padding: "12px 12px 8px", boxShadow: lift.p > 0.5 ? "0 30px 70px rgba(0,0,0,0.6)" : "0 0 40px rgba(4,228,0,0.6)", border: "2px solid rgba(120,255,140,0.8)" }}>
           <Img src={staticFile("paper/p2_fig3a.png")} style={{ width: "100%", display: "block" }} />
