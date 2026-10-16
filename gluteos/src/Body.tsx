@@ -33,7 +33,6 @@ const AbdArrow: React.FC<{ t: number }> = ({ t }) => {
       {/* parte recorrida, pegada al tobillo */}
       {prog > 0.02 ? <path d={`M ${p0.x} ${p0.y} A ${r} ${r} 0 0 1 ${pc.x} ${pc.y}`} fill="none" stroke={GREEN} strokeWidth={12} strokeLinecap="round" style={{ filter: NEON }} /> : null}
       <path d={`M ${head.x + Math.cos(tang - 2.6) * 34} ${head.y + Math.sin(tang - 2.6) * 34} L ${head.x + Math.cos(tang) * 10} ${head.y + Math.sin(tang) * 10} L ${head.x + Math.cos(tang + 2.6) * 34} ${head.y + Math.sin(tang + 2.6) * 34} Z`} fill={GREEN} style={{ filter: NEON }} />
-      <circle cx={hx} cy={hy} r={14} fill={PAPER} stroke={GREEN} strokeWidth={5} />
     </svg>
   );
 };
