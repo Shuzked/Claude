@@ -1,0 +1,48 @@
+# Composición final: sala vacía (IA) + Yago con la rotoscopia BiRefNet fotograma a fotograma + micrófonos (IA).
+import os, sys, subprocess, cv2, numpy as np
+S='/tmp/claude-0/-home-user-Claude/0931d5f0-2014-5d67-a994-6b77a811b555/scratchpad/'; G=S+'y9/gen/'; A=S+'y9/alpha/'
+SRC='/home/user/Claude/presidente/src-media/yago.9.mov'
+W,H=1080,1920
+out=sys.argv[1]; only=[int(x) for x in sys.argv[2:]]  # fotogramas sueltos para revisar
+bg=cv2.GaussianBlur(cv2.resize(cv2.imread(G+'empty_0.png'),(W,H),interpolation=cv2.INTER_CUBIC).astype(np.float32),(0,0),1.2)
+mic=cv2.resize(cv2.imread(G+'mics_rgba.png',cv2.IMREAD_UNCHANGED),(W,H),interpolation=cv2.INTER_AREA).astype(np.float32)
+K=1.22; cx,cy=W*0.5,H*0.80
+mic=cv2.warpAffine(mic,np.float32([[K,0,cx*(1-K)],[0,K,cy*(1-K)]]),(W,H),flags=cv2.INTER_LINEAR)
+ma=mic[...,3:]/255; mc=mic[...,:3]
+DESK=int(H*0.735)
+def frame(n,im):
+    p=A+f'a_{n:04d}.png'
+    if not os.path.exists(p):
+        # fuera del montaje: el fotograma más cercano rotoscopiado
+        return None
+    a=cv2.imread(p,0).astype(np.float32)/255
+    hsv=cv2.cvtColor(im,cv2.COLOR_BGR2HSV)
+    blue=((hsv[...,0]>=88)&(hsv[...,0]<=118)&(hsv[...,1]>60)&(hsv[...,2]>125)).astype(np.uint8); blue[:int(H*0.33)]=0
+    blue=cv2.dilate(blue,np.ones((7,7),np.uint8))
+    bb=cv2.GaussianBlur(blue.astype(np.float32),(0,0),1.5)[...,None]
+    dark=np.full_like(im,(28,24,22)).astype(np.float32)+cv2.cvtColor(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2BGR).astype(np.float32)*0.12
+    imf=im.astype(np.float32)*(1-bb)+dark*bb
+    a[DESK+40:]=0
+    a=cv2.GaussianBlur(a,(0,0),0.6)[...,None]
+    # fondo negro original: el borde semitransparente ya va premultiplicado por negro
+    f=imf*np.clip(a*1.6,0,1)+bg*(1-a)
+    f=mc*ma+f*(1-ma)
+    return np.clip(f,0,255).astype(np.uint8)
+dec=subprocess.Popen(['ffmpeg','-v','error','-i',SRC,'-vf',f'scale={W}:{H}','-f','rawvideo','-pix_fmt','bgr24','-'],stdout=subprocess.PIPE)
+enc=None if only else subprocess.Popen(['ffmpeg','-v','error','-y','-f','rawvideo','-pix_fmt','bgr24','-s',f'{W}x{H}','-r','25','-i','-','-c:v','libx264','-crf','12','-preset','slow','-pix_fmt','yuv420p',out],stdin=subprocess.PIPE)
+n=0; last=None
+while True:
+    buf=dec.stdout.read(W*H*3)
+    if len(buf)<W*H*3: break
+    if only and n>max(only): break
+    if not only or n in only:
+        im=np.frombuffer(buf,np.uint8).reshape(H,W,3)
+        fr=frame(n,im)
+        if fr is None: fr=last if last is not None else np.zeros((H,W,3),np.uint8)
+        last=fr
+        if only: cv2.imwrite(out.replace('.mp4',f'_{n}.jpg'),fr)
+        else: enc.stdin.write(fr.tobytes())
+    n+=1
+dec.kill()
+if enc: enc.stdin.close(); enc.wait()
+print('frames',n)

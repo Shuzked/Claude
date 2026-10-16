@@ -1,0 +1,8 @@
+node_modules
+out
+src-media
+public/comp.mp4
+public/audio/fx/
+.env.local
+public/audio/voice.wav
+public/audio/room.wav
