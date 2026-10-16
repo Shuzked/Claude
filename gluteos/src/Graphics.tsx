@@ -257,9 +257,9 @@ const faceMed = (t: number) => {
   const m = (k: 0 | 1) => w.map((p) => p[k]).sort((a, b) => a - b)[Math.floor(w.length / 2)];
   return { x: m(0), y: m(1) };
 };
-const YagoWindow: React.FC<{ from: number; to: number; top: number; height: number; scale?: number; faceY?: number; width?: number }> = ({ from, to, top, height, scale = 1.15, faceY = 0.36, width = 1080 }) => {
+const YagoWindow: React.FC<{ from: number; to: number; top: number; height: number; scale?: number; faceY?: number; width?: number; focus?: { x: number; y: number } }> = ({ from, to, top, height, scale = 1.15, faceY = 0.36, width = 1080, focus }) => {
   const { t } = useClock();
-  const fc = faceMed(Math.min(Math.max(t, from), to));
+  const fc = focus ?? faceMed(Math.min(Math.max(t, from), to));
   const left = Math.max(width - 1080 * scale, Math.min(0, width / 2 - scale * fc.x));
   const vt = Math.max(height - 1920 * scale, Math.min(0, height * faceY - scale * fc.y));
   return (
@@ -275,7 +275,7 @@ const YagoWindow: React.FC<{ from: number; to: number; top: number; height: numb
 
 // E01 (hook): desde el primer fotograma Yago ya reacciona. Detrás, el vídeo original
 // ocupa la parte de arriba y se funde con su fondo real; Yago va rotoscopiado delante.
-const HOOK_ROTO = { x: 0, y: 450, w: 780, h: 1470, t0: 1.72, n: 131 };
+const HOOK_ROTO = { x: 0, y: 450, w: 1080, h: 1470, t0: 1.72, n: 131 };
 const HookReact: React.FC = () => {
   const { t, ramp } = useClock();
   if (t > REACT.cut + 0.02) return null;
@@ -288,7 +288,7 @@ const HookReact: React.FC = () => {
     <AbsoluteFill>
       <AbsoluteFill style={{ opacity: fadeIn * (1 - fadeOut), maskImage: mask, WebkitMaskImage: mask }}>
         <Sequence from={f(REACT.hook)} durationInFrames={f(REACT.cut) - f(REACT.hook) + 2} layout="none">
-          <OffthreadVideo src={staticFile("broll/reaccion.mp4")} muted startFrom={25} playbackRate={0.78} style={{ position: "absolute", left: -90, top: -570, width: 1200, height: 2133 }} />
+          <OffthreadVideo src={staticFile("broll/reaccion_loop.mp4")} muted style={{ position: "absolute", left: -90, top: -570, width: 1200, height: 2133 }} />
         </Sequence>
               </AbsoluteFill>
       <CameraSpace>
@@ -296,50 +296,6 @@ const HookReact: React.FC = () => {
           <Img src={staticFile(`roto/hook/h_${n}.webp`)} style={{ width: "100%", height: "100%" }} />
         </div>
       </CameraSpace>
-    </AbsoluteFill>
-  );
-};
-
-// E01–E02: tras el corte, Yago entero; el vídeo original se encoge a una tarjeta a su
-// lado y se desmonta el reparto «acortamiento arriba / estiramiento abajo»
-const CARD_R = { x: 668, y: 250, w: 370, h: 658 };
-const CardReact: React.FC = () => {
-  const { t, squash, ramp, idle } = useClock();
-  if (t < REACT.cut - 0.02 || t > REACT.out + 0.05) return null;
-  const shrink = squash(REACT.cut, 15, 150);
-  const out = ramp(REACT.out - 0.35, REACT.out, easeInOut);
-  const id = idle(1.3, 0.6);
-  const k = shrink.p;
-  const x = CARD_R.x * k;
-  const y = CARD_R.y * k - 60 * (1 - k);
-  const w = 1080 + (CARD_R.w - 1080) * k;
-  const h = 1920 + (CARD_R.h - 1920) * k;
-  const a = squash(8.12, 9, 240);
-  const b = squash(10.52, 9, 240);
-  const st = squash(11.76, 7, 300);
-  const chip = (q: { p: number; sx: number; sy: number }, txt: React.ReactNode, top: number, i: number) => (
-    <div style={{ position: "absolute", left: 36, top, opacity: Math.min(1, q.p * 2) * (1 - out), transform: `translateX(${(1 - q.p) * -260}px) scale(${q.sx}, ${q.sy}) rotate(${i ? 2 : -2}deg)`, transformOrigin: "0% 50%" }}>
-      <div style={{ ...display, fontSize: 34, color: INK, background: PAPER, padding: "9px 16px 4px", borderRadius: 12, boxShadow: "0 14px 30px rgba(0,0,0,0.5)" }}>{txt}</div>
-    </div>
-  );
-  return (
-    <AbsoluteFill>
-      <div style={{ position: "absolute", left: x, top: y, width: w, height: h, borderRadius: 28 * k, overflow: "hidden", border: k > 0.5 ? `4px solid ${PAPER}` : undefined, boxShadow: "0 30px 70px rgba(0,0,0,0.65)", opacity: 1 - out, transform: `translateY(${id.y * k}px) rotate(${3 * k + id.r * 0.4 * k}deg) scale(${popOut(out)})`, transformOrigin: "50% 50%" }}>
-        <Sequence from={f(REACT.cut)} durationInFrames={f(REACT.out) - f(REACT.cut) + 10} layout="none">
-          <OffthreadVideo src={staticFile("broll/reaccion.mp4")} muted startFrom={8 * 25} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        </Sequence>
-        {/* «mapa simplista»: sello sobre el reparto */}
-        {t >= 11.7 ? (
-          <div style={{ position: "absolute", left: 0, right: 0, top: 260, display: "flex", justifyContent: "center", opacity: Math.min(1, st.p * 2) }}>
-            <div style={{ position: "relative", ...display, fontStyle: "normal", fontSize: 36, color: RED, border: `5px solid ${RED}`, borderRadius: 12, padding: "7px 12px 2px", background: "rgba(10,10,10,0.55)", transform: `rotate(-10deg) scale(${(2 - st.p) * st.sx}, ${(2 - st.p) * st.sy})`, filter: "drop-shadow(0 0 14px rgba(255,59,48,0.6))", whiteSpace: "nowrap" }}>
-              Mapa simplista
-            </div>
-          </div>
-        ) : null}
-      </div>
-      {chip(a, <>«Acortamiento <span style={{ color: "#0a7a00" }}>→ arriba</span>»</>, 300, 0)}
-      {chip(b, <>«Estiramiento <span style={{ color: "#0a7a00" }}>→ abajo</span>»</>, 385, 1)}
-      {t >= 11.7 ? <Burst x={850} y={580} d={t - 11.76} r={220} color={RED} n={14} /> : null}
     </AbsoluteFill>
   );
 };
@@ -470,48 +426,30 @@ const AbdTitle: React.FC = () => {
 const FIG = { left: 30, top: 330, w: 500 };
 const FIG_H = FIG.w * (684 / 659);
 const VALS = { ext: [5.5, 8.5, 13.5], abd: [10, 4, 1.5] }; // PROX, MID, DIST (Δ% aprox.)
-const LOBE_L = "M 200 30 C 120 18 34 62 26 168 C 18 270 92 346 196 334 C 204 252 204 120 200 30 Z";
-const LOBE_R = "M 210 30 C 290 18 376 62 384 168 C 392 270 318 346 214 334 C 206 252 206 120 210 30 Z";
-const GluteMap: React.FC<{ vals: number[]; prog: number; col: string; t: number }> = ({ vals, prog, col, t }) => {
-  const bands = [
-    [30, 132, "Superior"],
-    [132, 234, "Media"],
-    [234, 340, "Inferior"],
-  ] as [number, number, string][];
+/** Barras claras: cuánto creció cada zona del glúteo mayor con el ejercicio actual. */
+const RegionBars: React.FC<{ vals: number[]; prog: number; col: string; t: number }> = ({ vals, prog, col, t }) => {
+  const names = ["Parte superior", "Parte media", "Parte inferior"];
   const max = Math.max(...vals);
+  const W = 260;
   return (
-    <svg width={450} height={400} viewBox="-30 0 470 360" style={{ overflow: "visible" }}>
-      <defs>
-        <clipPath id="glute-clip">
-          <path d={LOBE_L} />
-          <path d={LOBE_R} />
-        </clipPath>
-      </defs>
-      <g clipPath="url(#glute-clip)">
-        <rect x={0} y={0} width={420} height={360} fill="rgba(255,255,255,0.06)" />
-        {bands.map(([y0, y1], i) => {
-          const v = vals[i] * prog;
-          const a = Math.min(1, v / 14);
-          const top = vals[i] === max;
-          return <rect key={i} x={0} y={y0} width={420} height={y1 - y0} fill={col} opacity={0.12 + 0.75 * a * (top ? 0.85 + 0.15 * Math.sin(t * 7) : 1)} />;
-        })}
-        {[132, 234].map((y) => (
-          <line key={y} x1={0} y1={y} x2={420} y2={y} stroke="rgba(10,10,10,0.6)" strokeWidth={3} strokeDasharray="8 8" />
-        ))}
-      </g>
-      <path d={LOBE_L} fill="none" stroke={PAPER} strokeWidth={5} />
-      <path d={LOBE_R} fill="none" stroke={PAPER} strokeWidth={5} />
-      {bands.map(([y0, y1, name], i) => (
-        <g key={name}>
-          <text x={-24} y={(y0 + y1) / 2 + 6} textAnchor="end" fill={PAPER} fontFamily={FONT} fontWeight={800} fontSize={17} letterSpacing={1}>
-            {name.toUpperCase()}
-          </text>
-          <text x={438} y={(y0 + y1) / 2 + 10} textAnchor="start" fill={col} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={30}>
-            +{(vals[i] * prog).toFixed(0)}%
-          </text>
-        </g>
-      ))}
-    </svg>
+    <div style={{ width: 460, display: "flex", flexDirection: "column", gap: 16, padding: "18px 20px", borderRadius: 18, background: "rgba(10,10,10,0.75)", border: "2px solid rgba(255,255,255,0.15)" }}>
+      {names.map((n, i) => {
+        const v = vals[i] * prog;
+        const top = vals[i] === max;
+        return (
+          <div key={n}>
+            <div style={{ display: "flex", justifyContent: "space-between", ...label, fontSize: 18, letterSpacing: 2, color: top ? col : PAPER }}>
+              <span>{n}</span>
+              <span style={{ ...display, fontSize: 30, color: top ? col : PAPER }}>+{v.toFixed(0)}%</span>
+            </div>
+            <div style={{ marginTop: 6, height: 26, width: W + 120, borderRadius: 13, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${(v / 14) * 100}%`, borderRadius: 13, background: col, opacity: top ? 1 : 0.55, boxShadow: top ? `0 0 ${14 + 6 * Math.sin(t * 7)}px ${col}` : undefined }} />
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ ...label, fontSize: 13, letterSpacing: 1, color: "rgba(255,255,255,0.6)", textTransform: "none" }}>Crecimiento medio aproximado de cada zona (figura 3A)</div>
+    </div>
   );
 };
 const Study: React.FC = () => {
@@ -523,8 +461,8 @@ const Study: React.FC = () => {
   const abdOn = t >= STUDY.abd;
   const hExt = ramp(STUDY.ext, STUDY.ext + 0.4);
   const hAbd = ramp(STUDY.abd, STUDY.abd + 0.4);
-  const progExt = ramp(STUDY.ext + 0.2, STUDY.ext + 1.4);
-  const progAbd = ramp(STUDY.abd + 0.1, STUDY.abd + 1.2);
+  const progExt = ramp(STUDY.ext + 0.3, STUDY.ext + 1.8);
+  const progAbd = ramp(STUDY.abd + 0.2, STUDY.abd + 1.7);
   const swap = squash(STUDY.abd, 10, 220);
   const lExt = squash(STUDY.extLab, 9, 240);
   const lAbd = squash(STUDY.abdLab, 9, 240);
@@ -573,13 +511,12 @@ const Study: React.FC = () => {
             {/* mapa del glúteo con el ejercicio actual */}
             <div style={{ position: "absolute", left: 560, top: FIG.top - 10, width: 500, display: "flex", flexDirection: "column", alignItems: "center", opacity: Math.min(1, map.p * 2), transform: `translateX(${(1 - map.p) * 300}px) scale(${map.sx}, ${map.sy})` }}>
               <div style={{ ...display, fontSize: 36, color: INK, background: col, padding: "8px 16px 4px", borderRadius: 10, transform: `scale(${abdOn ? 0.8 + 0.2 * swap.p : 1})`, filter: abdOn ? undefined : GLOW }}>{abdOn ? "Abducción en polea" : "Extensión en polea"}</div>
-              <div style={{ marginTop: 18, transform: `scaleX(${abdOn ? 0.6 + 0.4 * swap.p : 1})` }}>
-                <GluteMap vals={abdOn ? VALS.abd : VALS.ext} prog={abdOn ? progAbd : progExt} col={col} t={t} />
+              <div style={{ marginTop: 18, transform: `scale(${abdOn ? 0.85 + 0.15 * swap.p : 1})` }}>
+                <RegionBars vals={abdOn ? VALS.abd : VALS.ext} prog={abdOn ? progAbd : progExt} col={col} t={t} />
               </div>
-              <div style={{ ...label, fontSize: 14, letterSpacing: 1, color: "rgba(255,255,255,0.6)", textTransform: "none", marginTop: 4 }}>Medias aproximadas de la figura 3A</div>
               {/* demo del ejercicio */}
               <div style={{ position: "relative", marginTop: 14, width: 300, height: 300, borderRadius: 18, overflow: "hidden", border: `4px solid ${col}`, boxShadow: "0 20px 40px rgba(0,0,0,0.6)" }}>
-                <YagoWindow from={STUDY.fig} to={STUDY.to} top={0} height={300} width={300} scale={0.5} faceY={0.12} />
+                <YagoWindow from={STUDY.fig} to={STUDY.to} top={0} height={300} width={300} scale={0.55} faceY={0.5} focus={{ x: 715, y: 1500 }} />
               </div>
             </div>
             <div style={{ position: "absolute", left: 30, right: 30, top: 1170, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
@@ -606,7 +543,7 @@ const Study: React.FC = () => {
 
 // E07: del móvil sale una proyección holográfica (haz de luz + pantalla flotante
 // girada hacia él) que va pasando vídeos con sus propios swipes
-const FEED = ["sentadilla", "bulgaras", "reaccion", "stepups", "hipthrust", "peso", "sentadilla", "bulgaras"];
+const FEED = ["sentadilla", "bulgaras", "reaccion", "stepups", "hipthrust", "peso", "sentadilla", "bulgaras", "stepups", "reaccion"];
 const PH = { x: 620, y: 300, w: 380, h: 676 };
 const HAND = hand as { t0: number; fps: number; pts: number[][] };
 const PhoneFeed: React.FC = () => {
@@ -619,7 +556,7 @@ const PhoneFeed: React.FC = () => {
   const [hx, hy] = HAND.pts[hi];
   const done = PHONE.swipes.filter((s) => t >= s).length;
   const last = PHONE.swipes[done - 1] ?? -10;
-  const slide = Math.min(1, Math.max(0, (t - last) / 0.28));
+  const slide = Math.min(1, Math.max(0, (t - last) / 0.2));
   const ease = 1 - Math.pow(1 - slide, 3);
   const flick = 0.92 + 0.05 * Math.sin(frame * 1.9) + 0.03 * Math.sin(frame * 0.7);
   const reel = (idx: number, offset: number) => {
@@ -689,45 +626,108 @@ const Start: React.FC = () => {
   );
 };
 
-// E08: dos posiciones de abducción con el contorno real de Yago (sacado del metraje):
-// de pie (cadera extendida) y sentado (cadera flexionada), con la zona y el movimiento
-const ART = {
-  depie: { w: 596, h: 1048, zones: [[0.71, 0.55]], arrows: [[0.86, 0.95, 1]] },
-  sentado: { w: 802, h: 1337, zones: [[0.3, 0.5], [0.72, 0.5]], arrows: [[0.2, 0.6, -1], [0.84, 0.6, 1]] },
-} as const;
-const ArtCard: React.FC<{ kind: "depie" | "sentado"; at: number; title: string; sub: string; col: string; i: number }> = ({ kind, at, title, sub, col, i }) => {
+// E08: dos posiciones de abducción con un maniquí que hace el ejercicio de verdad:
+// de pie (cadera extendida, la pierna se separa hacia el lado) y sentado en máquina
+// (cadera flexionada, las rodillas se abren). Zona marcada: el lateral de la cadera.
+const Limb: React.FC<{ x1: number; y1: number; x2: number; y2: number; w1: number; w2: number }> = ({ x1, y1, x2, y2, w1, w2 }) => {
+  const a = Math.atan2(y2 - y1, x2 - x1) + Math.PI / 2;
+  const c = Math.cos(a);
+  const s2 = Math.sin(a);
+  const pts = `${x1 + c * w1},${y1 + s2 * w1} ${x2 + c * w2},${y2 + s2 * w2} ${x2 - c * w2},${y2 - s2 * w2} ${x1 - c * w1},${y1 - s2 * w1}`;
+  return (
+    <g fill="url(#mq)">
+      <polygon points={pts} />
+      <circle cx={x1} cy={y1} r={w1} />
+      <circle cx={x2} cy={y2} r={w2} />
+    </g>
+  );
+};
+const Mannequin: React.FC<{ seated?: boolean; k: number; col: string; pulse: number }> = ({ seated, k, col, pulse }) => {
+  const hipY = seated ? 250 : 232;
+  const hl = { x: 128, y: hipY };
+  const hr = { x: 172, y: hipY };
+  const torso = `M 108 ${hipY - 132} C 96 ${hipY - 128} 92 ${hipY - 112} 96 ${hipY - 92} C 102 ${hipY - 66} 112 ${hipY - 40} 112 ${hipY - 18} C 110 ${hipY - 6} 112 ${hipY + 6} 120 ${hipY + 12} L 180 ${hipY + 12} C 188 ${hipY + 6} 190 ${hipY - 6} 188 ${hipY - 18} C 188 ${hipY - 40} 198 ${hipY - 66} 204 ${hipY - 92} C 208 ${hipY - 112} 204 ${hipY - 128} 192 ${hipY - 132} Z`;
+  let legs: React.ReactNode;
+  if (!seated) {
+    const ang = (k * 38 * Math.PI) / 180;
+    const kr = { x: hr.x + Math.sin(ang) * 96, y: hr.y + Math.cos(ang) * 96 };
+    const ar = { x: hr.x + Math.sin(ang) * 192, y: hr.y + Math.cos(ang) * 192 };
+    legs = (
+      <>
+        <Limb x1={hl.x} y1={hl.y} x2={124} y2={hl.y + 96} w1={17} w2={11} />
+        <Limb x1={124} y1={hl.y + 96} x2={122} y2={hl.y + 190} w1={11} w2={8} />
+        <ellipse cx={116} cy={hl.y + 198} rx={16} ry={7} fill="url(#mq)" />
+        <Limb x1={hr.x} y1={hr.y} x2={kr.x} y2={kr.y} w1={17} w2={11} />
+        <Limb x1={kr.x} y1={kr.y} x2={ar.x} y2={ar.y} w1={11} w2={8} />
+        {/* tobillera y cable de la polea */}
+        <rect x={ar.x - 10} y={ar.y - 18} width={20} height={10} rx={3} fill={col} />
+        <line x1={ar.x} y1={ar.y - 13} x2={20} y2={hl.y + 186} stroke="rgba(255,255,255,0.6)" strokeWidth={3} />
+        {/* brazo apoyado en la máquina */}
+        <line x1={12} y1={hipY - 210} x2={12} y2={hipY + 200} stroke="rgba(255,255,255,0.35)" strokeWidth={8} strokeLinecap="round" />
+      </>
+    );
+  } else {
+    const spread = k * 30;
+    // muslos hacia la cámara (escorzo): cortos y anchos, con la rodilla como un casquete
+    const kl = { x: 112 - spread, y: hipY + 34 };
+    const kr = { x: 188 + spread, y: hipY + 34 };
+    legs = (
+      <>
+        {/* respaldo y asiento de la máquina */}
+        <rect x={96} y={hipY - 150} width={108} height={170} rx={14} fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" strokeWidth={2} />
+        <rect x={74} y={hipY + 4} width={152} height={26} rx={9} fill="rgba(255,255,255,0.22)" />
+        <rect x={140} y={hipY + 30} width={20} height={160} fill="rgba(255,255,255,0.15)" />
+        <Limb x1={hl.x} y1={hl.y + 6} x2={kl.x} y2={kl.y} w1={21} w2={19} />
+        <Limb x1={hr.x} y1={hr.y + 6} x2={kr.x} y2={kr.y} w1={21} w2={19} />
+        <circle cx={kl.x} cy={kl.y} r={17} fill="#f4f6f8" />
+        <circle cx={kr.x} cy={kr.y} r={17} fill="#f4f6f8" />
+        <Limb x1={kl.x} y1={kl.y + 10} x2={kl.x - 6} y2={kl.y + 130} w1={12} w2={8} />
+        <Limb x1={kr.x} y1={kr.y + 10} x2={kr.x + 6} y2={kr.y + 130} w1={12} w2={8} />
+        <ellipse cx={kl.x - 12} cy={kl.y + 138} rx={16} ry={7} fill="url(#mq)" />
+        <ellipse cx={kr.x + 12} cy={kr.y + 138} rx={16} ry={7} fill="url(#mq)" />
+        {/* almohadillas por fuera de las rodillas: se abren con ellas */}
+        <rect x={kl.x - 42} y={kl.y - 26} width={16} height={52} rx={7} fill={col} opacity={0.95} />
+        <rect x={kr.x + 26} y={kr.y - 26} width={16} height={52} rx={7} fill={col} opacity={0.95} />
+        <path d={`M ${kl.x - 50} ${kl.y} l -22 0 m 8 -9 l -8 9 l 8 9`} stroke={col} strokeWidth={4} fill="none" strokeLinecap="round" opacity={k} />
+        <path d={`M ${kr.x + 50} ${kr.y} l 22 0 m -8 -9 l 8 9 l -8 9`} stroke={col} strokeWidth={4} fill="none" strokeLinecap="round" opacity={k} />
+      </>
+    );
+  }
+  return (
+    <svg width={300} height={470} viewBox="0 0 300 470" style={{ overflow: "visible", filter: "drop-shadow(0 0 1.5px rgba(255,255,255,0.9)) drop-shadow(0 8px 14px rgba(0,0,0,0.5))" }}>
+      <defs>
+        <linearGradient id="mq" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#8f949a" />
+          <stop offset="0.45" stopColor="#e9ecef" />
+          <stop offset="1" stopColor="#7c8187" />
+        </linearGradient>
+      </defs>
+      {legs}
+      <path d={torso} fill="url(#mq)" />
+      {/* brazos */}
+      <Limb x1={100} y1={hipY - 120} x2={84} y2={hipY - 40} w1={11} w2={9} />
+      <Limb x1={84} y1={hipY - 40} x2={seated ? 96 : 50} y2={seated ? hipY + 10 : hipY - 70} w1={9} w2={7} />
+      <Limb x1={200} y1={hipY - 120} x2={216} y2={hipY - 40} w1={11} w2={9} />
+      <Limb x1={216} y1={hipY - 40} x2={seated ? 204 : 222} y2={seated ? hipY + 10 : hipY + 30} w1={9} w2={7} />
+      <rect x={140} y={hipY - 152} width={20} height={24} rx={8} fill="url(#mq)" />
+      <ellipse cx={150} cy={hipY - 176} rx={24} ry={29} fill="url(#mq)" />
+      {/* zona trabajada: lateral de la cadera (glúteo medio y parte alta del mayor) */}
+      {(seated ? [hl, hr] : [hr]).map((h, i) => (
+        <ellipse key={i} cx={h.x + (h.x > 150 ? 14 : -14)} cy={h.y - 6} rx={20 + 4 * pulse} ry={26 + 4 * pulse} fill={col} opacity={0.4 + 0.35 * pulse} style={{ filter: "blur(5px)" }} />
+      ))}
+    </svg>
+  );
+};
+const ArtCard: React.FC<{ seated?: boolean; at: number; title: string; sub: string; col: string; i: number }> = ({ seated, at, title, sub, col, i }) => {
   const { t, squash } = useClock();
   const q = squash(at, 10, 210);
   if (q.p < 0.01) return null;
-  const A = ART[kind];
-  const H = 400;
-  const W = (A.w / A.h) * H;
-  const draw = Math.min(1, Math.max(0, (t - at) / 0.55));
+  const k = 0.5 - 0.5 * Math.cos(Math.max(0, t - at - 0.3) * 4.2);
   const pulse = 0.5 + 0.5 * Math.sin((t - at) * 6);
-  const mov = Math.sin((t - at) * 4.5);
   return (
-    <div style={{ width: 470, height: 540, borderRadius: 24, background: "rgba(10,10,10,0.8)", border: `3px solid ${col}`, boxShadow: `0 0 30px ${col}44, 0 30px 60px rgba(0,0,0,0.5)`, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 14, opacity: Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 120}px) scale(${q.sx}, ${q.sy}) rotate(${i ? 1.5 : -1.5}deg)` }}>
-      <div style={{ position: "relative", width: W, height: H }}>
-        {/* contorno que se dibuja de arriba abajo */}
-        <Img src={staticFile(`art/${kind}.png`)} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", clipPath: `inset(0 0 ${(1 - draw) * 100}% 0)`, filter: "drop-shadow(0 0 6px rgba(255,255,255,0.45))" }} />
-        {draw < 1 ? <div style={{ position: "absolute", left: -10, right: -10, top: `${draw * 100}%`, height: 4, background: col, boxShadow: `0 0 16px 4px ${col}` }} /> : null}
-        <svg width={W} height={H} style={{ position: "absolute", inset: 0, overflow: "visible", opacity: draw >= 1 ? 1 : 0 }}>
-          {A.zones.map(([zx, zy], j) => (
-            <ellipse key={j} cx={zx * W} cy={zy * H} rx={30 + 6 * pulse} ry={24 + 5 * pulse} fill={col} opacity={0.35 + 0.35 * pulse} style={{ filter: `blur(6px)` }} />
-          ))}
-          {A.arrows.map(([ax, ay, dir], j) => {
-            const x = ax * W + dir * (6 + 10 * mov);
-            const y = ay * H;
-            return (
-              <g key={j} transform={`translate(${x} ${y})`}>
-                <line x1={0} y1={0} x2={dir * 46} y2={0} stroke={col} strokeWidth={8} strokeLinecap="round" />
-                <path d={`M ${dir * 46} -14 L ${dir * 66} 0 L ${dir * 46} 14 Z`} fill={col} />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-      <div style={{ ...display, fontSize: 38, color: col, marginTop: 14 }}>{title}</div>
+    <div style={{ width: 470, height: 600, borderRadius: 24, background: "rgba(10,10,10,0.82)", border: `3px solid ${col}`, boxShadow: `0 0 30px ${col}44, 0 30px 60px rgba(0,0,0,0.5)`, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 18, opacity: Math.min(1, q.p * 2), transform: `translateY(${(1 - q.p) * 120}px) scale(${q.sx}, ${q.sy}) rotate(${i ? 1.5 : -1.5}deg)` }}>
+      <Mannequin seated={seated} k={k} col={col} pulse={pulse} />
+      <div style={{ ...display, fontSize: 38, color: col, marginTop: 4 }}>{title}</div>
       <div style={{ ...label, fontSize: 20, letterSpacing: 3, color: PAPER, marginTop: 4 }}>{sub}</div>
     </div>
   );
@@ -738,9 +738,9 @@ const Positions: React.FC = () => {
   const out = ramp(POS.to - 0.25, POS.to, easeInOut);
   return (
     <AbsoluteFill style={{ opacity: 1 - out }}>
-      <div style={{ position: "absolute", top: 170, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 30 }}>
-        <ArtCard kind="depie" at={POS.ext} title="Cadera extendida" sub="De pie" col={GREEN} i={0} />
-        {t >= POS.flex - 0.02 ? <ArtCard kind="sentado" at={POS.flex} title="Más flexionada" sub="Sentado" col="#FFB020" i={1} /> : <div style={{ width: 470 }} />}
+      <div style={{ position: "absolute", top: 160, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 30 }}>
+        <ArtCard at={POS.ext} title="Cadera extendida" sub="De pie" col={GREEN} i={0} />
+        {t >= POS.flex - 0.02 ? <ArtCard seated at={POS.flex} title="Más flexionada" sub="Sentado" col="#FFB020" i={1} /> : <div style={{ width: 470 }} />}
       </div>
     </AbsoluteFill>
   );
@@ -774,7 +774,15 @@ export const Graphics: React.FC = () => {
   return (
     <AbsoluteFill>
       <HookReact />
-      <CardReact />
+      <Pill from={8.12} to={10.45} top={250} size={46} rot={-2}>
+        «Acortamiento → parte alta»
+      </Pill>
+      <Pill from={10.52} to={11.7} top={250} size={46} rot={2}>
+        «Estiramiento → parte baja»
+      </Pill>
+      <Pill from={11.76} to={14.7} top={250} size={56}>
+        Mapa simplista
+      </Pill>
       <Anat />
       <Catalog />
       <Pill from={CAT.ext} to={CAT.to} top={250} green size={38}>

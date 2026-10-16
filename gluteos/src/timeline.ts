@@ -135,12 +135,12 @@ export const SCALEKEYS = [
     keys: [
       [29.6, 1.65],
       [32.2, 1.65],
-      [32.75, 1.0],
-      [34.4, 1.0],
+      [32.75, 1.12],
+      [34.4, 1.12],
       [35.0, 1.6],
       [37.85, 1.6],
-      [38.4, 1.0],
-      [41.6, 1.0],
+      [38.4, 1.12],
+      [41.6, 1.12],
     ] as [number, number][],
   },
 ];
@@ -199,9 +199,9 @@ export const CAT = {
 export const ABD = { other: 36.56, word: 38.84, sep: 39.92, to: 41.5 };
 export const MAYOR = { medio: 44.4, mayor: 49.08, to: 51.2 };
 // E06: P1, figura 3A
-export const STUDY = { from: 51.28, fig: 52.92, ext: 53.08, extLab: 55.12, abd: 57.68, abdLab: 58.56, to: 61.62, bgFrom: 51.24, bgTo: 62.05 };
+export const STUDY = { from: 51.28, fig: 54.0, ext: 54.1, extLab: 56.6, abd: 57.68, abdLab: 60.2, to: 61.62, bgFrom: 51.24, bgTo: 62.05 };
 // E07: el móvil «escupe» un feed de vídeos que pasa con sus propios swipes
-export const PHONE = { in: 61.9, swipes: [63.0, 63.9, 64.8, 65.6, 66.4, 67.2, 68.0], out: 68.7 };
+export const PHONE = { in: 61.9, swipes: [65.12, 65.45, 65.85, 66.12, 66.5, 66.95, 67.25, 67.55, 67.95], out: 68.7 };
 // E07: elegir, no acumular
 export const COMBO = { at: 61.88, to: 64.2 };
 export const STARTP = { at: 69.08, card: 70.56, abd: 75.88, to: 77.2 };
