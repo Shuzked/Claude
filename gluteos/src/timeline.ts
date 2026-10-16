@@ -201,9 +201,9 @@ export const MAYOR = { medio: 44.4, mayor: 49.08, to: 51.2 };
 // E06: P1, figura 3A
 export const STUDY = { from: 51.28, fig: 52.92, ext: 53.08, extLab: 55.12, abd: 57.68, abdLab: 58.56, to: 61.62, bgFrom: 51.24, bgTo: 62.05 };
 // E07: el móvil «escupe» un feed de vídeos que pasa con sus propios swipes
-export const PHONE = { in: 64.3, swipes: [65.2, 65.8, 66.4, 66.85, 67.35], out: 68.15 };
+export const PHONE = { in: 61.9, swipes: [63.0, 63.9, 64.8, 65.6, 66.4, 67.2, 68.0], out: 68.7 };
 // E07: elegir, no acumular
-export const COMBO = { at: 62.56, to: 64.2 };
+export const COMBO = { at: 61.88, to: 64.2 };
 export const STARTP = { at: 69.08, card: 70.56, abd: 75.88, to: 77.2 };
 // E08: dos posiciones de abducción
 export const POS = { ext: 77.32, flex: 78.9, to: 79.94 };

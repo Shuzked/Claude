@@ -604,8 +604,8 @@ const Study: React.FC = () => {
 };
 
 // E07: del móvil sale un feed de vídeos de glúteo que pasa con sus propios swipes
-const FEED = ["sentadilla", "bulgaras", "reaccion", "stepups", "hipthrust", "peso"];
-const PH = { ax: 650, ay: 1010, x: 640, y: 230, w: 390, h: 694 };
+const FEED = ["sentadilla", "bulgaras", "reaccion", "stepups", "hipthrust", "peso", "sentadilla", "bulgaras"];
+const PH = { ax: 650, ay: 1010, x: 640, y: 300, w: 380, h: 676 };
 const PhoneFeed: React.FC = () => {
   const { t, frame, squash, ramp } = useClock();
   if (t < PHONE.in - 0.05 || t > PHONE.out + 0.4) return null;
@@ -782,7 +782,7 @@ export const Graphics: React.FC = () => {
         Parte superior del glúteo mayor
       </Pill>
       <Study />
-      <Pill from={COMBO.at} to={COMBO.to} top={250} size={46}>
+      <Pill from={COMBO.at} to={COMBO.to} top={130} size={42}>
         Combinar, no acumular
       </Pill>
       <PhoneFeed />
