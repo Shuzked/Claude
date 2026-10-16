@@ -9,7 +9,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { CameraSpace, toScreen } from "./Camera";
+import { CameraSpace } from "./Camera";
 import { gradeFilter } from "./Grade";
 import stick from "./stick.json";
 import { FONT, GREEN, PAPER } from "./theme";
@@ -251,18 +251,21 @@ const LEVER: Record<"press" | "fly", { img: string; at: number; to: number; side
 };
 
 const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
-  const { t, ramp, squash } = useClock();
+  const { t, frame, fps, ramp, squash } = useClock();
   const L = LEVER[kind];
   if (t < L.at - 0.02 || t >= L.to + (kind === "press" ? 0.2 : 0)) return null;
-  const inQ = squash(L.at, 14, 170);
+  const inQ = squash(L.at, 14, 150);
+  // tiempo del montaje desde que se congela (sigue corriendo durante la pausa)
+  const since = (frame - f(L.at)) / fps;
+  const k = (a: number, b: number, e = easeOut) => interpolate(since, [a, b], [0, 1], { ...clamp, easing: e });
   // la apertura entra con un barrido lateral que empuja al press
-  const swipe = kind === "fly" ? ramp(L.at, L.at + 0.22, easeInOut) : 1;
+  const swipe = kind === "fly" ? k(0, 0.3, easeInOut) : 1;
   const leave = kind === "press" ? ramp(L.to, L.to + 0.2, easeInOut) : 0;
-  const lv = ramp(L.at + 0.05, L.at + 0.35);
-  const grav = ramp(L.at + 0.25, L.at + 0.6);
-  const perp = ramp(L.at + 0.55, L.at + 0.95);
-  const lab = squash(L.at + 0.85, 8, 260);
-  const zoom = 1.1 - 0.08 * inQ.p + 0.03 * ramp(L.at, L.to, (u) => u);
+  const lv = k(0.1, 0.45);
+  const grav = k(0.45, 1.0);
+  const perp = k(1.0, 1.55);
+  const word = spring({ frame: frame - f(L.at) - Math.round(1.45 * fps), fps, config: { damping: 9, stiffness: 180, mass: 0.6 } });
+  const zoom = 1.1 - 0.08 * inQ.p + 0.025 * k(0, 2.4, (u) => u);
   const blur = kind === "fly" ? 18 * (1 - swipe) * swipe * 4 : leave * 14;
   const dx = kind === "fly" ? (1 - swipe) * 1080 : -leave * 1080;
   const col = kind === "press" ? GREEN : "#FFB020";
@@ -289,19 +292,21 @@ const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
                 {perp > 0.95 && Math.abs(s.db.x - s.sh.x) > 60 ? <path d={`M ${s.db.x - sgn * 26} ${s.sh.y} L ${s.db.x - sgn * 26} ${s.sh.y - 26} L ${s.db.x} ${s.sh.y - 26}`} fill="none" stroke={PAPER} strokeWidth={4} opacity={(perp - 0.95) / 0.05} /> : null}
                 <circle cx={s.sh.x} cy={s.sh.y} r={16 * lv} fill={PAPER} stroke={col} strokeWidth={6} />
                 <circle cx={s.db.x} cy={s.db.y} r={14 * lv} fill={RED} stroke={PAPER} strokeWidth={3} />
+                {/* «corta» / «larga» sobre la propia línea de palanca */}
+                {word > 0.01 ? (
+                  <g transform={`translate(${Math.min(930, Math.max(150, (s.sh.x + s.db.x) / 2))} ${s.sh.y + 62}) scale(${word})`}>
+                    <rect x={-78} y={-30} width={156} height={50} rx={10} fill={col} style={{ filter: `drop-shadow(0 0 10px ${col})` }} />
+                    <text x={0} y={8} textAnchor="middle" fill={INK} fontFamily={FONT} fontWeight={900} fontStyle="italic" fontSize={34}>
+                      {kind === "press" ? "CORTA" : "LARGA"}
+                    </text>
+                  </g>
+                ) : null}
               </g>
             );
           })}
         </svg>
       </AbsoluteFill>
       {kind === "press" || swipe > 0 ? <AbsoluteFill style={{ background: "white", opacity: kind === "press" ? Math.max(0, 0.6 - lv * 1.6) : 0 }} /> : null}
-      {/* rótulo de cada palanca */}
-      <div style={{ position: "absolute", left: 0, right: 0, top: 470, display: "flex", justifyContent: "center", opacity: Math.min(1, lab.p * 2) }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, transform: `translateY(${(1 - lab.p) * 40}px) scale(${lab.sx}, ${lab.sy}) rotate(${kind === "press" ? -2 : 2}deg)` }}>
-          <div style={{ ...display, fontSize: 44, color: INK, background: kind === "press" ? PAPER : GREEN, padding: "8px 18px 4px", borderRadius: 10 }}>{kind === "press" ? "Press" : "Aperturas"}</div>
-          <div style={{ ...display, ...stroke(8), fontSize: 58, color: col }}>{L.label}</div>
-        </div>
-      </div>
     </AbsoluteFill>
   );
 };
@@ -310,7 +315,7 @@ const Freeze: React.FC<{ kind: "press" | "fly" }> = ({ kind }) => {
  *  Press: el codo se flexiona y se extiende. Aperturas: el codo queda fijo y todo el
  *  brazo gira desde el hombro como una sola pieza. `t` = segundos desde que aparece. */
 const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
-  const cyc = 0.5 - 0.5 * Math.cos(Math.max(0, t) * 4.2);
+  const cyc = 0.5 - 0.5 * Math.cos(Math.max(0, t - 0.9) * 2.8);
   const sh = { x: 80, y: 290 };
   const upper = 140;
   const fore = 130;
@@ -322,10 +327,10 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
   const a2 = a1 + ((180 - elbow) * Math.PI) / 180 * -1;
   const hd = { x: el.x + Math.cos(a2) * fore, y: el.y + Math.sin(a2) * fore };
   // se dibuja por partes: brazo, antebrazo, mancuerna y arco (nada aparece de golpe)
-  const draw = Math.min(1, Math.max(0, t / 0.3));
-  const draw2 = Math.min(1, Math.max(0, (t - 0.3) / 0.3));
-  const db = spring({ frame: Math.round((t - 0.55) * 25), fps: 25, config: { damping: 9, stiffness: 240, mass: 0.6 } });
-  const arcP = Math.min(1, Math.max(0, (t - 0.65) / 0.3));
+  const draw = Math.min(1, Math.max(0, t / 0.4));
+  const draw2 = Math.min(1, Math.max(0, (t - 0.35) / 0.4));
+  const db = spring({ frame: Math.round((t - 0.7) * 25), fps: 25, config: { damping: 11, stiffness: 160, mass: 0.6 } });
+  const arcP = Math.min(1, Math.max(0, (t - 0.85) / 0.45));
   const col = bend ? GREEN : "#FFB020";
   // arco del ángulo del codo (entre la dirección al hombro y a la mano)
   const toSh = Math.atan2(sh.y - el.y, sh.x - el.x);
@@ -380,17 +385,17 @@ const ArmDiagram: React.FC<{ t: number; bend?: boolean }> = ({ t, bend }) => {
 const ExTag: React.FC<{ from: number; to: number; text: string; green?: boolean; icon: "bend" | "fixed"; iconAt: number }> = ({ from, to, text, green, icon, iconAt }) => {
   const { t, squash, ramp, idle } = useClock();
   if (t < from - 0.05 || t > to + 0.05) return null;
-  const q = squash(from, 9, 230);
-  const out = ramp(to - 0.25, to, easeInOut);
-  const ul = ramp(from + 0.15, from + 0.5);
-  const ic = squash(iconAt, 8, 240);
+  const q = squash(from, 12, 140);
+  const out = ramp(to - 0.35, to, easeInOut);
+  const ul = ramp(from + 0.3, from + 0.9);
+  const ic = squash(iconAt, 12, 130);
   const id = idle(from, 0.7);
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
       <Burst x={540} y={350} d={t - from - 0.05} r={130} n={12} color={green ? GREEN : PAPER} />
       <div style={{ position: "absolute", top: 290, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translateY(${id.y}px) rotate(${-2 + id.r * 0.5}deg) scale(${popOut(out)})` }}>
         <div style={{ position: "relative", transform: `scale(${q.p * q.sx}, ${q.p * q.sy})` }}>
-          <Words text={text} at={from + 0.05} gap={0.06} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER }} />
+          <Words text={text} at={from + 0.08} gap={0.12} style={{ ...display, ...stroke(10), fontSize: 110, color: green ? GREEN : PAPER }} />
           <div style={{ position: "absolute", left: 0, bottom: -10, height: 10, width: `${ul * 100}%`, background: green ? GREEN : PAPER, borderRadius: 6, filter: green ? GLOW : undefined }} />
         </div>
       </div>
@@ -409,22 +414,15 @@ const Split: React.FC = () => {
   const head = pop(SPLIT.lever + 0.1, 9, 240);
   return (
     <AbsoluteFill>
-      <ExTag from={SPLIT.from + 0.02} to={SPLIT.flyFrom - 0.05} text="Press" icon="bend" iconAt={SPLIT.elbow} />
-      <ExTag from={SPLIT.flyFrom + 0.02} to={24.0} text="Aperturas" green icon="fixed" iconAt={SPLIT.fixed} />
+      <ExTag from={SPLIT.from + 0.02} to={SPLIT.flyFrom - 0.05} text="Press" icon="bend" iconAt={20.02} />
+      <ExTag from={SPLIT.flyFrom + 0.02} to={24.0} text="Aperturas" green icon="fixed" iconAt={22.54} />
       <Freeze kind="press" />
       <Freeze kind="fly" />
       {t >= SPLIT.lever ? (
-        <div style={{ position: "absolute", left: 0, right: 0, top: 300, display: "flex", justifyContent: "center", opacity: Math.min(1, head * 2) }}>
-          <div style={{ transform: `scale(${0.6 + 0.4 * head}) rotate(-2deg)` }}>
-            <Words text="Misma aducción, otra palanca" at={SPLIT.lever + 0.1} gap={0.06} style={{ ...display, ...stroke(8), fontSize: 58 }} color={(i) => (i >= 2 ? GREEN : undefined)} />
-          </div>
-        </div>
-      ) : null}
-      {t >= SPLIT.lever ? (
-        <div style={{ position: "absolute", left: 0, right: 0, top: 1240, display: "flex", justifyContent: "center", opacity: Math.min(1, head * 2) }}>
-          <div style={{ display: "flex", gap: 22, ...label, fontSize: 22, letterSpacing: 2, color: PAPER, background: "rgba(10,10,10,0.7)", padding: "8px 16px", borderRadius: 10 }}>
-            <span style={{ color: RED }}>┆ Gravedad</span>
-            <span style={{ color: GREEN }}>━ Palanca sobre el hombro</span>
+        <div style={{ position: "absolute", left: 90, right: 90, top: 250, display: "flex", flexDirection: "column", alignItems: "center", opacity: Math.min(1, head * 2) }}>
+          <div style={{ transform: `scale(${0.6 + 0.4 * head}) rotate(-2deg)`, display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Words text="Misma aducción," at={SPLIT.lever + 0.1} gap={0.1} style={{ ...display, ...stroke(9), fontSize: 66 }} />
+            <Words text="distinta palanca" at={SPLIT.lever + 0.35} gap={0.1} style={{ ...display, ...stroke(9), fontSize: 66, color: GREEN }} />
           </div>
         </div>
       ) : null}
@@ -515,20 +513,9 @@ const Backdrop: React.FC<{ from: number; to: number; title: string; id: string }
 // «Pizarra imaginaria» (53–59 s): la Figura 4 centrada detrás de Yago, que va delante
 // (rotoscopiado con el palo, birefnet sobre el 4K) y las conclusiones centradas en grande.
 const STICK = stick as { t0: number; fps: number; x: number; y: number; w: number; h: number; ext?: string; dir?: string; tips: ([number, number] | null)[] };
-const tipAt = (t: number) => {
-  const i = Math.round((t - STICK.t0) * STICK.fps);
-  const win: [number, number][] = [];
-  for (let k = i - 4; k <= i + 4; k++) {
-    const p = STICK.tips[Math.max(0, Math.min(STICK.tips.length - 1, k))];
-    if (p) win.push(p);
-  }
-  if (!win.length) return null;
-  const med = (j: 0 | 1) => win.map((p) => p[j]).sort((a, b) => a - b)[Math.floor(win.length / 2)];
-  return { x: med(0), y: med(1) };
-};
 const BOARD = { left: 160, top: 330, w: 760 };
 const Board: React.FC = () => {
-  const { t, frame, fps, squash, ramp, idle } = useClock();
+  const { t, squash, ramp, idle } = useClock();
   const fig = squash(STUDY.fig, 12, 190);
   const wipe = ramp(STUDY.fig + 0.05, STUDY.fig + 0.6, easeInOut);
   const out = ramp(STUDY.to - 0.35, STUDY.to, easeInOut);
@@ -537,8 +524,6 @@ const Board: React.FC = () => {
   const bid = idle(3.3, 0.5);
   const i = Math.round((t - STICK.t0) * STICK.fps);
   const n = String(Math.max(0, Math.min(STICK.tips.length - 1, i))).padStart(3, "0");
-  const tip0 = tipAt(t);
-  const tip = tip0 ? toScreen(frame, fps, tip0) : null;
   return (
     <AbsoluteFill style={{ opacity: out > 0.85 ? (1 - out) / 0.15 : 1 }}>
       <div style={{ position: "absolute", left: BOARD.left, top: BOARD.top, width: BOARD.w, transformOrigin: "50% 100%", transform: `translateY(${(1 - fig.p) * 120 + bid.y}px) scale(${fig.p * fig.sx * popOut(out)}, ${fig.p * fig.sy * popOut(out)})` }}>
@@ -555,12 +540,6 @@ const Board: React.FC = () => {
           <Img src={staticFile(`roto/${STICK.dir ?? "stick"}/s_${n}.${STICK.ext ?? "png"}`)} style={{ width: "100%", height: "100%" }} />
         </div>
       </CameraSpace>
-      {/* destello en la punta del palo y haz hasta el punto señalado */}
-      {tip && wipe > 0.9 ? (
-        <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-          <circle cx={tip.x} cy={tip.y} r={10 + 3 * Math.sin(t * 12)} fill="#EFFFF0" style={{ filter: NEON }} />
-        </svg>
-      ) : null}
       {/* conclusiones, centradas y en grande */}
       <div style={{ position: "absolute", left: 0, right: 0, top: 620, display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
         <div style={{ position: "relative", ...display, fontSize: 84, color: INK, background: GREEN, padding: "16px 34px 8px", borderRadius: 18, filter: GLOW, opacity: Math.min(1, both.p * 2), transform: `translateY(${(1 - both.p) * 50}px) scale(${both.sx * popOut(out)}, ${both.sy * popOut(out)}) rotate(-2deg)` }}>

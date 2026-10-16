@@ -2,7 +2,6 @@ import React from "react";
 import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import arms from "./arms.json";
 import head from "./head.json";
-import pec from "./pec.json";
 import { gradeFilter } from "./Grade";
 import { GREEN, PAPER } from "./theme";
 import { ADD, COMBINE, f, HOOK, HUMERUS, toSrc } from "./timeline";
@@ -270,46 +269,6 @@ const Combine: React.FC<{ t: number }> = ({ t }) => {
   );
 };
 
-// «…desarrollar tu PECTORAL»: brillo sutil con la forma de los dos pectorales, bordes
-// difuminados, pegado al torso (hombros y caderas de la pose).
-const PEC = pec as { t0: number; fps: number; f: number[][] };
-export const PEC_AT = { from: 33.6, to: 34.28 };
-const PecGlow: React.FC<{ t: number }> = ({ t }) => {
-  const i = Math.max(0, Math.min(PEC.f.length - 1, Math.round((t - PEC.t0) * PEC.fps)));
-  const [ax, ay, bx, by, hx, hy, kx, ky] = PEC.f[i];
-  const shm = { x: (ax + bx) / 2, y: (ay + by) / 2 };
-  const hpm = { x: (hx + kx) / 2, y: (hy + ky) / 2 };
-  const down = { x: hpm.x - shm.x, y: hpm.y - shm.y };
-  const wv = { x: ax - bx, y: ay - by };
-  const W = Math.hypot(wv.x, wv.y);
-  const ang = (Math.atan2(wv.y, wv.x) * 180) / Math.PI;
-  const k = interpolate(t, [PEC_AT.from, PEC_AT.from + 0.25, PEC_AT.to - 0.25, PEC_AT.to], [0, 1, 1, 0], clamp);
-  const pulse = 0.85 + 0.15 * Math.sin(t * 7);
-  const lobe = (u: number, key: number) => {
-    // cada pectoral: desde el hombro hacia el esternón, algo por debajo de la línea de hombros
-    const c = { x: bx + wv.x * u + down.x * 0.2, y: by + wv.y * u + down.y * 0.2 };
-    // forma de pectoral: abanico redondeado desde el esternón hacia el hombro
-    const sx = u < 0.5 ? -1 : 1;
-    const r = W * 0.3;
-    return (
-      <path
-        key={key}
-        d={`M ${sx * r * 0.95} ${-r * 0.35} Q ${sx * r * 0.2} ${-r * 0.75} ${-sx * r * 0.85} ${-r * 0.45} L ${-sx * r * 0.9} ${r * 0.35} Q ${-sx * r * 0.4} ${r * 0.85} ${sx * r * 0.5} ${r * 0.55} Q ${sx * r * 0.95} ${r * 0.3} ${sx * r * 0.95} ${-r * 0.35} Z`}
-        transform={`translate(${c.x} ${c.y}) rotate(${ang})`}
-        fill="rgba(90,255,70,0.95)"
-      />
-    );
-  };
-  return (
-    <Svg opacity={k * 0.5 * pulse}>
-      <g style={{ filter: "blur(20px)" }}>
-        {lobe(0.3, 0)}
-        {lobe(0.7, 1)}
-      </g>
-    </Svg>
-  );
-};
-
 // Hook, «200 kilos»: la cabeza (rotoscopiada) se va hinchando, se pone roja del
 // esfuerzo (sin gotas, solo la cabeza: el corte va bajo la mandíbula). Recortes RGBA de 220 px (coordenadas de vídeo) en public/roto/head.
 const HEAD = head as { t0: number; fps: number; size: number; tl: number[][]; center: number[][] };
@@ -352,7 +311,6 @@ export const BodyLayer: React.FC = () => {
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       {t >= HOOK.press - 0.1 && t < HOOK.light ? <HeadInflate t={t} /> : null}
-      {t >= PEC_AT.from && t < PEC_AT.to ? <PecGlow t={t} /> : null}
       {t >= HUMERUS.from - 0.05 && t < HUMERUS.to + 0.05 ? <Humerus t={t} /> : null}
       {t >= ADD.from - 0.05 && t < ADD.to + 0.05 ? <AddArrows t={t} /> : null}
       {t >= COMBINE.press - 0.05 && t < COMBINE.to + 0.05 ? <Combine t={t} /> : null}

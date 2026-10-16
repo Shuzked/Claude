@@ -79,39 +79,56 @@ export const SEGMENTS: [number, number][] = (() => {
   return segs.filter(([x, y]) => y - x > 0.05);
 })();
 
-const segOut: number[] = [];
-{
+// Pausas con la imagen congelada (la voz se calla, la música sigue): dan tiempo a leer
+// la palanca del press y la de las aperturas.
+export const HOLDS: { at: number; dur: number }[] = [
+  { at: 25.32, dur: 0.9 },
+  { at: 27.27, dur: 1.0 },
+];
+
+type Seg = { src: number; dur: number; hold: boolean; out: number };
+const SEGS: Seg[] = (() => {
+  const out: Seg[] = [];
   let acc = 0;
   for (const [a, b] of SEGMENTS) {
-    segOut.push(acc);
-    acc += b - a;
+    let s0 = a;
+    for (const h of HOLDS.filter((x) => x.at > a && x.at < b).sort((x, y) => x.at - y.at)) {
+      out.push({ src: s0, dur: h.at - s0, hold: false, out: acc });
+      acc += h.at - s0;
+      out.push({ src: h.at, dur: h.dur, hold: true, out: acc });
+      acc += h.dur;
+      s0 = h.at;
+    }
+    out.push({ src: s0, dur: b - s0, hold: false, out: acc });
+    acc += b - s0;
   }
-}
-export const OUT_DURATION = SEGMENTS.reduce((acc, [a, b]) => acc + b - a, 0);
+  return out;
+})();
+const PLAY = SEGS.filter((x) => !x.hold);
+
+export const OUT_DURATION = SEGS.reduce((acc, x) => acc + x.dur, 0);
 export const DURATION_FRAMES = Math.round(OUT_DURATION * FPS);
 
 /** Segundo del original → segundo del montaje (lo recortado se pega al corte). */
 export const toOut = (src: number) => {
-  for (let i = SEGMENTS.length - 1; i >= 0; i--) {
-    const [a, b] = SEGMENTS[i];
-    if (src >= a) return segOut[i] + Math.min(src, b) - a;
+  for (let i = PLAY.length - 1; i >= 0; i--) {
+    const x = PLAY[i];
+    if (src >= x.src) return x.out + Math.min(src - x.src, x.dur);
   }
   return 0;
 };
 
-/** Segundo del montaje → segundo del original. */
+/** Segundo del montaje → segundo del original (en una pausa se queda quieto). */
 export const toSrc = (out: number) => {
-  for (let i = SEGMENTS.length - 1; i >= 0; i--) {
-    if (out >= segOut[i]) return SEGMENTS[i][0] + (out - segOut[i]);
+  for (let i = SEGS.length - 1; i >= 0; i--) {
+    const x = SEGS[i];
+    if (out >= x.out) return x.hold ? x.src : x.src + (out - x.out);
   }
   return 0;
 };
 
-export const segmentsOut = SEGMENTS.map(([a, b], i) => ({
-  src: a,
-  out: segOut[i],
-  dur: b - a,
-}));
+/** Tramos que reproducen vídeo y voz (las pausas no). */
+export const segmentsOut = PLAY.filter((x) => Math.round((x.out + x.dur) * FPS) - Math.round(x.out * FPS) >= 1).map((x) => ({ src: x.src, out: x.out, dur: x.dur }));
 
 /** Segundo del original → fotograma del montaje. */
 export const f = (sourceSeconds: number) =>
