@@ -345,13 +345,13 @@ const GluteMapScene: React.FC = () => {
           <text x={62} y={346} fill="#FFB020" fontFamily={FONT} fontWeight={900} fontSize={16} opacity={bot} textAnchor="end">INF.</text>
         </svg>
         {/* etiquetas a la derecha del glúteo */}
-        <div style={{ position: "absolute", left: 360, top: 90, opacity: Math.min(1, lt.p * 2) * dim, transform: `translateX(${(1 - lt.p) * 80}px) scale(${lt.sx}, ${lt.sy})`, transformOrigin: "0% 50%" }}>
+        <div style={{ position: "absolute", left: 340, top: 110, opacity: Math.min(1, lt.p * 2) * dim, transform: `translateX(${(1 - lt.p) * 80}px) scale(${lt.sx}, ${lt.sy})`, transformOrigin: "0% 50%" }}>
           <div style={{ ...label, fontSize: 22, letterSpacing: 3, color: GREEN }}>↑ Parte superior</div>
-          <div style={{ ...display, fontSize: 50, color: INK, background: GREEN, padding: "8px 16px 4px", borderRadius: 10, marginTop: 6 }}>Acortamiento</div>
+          <div style={{ ...display, fontSize: 40, color: INK, background: GREEN, padding: "8px 14px 4px", borderRadius: 10, marginTop: 8, display: "inline-block" }}>Acortamiento</div>
         </div>
-        <div style={{ position: "absolute", left: 360, top: 300, opacity: Math.min(1, lb.p * 2) * dim, transform: `translateX(${(1 - lb.p) * 80}px) scale(${lb.sx}, ${lb.sy})`, transformOrigin: "0% 50%" }}>
+        <div style={{ position: "absolute", left: 340, top: 290, opacity: Math.min(1, lb.p * 2) * dim, transform: `translateX(${(1 - lb.p) * 80}px) scale(${lb.sx}, ${lb.sy})`, transformOrigin: "0% 50%" }}>
           <div style={{ ...label, fontSize: 22, letterSpacing: 3, color: "#FFB020" }}>↓ Parte inferior</div>
-          <div style={{ ...display, fontSize: 50, color: INK, background: "#FFB020", padding: "8px 16px 4px", borderRadius: 10, marginTop: 6 }}>Estiramiento</div>
+          <div style={{ ...display, fontSize: 40, color: INK, background: "#FFB020", padding: "8px 14px 4px", borderRadius: 10, marginTop: 8, display: "inline-block" }}>Estiramiento</div>
         </div>
         {/* tachado: «no funciona» */}
         {x > 0.01 ? (
