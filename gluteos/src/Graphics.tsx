@@ -12,6 +12,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import faceTrack from "./faceTrack.json";
+import hand from "./hand.json";
 import { CameraSpace } from "./Camera";
 import { gradeFilter } from "./Grade";
 import { FONT, GREEN, PAPER } from "./theme";
@@ -603,23 +604,24 @@ const Study: React.FC = () => {
   );
 };
 
-// E07: del móvil sale un feed de vídeos de glúteo que pasa con sus propios swipes
+// E07: del móvil sale una proyección holográfica (haz de luz + pantalla flotante
+// girada hacia él) que va pasando vídeos con sus propios swipes
 const FEED = ["sentadilla", "bulgaras", "reaccion", "stepups", "hipthrust", "peso", "sentadilla", "bulgaras"];
-const PH = { ax: 650, ay: 1010, x: 640, y: 300, w: 380, h: 676 };
+const PH = { x: 620, y: 300, w: 380, h: 676 };
+const HAND = hand as { t0: number; fps: number; pts: number[][] };
 const PhoneFeed: React.FC = () => {
   const { t, frame, squash, ramp } = useClock();
   if (t < PHONE.in - 0.05 || t > PHONE.out + 0.4) return null;
-  const inQ = squash(PHONE.in, 13, 170);
+  const inQ = squash(PHONE.in, 13, 160);
   const back = ramp(PHONE.out, PHONE.out + 0.35, easeInOut);
   const k = inQ.p * (1 - back);
-  const cx = PH.ax + (PH.x + PH.w / 2 - PH.ax) * k;
-  const cy = PH.ay + (PH.y + PH.h / 2 - PH.ay) * k;
-  const sc = 0.12 + 0.88 * k;
-  // reel actual y avance del desplazamiento tras cada swipe
+  const hi = Math.max(0, Math.min(HAND.pts.length - 1, Math.round((t - HAND.t0) * HAND.fps)));
+  const [hx, hy] = HAND.pts[hi];
   const done = PHONE.swipes.filter((s) => t >= s).length;
   const last = PHONE.swipes[done - 1] ?? -10;
   const slide = Math.min(1, Math.max(0, (t - last) / 0.28));
   const ease = 1 - Math.pow(1 - slide, 3);
+  const flick = 0.92 + 0.05 * Math.sin(frame * 1.9) + 0.03 * Math.sin(frame * 0.7);
   const reel = (idx: number, offset: number) => {
     const at = idx === 0 ? PHONE.in : PHONE.swipes[idx - 1];
     return (
@@ -630,31 +632,35 @@ const PhoneFeed: React.FC = () => {
       </div>
     );
   };
+  // la pantalla crece desde la mano hasta su sitio
+  const cx = hx + (PH.x + PH.w / 2 - hx) * k;
+  const cy = hy + (PH.y + PH.h / 2 - hy) * k;
+  const sc = 0.08 + 0.92 * k;
+  const bl = { x: cx - (PH.w / 2) * sc * 0.88, y: cy + (PH.h / 2) * sc };
+  const br = { x: cx + (PH.w / 2) * sc * 0.88, y: cy + (PH.h / 2) * sc };
+  const tl = { x: cx - (PH.w / 2) * sc * 0.88, y: cy - (PH.h / 2) * sc };
   return (
-    <AbsoluteFill>
-      {/* estela desde el móvil */}
-      {k > 0.02 && k < 0.98 ? <div style={{ position: "absolute", left: PH.ax - 6, top: PH.ay - 6, width: 12, height: 12, borderRadius: 6, background: GREEN, boxShadow: `0 0 40px 18px rgba(4,228,0,${0.6 * (1 - k)})` }} /> : null}
-      <div style={{ position: "absolute", left: cx - PH.w / 2, top: cy - PH.h / 2, width: PH.w, height: PH.h, transform: `scale(${sc * inQ.sx}, ${sc * inQ.sy}) rotate(${4 * k}deg)`, opacity: Math.min(1, k * 3) }}>
-        <div style={{ position: "absolute", inset: -10, borderRadius: 46, background: "#0b0b0b", border: "3px solid rgba(255,255,255,0.35)", boxShadow: "0 40px 80px rgba(0,0,0,0.7)" }} />
-        <div style={{ position: "absolute", inset: 0, borderRadius: 38, overflow: "hidden", background: "#000" }}>
+    <AbsoluteFill style={{ opacity: Math.min(1, k * 2.5) }}>
+      {/* haz de luz desde el móvil */}
+      <svg width={1080} height={1920} style={{ position: "absolute", inset: 0, mixBlendMode: "screen" }}>
+        <defs>
+          <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="rgba(120,255,140,0.55)" />
+            <stop offset="1" stopColor="rgba(120,255,140,0.04)" />
+          </linearGradient>
+        </defs>
+        <polygon points={`${hx - 8},${hy} ${hx + 8},${hy} ${br.x},${br.y} ${tl.x},${tl.y} ${bl.x},${bl.y}`} fill="url(#beam)" opacity={flick} style={{ filter: "blur(3px)" }} />
+        <circle cx={hx} cy={hy} r={10 + 3 * Math.sin(frame * 0.8)} fill="#DFFFE0" style={{ filter: "drop-shadow(0 0 14px rgba(4,228,0,1))" }} />
+      </svg>
+      {/* pantalla holográfica, girada hacia él */}
+      <div style={{ position: "absolute", left: cx - PH.w / 2, top: cy - PH.h / 2, width: PH.w, height: PH.h, transform: `perspective(1200px) rotateY(24deg) scale(${sc * inQ.sx}, ${sc * inQ.sy})`, opacity: flick }}>
+        <div style={{ position: "absolute", inset: 0, borderRadius: 26, overflow: "hidden", boxShadow: "0 0 30px rgba(4,228,0,0.6), 0 0 80px rgba(4,228,0,0.25)", border: "2px solid rgba(160,255,170,0.85)", filter: "saturate(0.85) brightness(1.1)", opacity: 0.88 }}>
           {done > 0 && slide < 1 ? reel(done - 1, -PH.h * ease) : null}
           {reel(done, PH.h * (1 - ease))}
-          {/* interfaz genérica de un feed vertical */}
-          <div style={{ position: "absolute", left: 18, top: 18, ...display, fontStyle: "normal", fontSize: 26, letterSpacing: 0, textTransform: "none", ...stroke(3) }}>Reels</div>
-          <div style={{ position: "absolute", right: 14, bottom: 120, display: "flex", flexDirection: "column", gap: 18, alignItems: "center" }}>
-            {["♥", "💬", "➤"].map((ic, i) => (
-              <div key={i} style={{ fontSize: 30, color: "white", textShadow: "0 2px 6px rgba(0,0,0,0.8)", transform: i === 0 && t - last < 0.5 && done > 0 ? `scale(${1 + 0.4 * Math.sin(((t - last) / 0.5) * Math.PI)})` : undefined }}>{ic === "💬" ? "✎" : ic}</div>
-            ))}
-          </div>
-          <div style={{ position: "absolute", left: 16, right: 70, bottom: 18 }}>
-            <div style={{ ...label, fontSize: 16, letterSpacing: 1, color: "white", textTransform: "none", textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>@gluteos.top · Seguir</div>
-            <div style={{ ...label, fontSize: 14, letterSpacing: 0.5, color: "rgba(255,255,255,0.9)", textTransform: "none", marginTop: 4, textShadow: "0 2px 6px rgba(0,0,0,0.9)" }}>{`Ejercicio nº ${done + 1} que NO puede faltar`}</div>
-          </div>
-          {/* toque del dedo en cada swipe */}
-          {done > 0 && t - last < 0.35 ? <div style={{ position: "absolute", left: PH.w / 2 - 30, top: PH.h * 0.62 - (t - last) * 500, width: 60, height: 60, borderRadius: 30, border: "4px solid rgba(255,255,255,0.8)", opacity: 1 - (t - last) / 0.35 }} /> : null}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(4,228,0,0.18), transparent 45%, rgba(4,228,0,0.12))" }} />
+          <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 4px)", backgroundPosition: `0 ${frame * 2}px` }} />
         </div>
       </div>
-      <div style={{ display: "none" }}>{frame}</div>
     </AbsoluteFill>
   );
 };
