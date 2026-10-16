@@ -1,3 +1,5 @@
 previews/
 **/public/video-proxy.mp4
 **/src-media/
+.env.local
+**/.env.local
