@@ -1,17 +1,13 @@
 import React from "react";
 import { Audio } from "@remotion/media";
 import { AbsoluteFill, getInputProps, interpolate, Sequence, staticFile, useVideoConfig } from "remotion";
-import { CLOSE, DURATION_FRAMES, f, HOOK, QUESTIONS, segmentsOut, toOut } from "./timeline";
+import { CLOSE, DURATION_FRAMES, f, QUESTIONS, segmentsOut, toOut } from "./timeline";
 
 // Voces: «prensa» (micro de mano por la megafonía) o «limpio» (render alternativo).
 const VOICE = ((getInputProps() as { voice?: string }).voice ?? "limpio") as "prensa" | "limpio";
 
 type Sfx = { at: number; src: string; volume: number };
 const sfx: Sfx[] = [
-  // flashes de cámara al abrir la rueda de prensa
-  { at: HOOK.from + 0.05, src: "fx/snap.wav", volume: 0.16 },
-  { at: HOOK.from + 0.42, src: "fx/snap.wav", volume: 0.1 },
-  { at: HOOK.from + 0.95, src: "fx/snap.wav", volume: 0.13 },
   ...QUESTIONS.flatMap((q) => [
     { at: q.q - 0.4, src: "fx/whoosh-a.wav", volume: 0.18 }, // entra la tarjeta del periodista
     { at: q.q - 0.15, src: "ui/pop.wav", volume: 0.2 }, // contador
