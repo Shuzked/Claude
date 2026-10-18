@@ -8,7 +8,6 @@ import { CLOSE, f, QUESTIONS, toSrc } from "./timeline";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
-const RED = "#FF4D4D";
 
 const useClock = () => {
   const frame = useCurrentFrame();
@@ -113,7 +112,7 @@ const QuestionCard: React.FC<{ q: number; file: number; dur: number; a: number; 
   if (t < q - 0.35 || t > a + 0.15) return null;
   const s = squash(q - 0.35, 12, 230);
   const out = ramp(a - 0.05, a + 0.15, Easing.in(Easing.cubic));
-  const accent = final ? RED : GREEN;
+  const accent = GREEN;
   // palabras al ritmo de la voz (proporcional a las letras de cada palabra)
   const words = text.split(" ");
   const tot = words.reduce((x, w) => x + w.length + 1, 0);
@@ -128,7 +127,7 @@ const QuestionCard: React.FC<{ q: number; file: number; dur: number; a: number; 
   return (
     <AbsoluteFill style={{ alignItems: "center", top: 1370 }}>
       <div style={{ width: 920, transformOrigin: "8% 0%", opacity: Math.min(1, s.p * 2.5) * (1 - out), transform: `translate(${shake}px, ${(1 - s.p) * 70 + out * 40}px) scale(${(0.6 + 0.4 * s.p) * s.sx * (1 - out * 0.15)}, ${(0.6 + 0.4 * s.p) * s.sy * (1 - out * 0.15)})` }}>
-        <div style={{ position: "relative", background: final ? "rgba(70,8,8,0.86)" : "rgba(8,10,16,0.84)", border: `2px solid ${final ? "rgba(255,90,90,0.55)" : "rgba(255,255,255,0.14)"}`, borderRadius: 24, padding: "24px 30px 22px", boxShadow: "0 24px 60px rgba(0,0,0,0.55)", overflow: "hidden" }}>
+        <div style={{ position: "relative", background: "rgba(8,10,16,0.84)", border: "2px solid rgba(255,255,255,0.14)", borderRadius: 24, padding: "24px 30px 22px", boxShadow: "0 24px 60px rgba(0,0,0,0.55)", overflow: "hidden" }}>
           <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 2, fontFamily: FONT, fontWeight: 800, fontSize: 48, lineHeight: 1.16, color: "white", letterSpacing: -0.5 }}>
             {words.map((w, k) => {
               const st = times[k];
