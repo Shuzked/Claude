@@ -6,3 +6,5 @@ public/audio/fx/
 .env.local
 public/audio/voice.wav
 public/audio/room.wav
+public/audio/q/
+public/audio/music.mp3

@@ -32,11 +32,43 @@ def frame(n,im):
     dark=np.full_like(im,(28,24,22)).astype(np.float32)+cv2.cvtColor(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2BGR).astype(np.float32)*0.12
     imf=im.astype(np.float32)*(1-bb)+dark*bb
     a[DESK+40:]=0
-    a=cv2.GaussianBlur(a,(0,0),0.6)[...,None]
+    a2=cv2.GaussianBlur(a,(0,0),0.6)
+    a=a2[...,None]
+    if GRADE:
+        # Yago a la luz de la sala: negros levantados hacia el azul marino de la sala y un toque más frío en sombras
+        lum=imf.mean(2,keepdims=True)/255
+        sh=(1-lum)**2
+        imf=imf*0.94+np.array([14,8,4])*sh+4
+        imf=imf*np.array([1.0,0.985,0.96])  # quita algo de cálido para casar con la pantalla azul
     # fondo negro original: el borde semitransparente ya va premultiplicado por negro
-    f=imf*np.clip(a*1.6,0,1)+bg*(1-a)
+    b=bg
+    if GRADE:
+        # sombra de contacto de los brazos sobre la mesa
+        sm=np.zeros_like(a2); sm[DESK-60:DESK+40]=a2[DESK-60:DESK+40]
+        sm=cv2.GaussianBlur(np.roll(sm,14,axis=0),(0,0),14); sm[:DESK-10]=0
+        b=bg*(1-0.45*np.clip(sm*1.6,0,1))[...,None]
+    f=imf*np.clip(a*1.6,0,1)+b*(1-a)
+    if GRADE:
+        # envoltura de luz: el azul de la pantalla se cuela por los bordes de Yago
+        inner=cv2.GaussianBlur(cv2.erode(a2,np.ones((9,9),np.uint8)),(0,0),5)
+        edge=np.clip(a2-inner,0,1)[...,None]
+        f=f+BGW*edge*0.55
     f=mc*ma+f*(1-ma)
+    if GRADE: f=grade(f)
     return np.clip(f,0,255).astype(np.uint8)
+
+GRADE=os.environ.get('GRADE','1')=='1'
+BGW=cv2.GaussianBlur(bg,(0,0),22)
+yy,xx=np.mgrid[0:H,0:W]; VIG=(1-0.32*np.clip(((xx-W/2)/(W*0.62))**2+((yy-H*0.45)/(H*0.6))**2,0,1)**1.4)[...,None].astype(np.float32)
+def grade(f):
+    x=f/255
+    # curva de contraste suave (S) y viraje: sombras verde-azuladas, luces cálidas
+    x=np.clip(x,0,1); x=x+0.04*np.sin(2*np.pi*(x-0.5))
+    l=x.mean(2,keepdims=True)
+    x=x+(np.array([0.025,0.01,-0.012])*(1-l)**2)+(np.array([-0.012,0.0,0.02])*l**2)
+    g=x.mean(2,keepdims=True); x=g+(x-g)*1.06
+    x=x*VIG
+    return x*255
 dec=subprocess.Popen(['ffmpeg','-v','error','-i',SRC,'-vf',f'scale={W}:{H}','-f','rawvideo','-pix_fmt','bgr24','-'],stdout=subprocess.PIPE)
 enc=None if only else subprocess.Popen(['ffmpeg','-v','error','-y','-f','rawvideo','-pix_fmt','bgr24','-s',f'{W}x{H}','-r','25','-i','-','-c:v','libx264','-crf','12','-preset','slow','-pix_fmt','yuv420p',out],stdin=subprocess.PIPE)
 n=0; last=None

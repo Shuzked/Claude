@@ -55,19 +55,79 @@ export const words: Word[] = (transcript as { segments: { words: RawWord[] }[] }
   })
   .filter((w) => w.text !== "");
 
-// --- Montaje --------------------------------------------------------------------
-// [inicio, fin] en el original. Cada bloque = pregunta (Yago escucha) + respuesta.
-export const SEGMENTS: [number, number][] = [
-  [2.12, 8.32], // hook: «me presento a presidente…» → «Primera pregunta.»
-  [13.76, 21.9], // 1/8 elevaciones frontales
-  [22.86, 29.72], // 3/8 drop sets
-  [30.36, 36.82], // 4/8 días consecutivos
-  [37.5, 44.52], // 5/8 straps
-  [45.66, 53.4], // 6/8 volumen
-  [54.3, 60.84], // 7/8 cardio
-  [60.84, 67.22], // 8/8 fallo
-  [68.0, 77.98], // cierre: «Menuda mierda de presidente…» → CTA
+// --- Preguntas del periodista ---------------------------------------------------------
+// Voces de Cartesia procesadas como micro de prensa (public/audio/q). a: inicio de la
+// respuesta de Yago, end: fin de su respuesta, to: fin del bloque. La pregunta se coloca
+// justo antes de la respuesta, dentro del silencio en que Yago escucha.
+import qa from "./questions_audio.json";
+type QA = { voice: string; start: number; dur: number; len: number; env: number[] };
+const QAUD = qa as Record<string, QA>;
+
+export type Q = {
+  n: number;
+  topic: string;
+  text: string;
+  a: number;
+  end: number;
+  to: number;
+  key: { text: string; at: number }[];
+  push?: number; // acercamiento digital en este instante
+  icon?: "clock" | "calendar";
+  // calculados
+  q: number; // empieza a hablar el periodista (segundo del original)
+  file: number; // empieza el archivo de audio
+  dur: number;
+  voice: string;
+  env: number[];
+};
+type QIn = Omit<Q, "q" | "file" | "dur" | "voice" | "env">;
+const PRE_GAP = 0.22; // silencio entre la pregunta y la respuesta
+const place = (x: QIn, prevEnd: number): Q => {
+  const au = QAUD[String(x.n)];
+  const q = Math.max(prevEnd + 0.06, x.a - PRE_GAP - au.dur);
+  return { ...x, q, file: q - au.start, dur: au.dur, voice: au.voice, env: au.env };
+};
+const QIN: QIn[] = [
+  { n: 1, topic: "Elevaciones frontales", text: "¿Las elevaciones frontales sobran porque ya hacemos presses?", a: 16.84, end: 21.68, to: 21.9, key: [{ text: "Trabajo recibido + prioridad", at: 20.3 }] },
+  { n: 3, topic: "Series rectas vs. drop sets", text: "¿Las series rectas hacen crecer más que los drop sets?", a: 26.0, end: 29.52, to: 29.72, key: [{ text: "Pueden ahorrar tiempo", at: 28.5 }], push: 26.0, icon: "clock" },
+  { n: 4, topic: "Días consecutivos", text: "¿Entrenar el mismo músculo dos días seguidos impide que crezca?", a: 33.32, end: 36.6, to: 36.82, key: [{ text: "Importa la dosis, no solo el calendario", at: 35.2 }], icon: "calendar" },
+  { n: 5, topic: "Straps", text: "¿Usar straps para levantar más peso no es hacer trampa?", a: 40.56, end: 44.32, to: 44.52, key: [{ text: "Espalda ≠ competición de agarre", at: 42.8 }] },
+  { n: 6, topic: "Volumen de entrenamiento", text: "¿Para ganar más músculo siempre es mejor hacer menos series?", a: 48.72, end: 53.16, to: 53.4, key: [{ text: "Más puede aportar más", at: 50.0 }, { text: "Con rendimientos decrecientes", at: 51.3 }] },
+  { n: 7, topic: "Cardio", text: "¿Para ganar músculo hay que dejar el cardio?", a: 57.28, end: 60.64, to: 60.84, key: [{ text: "Dosis + organización", at: 59.2 }], push: 57.28 },
+  { n: 8, topic: "Llegar al fallo", text: "¿Toda serie que no llegue al fallo es una serie perdida?", a: 63.52, end: 66.96, to: 67.22, key: [{ text: "Crecer sin llegar", at: 64.6 }, { text: "Menos fatiga", at: 66.0 }] },
 ];
+export const HOOK = { from: 2.12, to: 8.32, end: 8.2 };
+export const QUESTIONS: Q[] = (() => {
+  const out: Q[] = [];
+  let prev = HOOK.end;
+  for (const x of QIN) {
+    const q = place(x, prev);
+    out.push(q);
+    prev = x.end;
+  }
+  return out;
+})();
+const CLOSE_IN = { n: 9, text: "Menuda mierda de presidente… ¿Entonces qué promete tu programa electoral?", a: 71.84, cta: 75.52, to: 77.98 };
+export const CLOSE = (() => {
+  const au = QAUD["9"];
+  const q = Math.max(66.96 + 0.06, CLOSE_IN.a - 0.45 - au.dur); // pausa cómica breve antes de «Milagros, no»
+  return { ...CLOSE_IN, q, file: q - au.start, dur: au.dur, voice: au.voice, env: au.env };
+})();
+
+// --- Montaje: tramos del original (Yago escucha un instante antes de que hable el periodista)
+const LEAD = 0.5;
+export const SEGMENTS: [number, number][] = (() => {
+  const raw: [number, number][] = [[HOOK.from, HOOK.to]];
+  for (const q of QUESTIONS) raw.push([q.q - LEAD, q.to]);
+  raw.push([CLOSE.q - LEAD, CLOSE.to]);
+  const out: [number, number][] = [];
+  for (const [a, b] of raw) {
+    const last = out[out.length - 1];
+    if (last && a <= last[1] + 0.04) last[1] = Math.max(last[1], b);
+    else out.push([a, b]);
+  }
+  return out;
+})();
 
 type Seg = { src: number; dur: number; out: number };
 const SEGS: Seg[] = (() => {
@@ -102,38 +162,6 @@ export const toSrc = (out: number) => {
 };
 /** Segundo del original → fotograma del montaje. */
 export const f = (src: number) => Math.round(toOut(src) * FPS);
-
-// --- Preguntas --------------------------------------------------------------------
-// q: inicio de la pregunta (en el original), a: inicio de la respuesta, to: fin del bloque.
-// key: rótulo de la respuesta (uno o dos tiempos).
-export type Q = {
-  n: number;
-  topic: string;
-  text: string;
-  q: number;
-  a: number;
-  to: number;
-  key: { text: string; at: number }[];
-  push?: number; // acercamiento digital en este instante
-  icon?: "clock" | "calendar";
-};
-export const QUESTIONS: Q[] = [
-  { n: 1, topic: "Elevaciones frontales", text: "¿Las elevaciones frontales sobran porque ya hacemos presses?", q: 13.8, a: 16.84, to: 21.9, key: [{ text: "Trabajo recibido + prioridad", at: 20.3 }] },
-  { n: 3, topic: "Series rectas vs. drop sets", text: "¿Las series rectas hacen crecer más que los drop sets?", q: 22.9, a: 26.0, to: 29.72, key: [{ text: "Pueden ahorrar tiempo", at: 28.5 }], push: 26.0, icon: "clock" },
-  { n: 4, topic: "Días consecutivos", text: "¿Entrenar el mismo músculo dos días seguidos impide que crezca?", q: 30.4, a: 33.32, to: 36.82, key: [{ text: "Importa la dosis, no solo el calendario", at: 35.2 }], icon: "calendar" },
-  { n: 5, topic: "Straps", text: "¿Usar straps para levantar más peso no es hacer trampa?", q: 37.54, a: 40.56, to: 44.52, key: [{ text: "Espalda ≠ competición de agarre", at: 42.8 }] },
-  { n: 6, topic: "Volumen de entrenamiento", text: "¿Para ganar más músculo siempre es mejor hacer menos series?", q: 45.7, a: 48.72, to: 53.4, key: [{ text: "Más puede aportar más", at: 50.0 }, { text: "Con rendimientos decrecientes", at: 51.3 }] },
-  { n: 7, topic: "Cardio", text: "¿Para ganar músculo hay que dejar el cardio?", q: 54.34, a: 57.28, to: 60.84, key: [{ text: "Dosis + organización", at: 59.2 }], push: 57.28 },
-  { n: 8, topic: "Llegar al fallo", text: "¿Toda serie que no llegue al fallo es una serie perdida?", q: 60.86, a: 63.52, to: 67.22, key: [{ text: "Crecer sin llegar", at: 64.6 }, { text: "Menos fatiga", at: 66.0 }] },
-];
-export const CLOSE = {
-  q: 68.04,
-  text: "Menuda mierda de presidente… ¿Entonces qué promete tu programa electoral?",
-  a: 71.84,
-  cta: 75.52,
-  to: 77.98,
-};
-export const HOOK = { from: 2.12, to: 8.32 };
 
 // --- Subtítulos: páginas de 1 a 3 palabras ------------------------------------------
 export const captionPages: Word[][] = [];

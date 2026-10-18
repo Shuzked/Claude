@@ -10,9 +10,13 @@ export const Scene: React.FC = () => {
   const { fps } = useVideoConfig();
   const t = toSrc(frame / fps);
   let s = 1;
+  // empuje lento de cámara dentro de cada bloque (respira sin que se note)
+  for (const q of QUESTIONS) {
+    if (t >= q.q - 0.5 && t < q.to) s *= 1 + 0.025 * Math.min(1, (t - q.q + 0.5) / (q.to - q.q + 0.5));
+  }
   for (const q of QUESTIONS) {
     if (q.push && t >= q.push - 0.1 && t < q.to) {
-      s = interpolate(t, [q.push, q.push + 0.5], [1, 1.07], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) });
+      s *= interpolate(t, [q.push, q.push + 0.5], [1, 1.06], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) });
     }
   }
   return (
