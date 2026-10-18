@@ -97,9 +97,9 @@ const Counter: React.FC = () => {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((k) => {
-            const cur = k === q.n, done = k < q.n, skip = k === 2;
+            const cur = k === q.n, done = k < q.n;
             const pulse = cur ? 1 + 0.25 * Math.max(0, Math.sin((frame / 25) * 6)) : 1;
-            return <div key={k} style={{ width: cur ? 28 : 12, height: 12, borderRadius: 6, background: cur ? GREEN : done && !skip ? "rgba(4,228,0,0.55)" : "rgba(255,255,255,0.25)", transform: `scale(${pulse})`, transition: "none" }} />;
+            return <div key={k} style={{ width: cur ? 28 : 12, height: 12, borderRadius: 6, background: cur ? GREEN : done ? "rgba(4,228,0,0.55)" : "rgba(255,255,255,0.25)", transform: `scale(${pulse})`, transition: "none" }} />;
           })}
         </div>
       </div>
