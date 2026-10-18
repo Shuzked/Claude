@@ -1,26 +1,18 @@
 import React from "react";
-import { AbsoluteFill, Easing, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Sequence, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
-import { QUESTIONS, segmentsOut, toSrc } from "./timeline";
+import { segmentsOut, toSrc } from "./timeline";
+import { camAt } from "./camera";
 
 // Plano compuesto (sala de prensa IA + Yago rotoscopiado + micrófonos), montado por
-// tramos. Acercamientos digitales suaves en «No necesariamente» y en el «No» del cardio.
+// tramos. La cámara virtual sigue la cara de Yago y mete zooms puntuales (camera.ts).
 export const Scene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = toSrc(frame / fps);
-  let s = 1;
-  // empuje lento de cámara dentro de cada bloque (respira sin que se note)
-  for (const q of QUESTIONS) {
-    if (t >= q.q - 0.5 && t < q.to) s *= 1 + 0.025 * Math.min(1, (t - q.q + 0.5) / (q.to - q.q + 0.5));
-  }
-  for (const q of QUESTIONS) {
-    if (q.push && t >= q.push - 0.1 && t < q.to) {
-      s *= interpolate(t, [q.push, q.push + 0.5], [1, 1.06], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) });
-    }
-  }
+  const c = camAt(t);
   return (
-    <AbsoluteFill style={{ transform: `scale(${s})`, transformOrigin: "50% 32%" }}>
+    <AbsoluteFill style={{ transform: `translate(${c.tx}px, ${c.ty}px) scale(${c.s})`, transformOrigin: "50% 50%" }}>
       {segmentsOut.map((x) => (
         <Sequence key={x.src} from={Math.round(x.out * fps)} durationInFrames={Math.round((x.out + x.dur) * fps) - Math.round(x.out * fps)} name={`Toma · ${x.src.toFixed(2)}s`}>
           <Video src={staticFile("comp.mp4")} trimBefore={Math.round(x.src * fps)} objectFit="cover" style={{ width: "100%", height: "100%" }} />

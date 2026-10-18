@@ -107,7 +107,7 @@ export const QUESTIONS: Q[] = (() => {
   }
   return out;
 })();
-const CLOSE_IN = { n: 9, text: "Menuda mierda de presidente… ¿Entonces qué promete tu programa electoral?", a: 71.84, cta: 75.52, to: 77.98 };
+const CLOSE_IN = { n: 9, text: "Menuda mierda de presidente… ¿Entonces qué promete tu programa electoral?", a: 71.84, cta: 75.52, follow: 77.16, to: 77.98 };
 export const CLOSE = (() => {
   const au = QAUD["9"];
   const q = Math.max(66.96 + 0.06, CLOSE_IN.a - 0.45 - au.dur); // pausa cómica breve antes de «Milagros, no»
@@ -179,6 +179,6 @@ export const captionPages: Word[][] = [];
   }
   flush();
 }
-export const visiblePages = captionPages.filter((p) =>
-  SEGMENTS.some(([a, b]) => p[0].start >= a - 0.05 && p[0].start < b),
+export const visiblePages = captionPages.filter(
+  (p) => SEGMENTS.some(([a, b]) => p[0].start >= a - 0.05 && p[0].start < b) && p[0].start < CLOSE.follow - 0.05, // «sígueme» lo dice el CTA
 );

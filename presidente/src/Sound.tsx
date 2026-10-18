@@ -22,10 +22,10 @@ const sfx: Sfx[] = [
   { at: 43.3, src: "fx/snap.wav", volume: 0.08 },
   { at: CLOSE.q - 0.4, src: "fx/whoosh-b.wav", volume: 0.2 },
   { at: CLOSE.q + 0.05, src: "ui/impact.wav", volume: 0.12 }, // «Menuda mierda de presidente…»
-  { at: CLOSE.cta - 0.05, src: "fx/hit.wav", volume: 0.18 },
-  { at: CLOSE.cta, src: "ui/shine.wav", volume: 0.2 },
-  { at: CLOSE.cta + 0.2, src: "fx/snap.wav", volume: 0.12 },
-  { at: CLOSE.cta + 0.55, src: "fx/snap.wav", volume: 0.09 },
+  { at: CLOSE.follow - 0.05, src: "fx/hit.wav", volume: 0.18 },
+  { at: CLOSE.follow, src: "ui/shine.wav", volume: 0.2 },
+  { at: CLOSE.follow + 0.2, src: "fx/snap.wav", volume: 0.12 },
+  { at: CLOSE.follow + 0.55, src: "fx/snap.wav", volume: 0.09 },
 ];
 
 // Música: cama baja que respira; sube un poco en el arranque y en el CTA y baja cuando
@@ -63,7 +63,7 @@ export const Sound: React.FC = () => {
       ))}
       {[...QUESTIONS.map((q) => ({ n: q.n, file: q.file })), { n: 9, file: CLOSE.file }].map((q) => (
         <Sequence key={`q${q.n}`} from={f(q.file)} durationInFrames={Math.round(6 * fps)} name={`Periodista · ${q.n}`}>
-          <Audio src={staticFile(`audio/q/q${q.n}_${VOICE}.wav`)} volume={VOICE === "prensa" ? 0.82 : 0.7} />
+          <Audio src={staticFile(`audio/q/q${q.n}_${VOICE}.wav`)} volume={VOICE === "prensa" ? 0.23 : 0.2} />
         </Sequence>
       ))}
       <Sequence durationInFrames={DURATION_FRAMES} name="Sala">

@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { FONT, GREEN, INK } from "./theme";
 import { CLOSE, f, QUESTIONS, toSrc } from "./timeline";
+import { faceAt, toScreen } from "./camera";
 
 // Rótulos con animación de estilo Lottie: muelles con squash & stretch, trazos que se
 // dibujan, ráfagas de partículas y vida en reposo. Todo sincronizado con la voz.
@@ -205,29 +206,48 @@ const KeyChips: React.FC = () => {
   );
 };
 
-// --- CTA: aparece con rebote, anillos y el usuario se escribe ---
-const Cta: React.FC = () => {
-  const { t, frame, fps, squash, ramp, idle } = useClock();
-  if (t < CLOSE.cta - 0.1) return null;
-  const s = squash(CLOSE.cta - 0.05, 9, 200);
-  const d = (frame - f(CLOSE.cta)) / fps;
-  const handle = "@heracles_fit";
-  const typed = Math.round(ramp(CLOSE.cta + 0.25, CLOSE.cta + 0.95, Easing.linear) * handle.length);
-  const id = idle(9, 0.8);
+// --- CTA «Sígueme» (como siempre): una línea verde se traza, la palabra sube a través de
+// ella y una flecha fina sigue empujando hacia arriba. El @ va sobre su cabeza, siguiéndola.
+const easeInOut = Easing.bezier(0.65, 0, 0.35, 1);
+const GLOW = "drop-shadow(0 0 10px rgba(4,228,0,0.6))";
+const display: React.CSSProperties = { fontFamily: FONT, fontWeight: 900, fontStyle: "italic", textTransform: "uppercase", letterSpacing: -1, lineHeight: 0.95, whiteSpace: "nowrap", color: "#F5F5F0" };
+const Follow: React.FC = () => {
+  const { t, ramp } = useClock();
+  const at = CLOSE.follow;
+  if (t < at - 0.1) return null;
+  const line = ramp(at - 0.05, at + 0.35, easeInOut);
+  const rise = ramp(at + 0.2, at + 0.75, Easing.bezier(0.2, 1.4, 0.35, 1));
+  const arrow = ramp(at + 0.7, at + 1.05, Easing.bezier(0.2, 1.3, 0.4, 1));
+  const bob = Math.sin(Math.max(0, t - at - 1.0) * 5) * 8 * arrow;
+  const W = 560;
   return (
-    <AbsoluteFill style={{ alignItems: "center", top: 260 }}>
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, transform: `translateY(${id.y}px) scale(${(0.5 + 0.5 * s.p) * s.sx}, ${(0.5 + 0.5 * s.p) * s.sy})`, opacity: Math.min(1, s.p * 2) }}>
-        <div style={{ position: "relative", fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 96, color: INK, background: GREEN, borderRadius: 20, padding: "14px 36px 4px", boxShadow: "0 0 70px rgba(4,228,0,0.6)" }}>
-          SÍGUEME
-          <Burst d={d} r={160} n={14} x={190} y={60} />
-          <Sparkles d={d} w={380} h={120} />
+    <>
+      <Burst x={540} y={1300} d={t - at - 0.55} r={90} n={12} />
+      <div style={{ position: "absolute", top: 1080, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <svg width={120} height={70} viewBox="0 0 120 70" style={{ opacity: Math.min(1, arrow * 3), transform: `translateY(${(1 - arrow) * 190 - bob}px) scaleX(${0.4 + 0.6 * arrow})`, filter: GLOW }}>
+          <path d="M 14 56 L 60 14 L 106 56" fill="none" stroke={GREEN} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div style={{ height: 140, overflow: "hidden", marginTop: 6, display: "flex", alignItems: "flex-end" }}>
+          <div style={{ ...display, fontSize: 132, letterSpacing: interpolate(rise, [0, 1], [30, 2]), transform: `translateY(${(1 - rise) * 150}px)`, textShadow: "0 6px 30px rgba(0,0,0,0.6)" }}>Sígueme</div>
         </div>
-        <div style={{ ...label, fontSize: 42, letterSpacing: 2, color: "white", textShadow: "0 4px 18px rgba(0,0,0,0.85)", minHeight: 50 }}>
-          {handle.slice(0, typed)}
-          <span style={{ opacity: Math.floor(frame / 8) % 2 ? 1 : 0, color: GREEN }}>|</span>
-        </div>
+        <div style={{ width: W * line, height: 5, borderRadius: 3, background: GREEN, boxShadow: "0 0 18px rgba(4,228,0,0.8)", marginTop: 6 }} />
       </div>
-    </AbsoluteFill>
+    </>
+  );
+};
+
+// «@heracles_fit» encima de la cabeza, siguiendo la cara (con la cámara aplicada)
+const Handle: React.FC = () => {
+  const { t, frame, fps } = useClock();
+  if (t < CLOSE.follow + 0.1) return null;
+  const qp = spring({ frame: frame - f(CLOSE.follow + 0.15), fps, config: { damping: 10, stiffness: 220, mass: 0.6 } });
+  const fc = faceAt(t);
+  const p = toScreen(t, fc.x, fc.y - fc.h * 1.05);
+  const bob = Math.sin(t * 3.2) * 6;
+  return (
+    <div style={{ position: "absolute", left: p.x, top: p.y - 40 * p.s + bob, transform: `translate(-50%, -50%) scale(${qp}) rotate(${(1 - qp) * 10 - 2}deg)`, opacity: Math.min(1, qp * 2), background: "rgba(10,10,10,0.85)", border: `3px solid ${GREEN}`, borderRadius: 999, padding: "10px 22px 8px", boxShadow: "0 0 26px rgba(4,228,0,0.45)", fontFamily: FONT, fontWeight: 900, fontStyle: "italic", fontSize: 40, color: GREEN, whiteSpace: "nowrap" }}>
+      @heracles_fit
+    </div>
   );
 };
 
@@ -239,6 +259,7 @@ export const Graphics: React.FC = () => (
     ))}
     <QuestionCard q={CLOSE.q} file={CLOSE.file} dur={CLOSE.dur} a={CLOSE.a} text={CLOSE.text} env={CLOSE.env} final />
     <KeyChips />
-    <Cta />
+    <Follow />
+    <Handle />
   </AbsoluteFill>
 );
