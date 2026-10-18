@@ -107,23 +107,12 @@ const Counter: React.FC = () => {
   );
 };
 
-// --- Tarjeta del periodista: micro con ondas, voz en vivo y texto palabra a palabra ---
-const Wave: React.FC<{ env: number[]; i: number; color: string }> = ({ env, i, color }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: 4, height: 34 }}>
-    {Array.from({ length: 14 }).map((_, k) => {
-      const e = env[Math.max(0, Math.min(env.length - 1, i - Math.abs(k - 6.5) * 0.6))] ?? 0;
-      const h = 5 + e * 28 * (0.55 + 0.45 * Math.abs(Math.sin(k * 1.7 + i * 0.4)));
-      return <div key={k} style={{ width: 5, height: h, borderRadius: 3, background: color }} />;
-    })}
-  </div>
-);
-
+// --- Tarjeta de la pregunta: sólo el texto, palabra a palabra al ritmo de la voz ---
 const QuestionCard: React.FC<{ q: number; file: number; dur: number; a: number; text: string; env: number[]; final?: boolean }> = ({ q, file, dur, a, text, env, final }) => {
   const { t, frame, fps, ramp, squash } = useClock();
   if (t < q - 0.35 || t > a + 0.15) return null;
   const s = squash(q - 0.35, 12, 230);
   const out = ramp(a - 0.05, a + 0.15, Easing.in(Easing.cubic));
-  const ei = Math.round((t - file) * fps);
   const accent = final ? RED : GREEN;
   // palabras al ritmo de la voz (proporcional a las letras de cada palabra)
   const words = text.split(" ");
@@ -136,26 +125,10 @@ const QuestionCard: React.FC<{ q: number; file: number; dur: number; a: number; 
   });
   // temblor de enfado en la pregunta final
   const shake = final && t > q && t < q + 1.2 ? Math.sin(frame * 2.3) * 3 * (1 - (t - q) / 1.2) : 0;
-  const ring = (k: number) => {
-    const d = ((frame / fps + k * 0.33) % 1);
-    return <circle key={k} cx={22} cy={22} r={10 + d * 16} fill="none" stroke={accent} strokeWidth={2.5} opacity={(1 - d) * (t < q + dur ? 1 : 0)} />;
-  };
   return (
-    <AbsoluteFill style={{ alignItems: "center", top: 1330 }}>
+    <AbsoluteFill style={{ alignItems: "center", top: 1370 }}>
       <div style={{ width: 920, transformOrigin: "8% 0%", opacity: Math.min(1, s.p * 2.5) * (1 - out), transform: `translate(${shake}px, ${(1 - s.p) * 70 + out * 40}px) scale(${(0.6 + 0.4 * s.p) * s.sx * (1 - out * 0.15)}, ${(0.6 + 0.4 * s.p) * s.sy * (1 - out * 0.15)})` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12, marginLeft: 6 }}>
-          <svg width={44} height={44} viewBox="0 0 44 44" style={{ overflow: "visible" }}>
-            {[0, 1, 2].map(ring)}
-            <circle cx={22} cy={22} r={18} fill={accent} />
-            <rect x={18} y={11} width={8} height={14} rx={4} fill={INK} />
-            <path d="M14 21a8 8 0 0 0 16 0M22 29v4" stroke={INK} strokeWidth={2.4} fill="none" strokeLinecap="round" />
-          </svg>
-          <div style={{ ...label, fontSize: 24, letterSpacing: 4, color: "white" }}>Periodista</div>
-          <Wave env={env} i={ei} color={accent} />
-        </div>
         <div style={{ position: "relative", background: final ? "rgba(70,8,8,0.86)" : "rgba(8,10,16,0.84)", border: `2px solid ${final ? "rgba(255,90,90,0.55)" : "rgba(255,255,255,0.14)"}`, borderRadius: 24, padding: "24px 30px 22px", boxShadow: "0 24px 60px rgba(0,0,0,0.55)", overflow: "hidden" }}>
-          {/* barra de acento que se dibuja de izquierda a derecha */}
-          <div style={{ position: "absolute", left: 0, top: 0, height: 6, width: `${ramp(q - 0.2, q + dur) * 100}%`, background: accent, boxShadow: `0 0 18px ${accent}` }} />
           <div style={{ display: "flex", flexWrap: "wrap", columnGap: 12, rowGap: 2, fontFamily: FONT, fontWeight: 800, fontSize: 48, lineHeight: 1.16, color: "white", letterSpacing: -0.5 }}>
             {words.map((w, k) => {
               const st = times[k];
