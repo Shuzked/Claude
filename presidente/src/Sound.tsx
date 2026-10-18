@@ -63,7 +63,7 @@ export const Sound: React.FC = () => {
       ))}
       {[...QUESTIONS.map((q) => ({ n: q.n, file: q.file })), { n: 9, file: CLOSE.file }].map((q) => (
         <Sequence key={`q${q.n}`} from={f(q.file)} durationInFrames={Math.round(6 * fps)} name={`Periodista · ${q.n}`}>
-          <Audio src={staticFile(`audio/q/q${q.n}_${VOICE}.wav`)} volume={VOICE === "prensa" ? 0.23 : 0.2} />
+          <Audio src={staticFile(`audio/q/q${q.n}_${VOICE}.wav`)} volume={VOICE === "prensa" ? 0.23 : 0.28} />
         </Sequence>
       ))}
       <Sequence durationInFrames={DURATION_FRAMES} name="Sala">
