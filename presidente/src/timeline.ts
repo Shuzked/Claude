@@ -23,7 +23,7 @@ const fixes: Record<string, string> = {
   "74.36": "entrenar,",
   "74.8": "sí.",
   "75.52": "Mejor",
-  "76.68": "votes:",
+  "76.68": "votes",
 };
 
 // Destacados (subrayador) de cada respuesta
