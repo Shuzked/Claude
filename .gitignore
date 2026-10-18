@@ -3,3 +3,4 @@ previews/
 **/src-media/
 .env.local
 **/.env.local
+__pycache__/
