@@ -49,7 +49,7 @@ export const words: Word[] = (transcript as { segments: { words: RawWord[] }[] }
       text,
       start: w.start,
       end: w.start + w.duration,
-      eos: w.eos || /[.?:]$/.test(text),
+      eos: w.eos || /[.?:]$/.test(text) || id === "76.68", // corte tras «votes» (el «sígueme» lo dice el CTA)
       underline: underlined.has(id),
     };
   })
