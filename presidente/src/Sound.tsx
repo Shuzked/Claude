@@ -4,7 +4,7 @@ import { AbsoluteFill, getInputProps, interpolate, Sequence, staticFile, useVide
 import { CLOSE, DURATION_FRAMES, f, HOOK, QUESTIONS, segmentsOut, toOut } from "./timeline";
 
 // Voces: «prensa» (micro de mano por la megafonía) o «limpio» (render alternativo).
-const VOICE = ((getInputProps() as { voice?: string }).voice ?? "prensa") as "prensa" | "limpio";
+const VOICE = ((getInputProps() as { voice?: string }).voice ?? "limpio") as "prensa" | "limpio";
 
 type Sfx = { at: number; src: string; volume: number };
 const sfx: Sfx[] = [
@@ -15,7 +15,6 @@ const sfx: Sfx[] = [
   ...QUESTIONS.flatMap((q) => [
     { at: q.q - 0.4, src: "fx/whoosh-a.wav", volume: 0.18 }, // entra la tarjeta del periodista
     { at: q.q - 0.15, src: "ui/pop.wav", volume: 0.2 }, // contador
-    ...q.key.map((k, i) => ({ at: k.at, src: i ? "ui/tick.wav" : "ui/ding.wav", volume: i ? 0.16 : 0.15 })),
     { at: q.a + 0.02, src: "fx/snap.wav", volume: 0.07 }, // un flash cuando empieza a responder
   ]),
   { at: 43.05, src: "fx/snap.wav", volume: 0.12 }, // remate de los straps
