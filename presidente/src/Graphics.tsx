@@ -86,12 +86,13 @@ const Counter: React.FC = () => {
     <AbsoluteFill style={{ alignItems: "center", top: 120 }}>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, opacity: Math.min(1, s.p * 2) * (1 - out), transform: `translateY(${(1 - s.p) * -60 + id.y - out * 30}px) scale(${s.sx}, ${s.sy})` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ position: "relative", background: GREEN, borderRadius: 14, padding: "8px 16px 4px", boxShadow: "0 0 30px rgba(4,228,0,0.5)", overflow: "hidden", display: "flex", ...label, fontSize: 40, letterSpacing: 0, fontStyle: "italic", fontWeight: 900, color: INK }}>
-            <div style={{ position: "relative", height: 46, width: 30, overflow: "hidden" }}>
-              <div style={{ position: "absolute", left: 0, top: -roll * 46 }}>{prevN || ""}</div>
-              <div style={{ position: "absolute", left: 0, top: 46 - roll * 46 }}>{num}</div>
+          <div style={{ position: "relative", background: GREEN, borderRadius: 14, padding: "8px 18px 4px", boxShadow: "0 0 30px rgba(4,228,0,0.5)", overflow: "hidden", display: "flex", alignItems: "flex-end", ...label, fontSize: 40, letterSpacing: 0, fontStyle: "italic", fontWeight: 900, color: INK }}>
+            <div style={{ position: "relative", height: 46, width: 30, overflow: "hidden", textAlign: "center" }}>
+              <div style={{ position: "absolute", left: 0, right: 0, top: -roll * 46 }}>{prevN || ""}</div>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 46 - roll * 46 }}>{num}</div>
             </div>
-            <span>/7</span>
+            <span style={{ margin: "0 6px 0 8px", opacity: 0.85 }}>/</span>
+            <span>7</span>
           </div>
           <div style={{ ...label, fontSize: 30, letterSpacing: 2, color: "white", clipPath: `inset(0 ${(1 - wipe) * 100}% 0 0)`, textShadow: "0 3px 14px rgba(0,0,0,0.7)" }}>{q.topic}</div>
           <Burst d={(frame - f(q.q - 0.15)) / 25} r={70} n={9} x={30} y={26} />
