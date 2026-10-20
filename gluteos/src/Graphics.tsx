@@ -301,57 +301,22 @@ const HookReact: React.FC = () => {
   );
 };
 
-// Hook: fila de 4 glúteos (vista trasera) con la zona roja en un sitio distinto en cada uno,
-// como en el vídeo original. Sin ✓ ni tachado: solo enseña los «mapas» de las redes.
-const GLUTE_BODY = "M 44 8 C 40 40 18 70 14 110 C 10 150 22 185 34 214 L 92 214 C 95 196 98 186 100 182 C 102 186 105 196 108 214 L 166 214 C 178 185 190 150 186 110 C 182 70 160 40 156 8 Z";
-const GLUTE_ZONES: [number, number, number, number][][] = [
-  [[72, 160, 30, 20], [128, 160, 30, 20]], // parte baja, junto al pliegue
-  [[66, 82, 30, 24], [134, 82, 30, 24]], // parte alta
-  [[30, 122, 22, 34], [170, 122, 22, 34]], // lateral
-  [[62, 124, 46, 58], [138, 124, 46, 58]], // todo el glúteo
-];
+// Hook: los 4 dibujos de glúteo del vídeo original (zona roja en sitios distintos), sin ✓
+// ni tachado; limpiados con IA y recortados (public/art/gluteo_1..4.png).
 const GluteRow: React.FC = () => {
   const { t, squash, ramp, idle } = useClock();
   if (t < REACT.hook || t > REACT.cut + 0.02) return null;
   const out = ramp(REACT.cut - 0.4, REACT.cut, easeInOut);
-  const W = 200, H = 220, GAP = 16;
+  const W = 210, H = 308, GAP = 12;
   const left = (1080 - (4 * W + 3 * GAP)) / 2;
   return (
     <AbsoluteFill style={{ opacity: 1 - out }}>
-      {GLUTE_ZONES.map((zones, k) => {
-        const at = REACT.hook + 0.15 + k * 0.12;
+      {[1, 2, 3, 4].map((k) => {
+        const at = REACT.hook + 0.15 + (k - 1) * 0.12;
         const s = squash(at, 10, 230);
-        const heat = ramp(at + 0.2, at + 0.6);
-        const pulse = 0.85 + 0.15 * Math.sin((t - at) * 5 + k);
         const id = idle(k * 1.7, 0.6);
         return (
-          <div key={k} style={{ position: "absolute", left: left + k * (W + GAP), top: 34, width: W, height: H, opacity: Math.min(1, s.p * 2), transform: `translateY(${(1 - s.p) * -60 + id.y}px) scale(${s.sx * (0.6 + 0.4 * s.p)}, ${s.sy * (0.6 + 0.4 * s.p)}) rotate(${id.r}deg)`, filter: "drop-shadow(0 12px 22px rgba(0,0,0,0.55))" }}>
-            <svg width={W} height={H} viewBox="0 0 200 220">
-              <defs>
-                <radialGradient id={`gsk${k}`} cx="50%" cy="45%" r="70%">
-                  <stop offset="0%" stopColor="#FFFFFF" />
-                  <stop offset="70%" stopColor="#E4E4E6" />
-                  <stop offset="100%" stopColor="#B9B9BE" />
-                </radialGradient>
-                <radialGradient id={`gred${k}`}>
-                  <stop offset="0%" stopColor="#FF1F1F" stopOpacity={0.95} />
-                  <stop offset="55%" stopColor="#FF3B30" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="#FF3B30" stopOpacity={0} />
-                </radialGradient>
-                <clipPath id={`gclip${k}`}><path d={GLUTE_BODY} /></clipPath>
-              </defs>
-              <path d={GLUTE_BODY} fill={`url(#gsk${k})`} />
-              <g clipPath={`url(#gclip${k})`}>
-                <ellipse cx={58} cy={118} rx={46} ry={56} fill="rgba(255,255,255,0.35)" />
-                <ellipse cx={142} cy={118} rx={46} ry={56} fill="rgba(255,255,255,0.35)" />
-                {zones.map(([cx, cy, rx, ry], j) => (
-                  <ellipse key={j} cx={cx} cy={cy} rx={rx * (0.6 + 0.4 * heat) * pulse} ry={ry * (0.6 + 0.4 * heat) * pulse} fill={`url(#gred${k})`} opacity={heat} />
-                ))}
-              </g>
-              <path d="M 100 40 C 100 90 99 130 100 176" fill="none" stroke="rgba(0,0,0,0.28)" strokeWidth={2.5} strokeLinecap="round" />
-              <path d="M 30 166 C 50 182 78 184 97 174 M 170 166 C 150 182 122 184 103 174" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth={2.5} strokeLinecap="round" />
-            </svg>
-          </div>
+          <Img key={k} src={staticFile(`art/gluteo_${k}.png`)} style={{ position: "absolute", left: left + (k - 1) * (W + GAP), top: 30, width: W, height: H, objectFit: "contain", opacity: Math.min(1, s.p * 2), transform: `translateY(${(1 - s.p) * -60 + id.y}px) scale(${s.sx * (0.6 + 0.4 * s.p)}, ${s.sy * (0.6 + 0.4 * s.p)}) rotate(${id.r}deg)`, filter: "drop-shadow(0 12px 22px rgba(0,0,0,0.55))" }} />
         );
       })}
     </AbsoluteFill>
