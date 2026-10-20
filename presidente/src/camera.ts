@@ -26,7 +26,7 @@ export const faceAt = (t: number) => {
 
 // Claves de zoom (segundos del original): s = escala, d = duración de la transición.
 type Key = { t: number; s: number; d: number };
-const q = (n: number) => QUESTIONS.find((x) => x.n === n)!;
+const q = (n: number) => QUESTIONS.find((x) => x.n === n);
 const isCut = (t: number) => SEGMENTS.some(([a]) => Math.abs(a - t) < 0.01);
 const keys: Key[] = [
   { t: HOOK.from, s: 1.0, d: 0 },
@@ -40,14 +40,8 @@ for (const x of QUESTIONS) {
 }
 // respuestas: unas suaves, otras con golpe en el remate
 keys.push(
-  { t: q(1).a, s: 1.16, d: 0.7 },
-  { t: q(3).a, s: 1.32, d: 0.16 }, // «No necesariamente»
-  { t: q(4).a, s: 1.1, d: 0.9 },
-  { t: q(5).a, s: 1.12, d: 0.7 },
+  ...([[1, 1.16, 0.7], [3, 1.32, 0.16], [4, 1.1, 0.9], [5, 1.12, 0.7], [6, 1.13, 0.9], [7, 1.3, 0.16], [8, 1.15, 0.8]] as const).filter(([n]) => q(n)).map(([n, s, d]) => ({ t: q(n)!.a, s, d })),
   { t: 42.76, s: 1.34, d: 0.16 }, // «no que compita el agarre»
-  { t: q(6).a, s: 1.13, d: 0.9 },
-  { t: q(7).a, s: 1.3, d: 0.16 }, // «No.»
-  { t: q(8).a, s: 1.15, d: 0.8 },
   { t: CLOSE.q - 0.5, s: 1.0, d: 0.45 },
   { t: CLOSE.q, s: 1.05, d: 3 },
   { t: CLOSE.a, s: 1.2, d: 0.18 }, // «Milagros, no»

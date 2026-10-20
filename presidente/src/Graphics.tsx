@@ -79,7 +79,7 @@ const Counter: React.FC = () => {
   const out = ramp(q.to - 0.3, q.to);
   const wipe = ramp(q.q - 0.05, q.q + 0.45);
   const roll = ramp(q.q - 0.1, q.q + 0.3);
-  const num = qi + 1; // numeración de 1 a 7 (la pregunta 2 del guion no se grabó)
+  const num = qi + 1; // numeración correlativa (1/7 o, en la versión corta, 1/5)
   const prevN = qi;
   const id = idle(qi, 0.6);
   return (
@@ -92,13 +92,13 @@ const Counter: React.FC = () => {
               <div style={{ position: "absolute", left: 0, right: 0, top: 46 - roll * 46 }}>{num}</div>
             </div>
             <span style={{ margin: "0 6px 0 8px", opacity: 0.85 }}>/</span>
-            <span>7</span>
+            <span>{QUESTIONS.length}</span>
           </div>
           <div style={{ ...label, fontSize: 30, letterSpacing: 2, color: "white", clipPath: `inset(0 ${(1 - wipe) * 100}% 0 0)`, textShadow: "0 3px 14px rgba(0,0,0,0.7)" }}>{q.topic}</div>
           <Burst d={(frame - f(q.q - 0.15)) / 25} r={70} n={9} x={30} y={26} />
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          {[1, 2, 3, 4, 5, 6, 7].map((k) => {
+          {QUESTIONS.map((_, j) => j + 1).map((k) => {
             const cur = k === num, done = k < num;
             const pulse = cur ? 1 + 0.25 * Math.max(0, Math.sin((frame / 25) * 6)) : 1;
             return <div key={k} style={{ width: cur ? 28 : 12, height: 12, borderRadius: 6, background: cur ? GREEN : done ? "rgba(4,228,0,0.55)" : "rgba(255,255,255,0.25)", transform: `scale(${pulse})`, transition: "none" }} />;

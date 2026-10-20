@@ -5,7 +5,12 @@
 // ese hueco (Yago escuchando) y en él aparece la pregunta en pantalla.
 
 import transcript from "./transcript.json";
+import { getInputProps } from "remotion";
 import { FPS } from "./theme";
+
+// Versión corta (VD9 corto): 5 preguntas, sin drop sets ni días consecutivos.
+export const SHORT = Boolean((getInputProps() as { short?: boolean }).short);
+const DROP = SHORT ? [3, 4] : [];
 
 export type Word = { text: string; start: number; end: number; eos: boolean; underline: boolean };
 
@@ -100,7 +105,7 @@ export const HOOK = { from: 2.12, to: 8.32, end: 8.2 };
 export const QUESTIONS: Q[] = (() => {
   const out: Q[] = [];
   let prev = HOOK.end;
-  for (const x of QIN) {
+  for (const x of QIN.filter((x) => !DROP.includes(x.n))) {
     const q = place(x, prev);
     out.push(q);
     prev = x.end;
