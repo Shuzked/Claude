@@ -3,6 +3,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  getInputProps,
   interpolate,
   Sequence,
   spring,
@@ -21,6 +22,10 @@ import { f, FIXED, JUMPS, punches, segmentsOut, SHOT_CUTS, toSrc, TRACKS } from 
 //  3. Golpes de zoom en los remates y en cada revelación.
 //  4. Deriva mínima de cámara en mano.
 //  5. Tracking de cabeza: la cara se mantiene en el tercio superior.
+
+// Versión 2 (--props='{"v2":true}'): misma toma con el hook del brazo adelgazado (0–1,8 s).
+// Las dos llevan la voz limpia de la versión 2.
+const VIDEO = (getInputProps() as { v2?: boolean }).v2 ? "video-v2.mp4" : "video.mp4";
 
 const ORIGIN = { x: 540, y: 1920 * 0.32 };
 const TARGET = { x: 540, y: 640 };
@@ -183,7 +188,7 @@ export const Camera: React.FC<{ children?: React.ReactNode }> = ({ children }) =
             name={`Toma · ${s.src.toFixed(2)}s`}
           >
             <Video
-              src={staticFile("video.mp4")}
+              src={staticFile(VIDEO)}
               trimBefore={Math.round(s.src * fps)}
               objectFit="cover"
               style={{ width: "100%", height: "100%" }}
